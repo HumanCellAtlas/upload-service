@@ -6,6 +6,6 @@
     "region": "us-east-1",
     "api_gateway_stage": "dev",
     "backend": "api",
-    "chalice_version": "0.8.2"
+    "chalice_version": "0.9.0"
   }
 }
