@@ -2,7 +2,7 @@ swagger: '2.0'
 info:
   title: Staging API
   version: "0.0.1"
-host: hca-staging.czi.technology
+host: staging.dev.data.humancellatlas.org
 schemes:
   - https
 basePath: /v1
