@@ -9,13 +9,40 @@ basePath: /v1
 produces:
   - application/json
 paths:
-  /foo:
-    get:
+  /area/{staging_area_id}:
+    post:
+      summary: Create a Staging Area
+      operationId: staging.api.area.create
       description: |
-        Hello
-      summary: Hello
+        Create a Staging Area
+      parameters:
+        - name: staging_area_id
+          in: path
+          description: |
+            A unique identifer for the staging area.
+          required: true
+          type: string
       responses:
-        200:
-          description: OK
+        201:
+          description: CREATED
+        409:
+          description: CONFLICT
+        default:
+          description: Unexpected error
+    delete:
+      description: |
+        Delete a Staging Area
+      summary: Delete a Staging Area
+      parameters:
+        - name: staging_area_id
+          in: path
+          description: The unique identifer of the staging area.
+          required: true
+          type: string
+      responses:
+        204:
+          description: NO CONTENT
+        404:
+          description: NOT FOUND
         default:
           description: Unexpected error
