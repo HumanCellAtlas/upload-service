@@ -11,7 +11,7 @@ if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
     sys.path.insert(0, pkg_root)  # noqa
 
-from staging.api import area
+from staging.api import area  # noqa
 
 
 class TestArea(unittest.TestCase):

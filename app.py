@@ -49,33 +49,6 @@ def get_chalice_app(flask_app):
                                 headers={"Content-Type": "text/html"},
                                 body=swagger_ui_html)
 
-    @app.route("/internal/notify", methods=["POST"])
-    def handle_notification():
-        event = app.current_request.json_body
-        if event["kind"] == "storage#object" and event["selfLink"].startswith("https://www.googleapis.com/storage"):
-            gs_key_name = event["name"]
-            sync_result = sync_blob(source_platform="gs",
-                                    source_key=gs_key_name,
-                                    dest_platform="s3",
-                                    logger=app.logger)
-            return sync_result
-        else:
-            raise NotImplementedError()
-
-    @app.route("/internal/logs/{group}", methods=["GET"])
-    def get_logs(group):
-        assert group in {"dss-dev", "dss-index-dev", "dss-sync-dev"}
-        logs = []
-        start_time = datetime.datetime.now() - datetime.timedelta(minutes=10)
-        filter_args = dict(logGroupName="/aws/lambda/{}".format(group), startTime=int(start_time.timestamp()))
-        if app.current_request.query_params and "pattern" in app.current_request.query_params:
-            filter_args.update(filterPattern=app.current_request.query_params["pattern"])
-        for event in paginate(boto3.client("logs").get_paginator("filter_log_events"), **filter_args):
-            if "timestamp" not in event or "message" not in event:
-                continue
-            logs.append(event)
-        return dict(logs=logs)
-
     return app
 
 app = get_chalice_app(create_app().app)

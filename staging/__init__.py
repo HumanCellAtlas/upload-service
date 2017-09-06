@@ -18,6 +18,7 @@ def get_logger():
     except RuntimeError:
         return logging.getLogger(__name__)
 
+
 @failsafe
 def create_app():
     app = connexion.App(__name__)
