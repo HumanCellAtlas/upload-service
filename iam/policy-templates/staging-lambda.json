@@ -12,10 +12,45 @@
     },
     {
       "Effect": "Allow",
-      "Action": "s3:*",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:DeleteBucket",
+        "s3:ListBucket"
+      ],
       "Resource": [
-        "arn:aws:s3:::$STAGING_S3_BUCKET",
-        "arn:aws:s3:::$STAGING_S3_BUCKET/*"
+        "arn:aws:s3:::org-humancellatlas-staging-*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:GetObjectTagging"
+      ],
+      "Resource": [
+        "arn:aws:s3:::org-humancellatlas-staging-*/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": "s3:ListAllMyBuckets",
+      "Resource": "arn:aws:s3:::*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateUser",
+        "iam:DeleteUser",
+        "iam:PutUserPolicy",
+        "iam:DeleteUserPolicy",
+        "iam:ListUserPolicies",
+        "iam:CreateAccessKey",
+        "iam:DeleteAccessKey",
+        "iam:ListAccessKeys"
+      ],
+      "Resource": [
+        "arn:aws:iam::861229788715:user/staging-*",
+        "arn:aws:iam::861229788715:policy/staging-*"
       ]
     }
   ]
