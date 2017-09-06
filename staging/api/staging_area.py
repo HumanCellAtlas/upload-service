@@ -16,8 +16,9 @@ class StagingArea:
 
     def __init__(self, uuid):
         self.uuid = uuid
-        self.bucket_name = f"{self.STAGING_BUCKET_NAME_PREFIX}{uuid}"
-        self.user_name = f"{self.STAGING_USER_NAME_PREFIX}{uuid}"
+        self.bucket_name = self.STAGING_BUCKET_NAME_PREFIX + uuid
+        self.user_name = self.STAGING_USER_NAME_PREFIX + uuid
+        self._credentials = None
 
     def urn(self):
         encoded_credentials = base64.b64encode(json.dumps(self._credentials).encode('utf8')).decode('utf8')
@@ -26,7 +27,7 @@ class StagingArea:
 
 class AwsStagingArea(StagingArea):
 
-    STAGING_ACCESS_POLICY_PREFIX = 'staging-user-'
+    STAGING_ACCESS_POLICY_PREFIX = 'staging-'
 
     def __init__(self, uuid):
         super().__init__(uuid)
@@ -60,7 +61,7 @@ class AwsStagingArea(StagingArea):
             return False
 
     def _add_access_policy(self):
-        policy_name = f"{self.STAGING_ACCESS_POLICY_PREFIX}{self.uuid}"
+        policy_name = self.STAGING_ACCESS_POLICY_PREFIX + self.uuid
         policy_document = {
             "Version": "2012-10-17",
             "Statement": [

@@ -41,7 +41,7 @@ class TestArea(unittest.TestCase):
     @mock_s3
     @mock_iam
     def test_create_with_already_used_staging_area_id(self):
-        area_id = uuid.uuid4()
+        area_id = str(uuid.uuid4())
         bucket_name = f"org-humancellatlas-staging-{area_id}"
         boto3.resource('s3').Bucket(bucket_name).create()
 
@@ -54,7 +54,7 @@ class TestArea(unittest.TestCase):
     @mock_s3
     @mock_iam
     def test_delete_with_id_of_real_staging_area(self):
-        area_id = uuid.uuid4()
+        area_id = str(uuid.uuid4())
         boto3.resource('s3').Bucket(f"org-humancellatlas-staging-{area_id}").create()
         boto3.resource('iam').User(f"staging-user-{area_id}").create()
 
@@ -66,7 +66,7 @@ class TestArea(unittest.TestCase):
     @mock_s3
     @mock_iam
     def test_delete_with_unused_used_staging_area_id(self):
-        area_id = uuid.uuid4()
+        area_id = str(uuid.uuid4())
 
         response = area.delete(area_id)
 
