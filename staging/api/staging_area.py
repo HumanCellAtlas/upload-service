@@ -37,6 +37,7 @@ class AwsStagingArea(StagingArea):
 
     def create(self):
         self._bucket.create()
+        # self._enable_transfer_acceleration()
         self._user.create()
         self._add_access_policy()
         self._create_credentials()
@@ -59,6 +60,12 @@ class AwsStagingArea(StagingArea):
                 raise StagingException(status=500, title="Unexpected Error",
                                        detail=f"bucket.load() returned {e.response}")
             return False
+
+    def _enable_transfer_acceleration(self):
+        s3.meta.client.put_bucket_accelerate_configuration(
+            Bucket=self.bucket_name,
+            AccelerateConfiguration={'Status': 'Enabled'}
+        )
 
     def _add_access_policy(self):
         policy_name = self.STAGING_ACCESS_POLICY_PREFIX + self.uuid
