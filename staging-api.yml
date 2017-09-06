@@ -1,7 +1,7 @@
 swagger: '2.0'
 info:
   title: Staging API
-  version: "0.0.1"
+  version: "0.0.2"
 host: staging.dev.data.humancellatlas.org
 schemes:
   - https
@@ -19,14 +19,22 @@ paths:
         - name: staging_area_id
           in: path
           description: |
-            A unique identifer for the staging area.
+            A RFC4122-compliant ID for the staging area.
           required: true
           type: string
+          pattern: "[A-Za-z0-9]{8}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{12}"
+        - name: cloud
+          description: |
+            Which cloud storage platform should be staging area be created in.
+          in: query
+          type: string
+          enum: [aws, gcp]
+          required: true
       responses:
         201:
-          description: CREATED
+          description: Staging area was created.
         409:
-          description: CONFLICT
+          description: A staging area with that ID already exists.
         default:
           description: Unexpected error
     delete:
@@ -41,8 +49,8 @@ paths:
           type: string
       responses:
         204:
-          description: NO CONTENT
+          description: Staging area was deleted.
         404:
-          description: NOT FOUND
+          description: Could not find a staging area with that ID.
         default:
           description: Unexpected error
