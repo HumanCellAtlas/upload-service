@@ -43,6 +43,7 @@ class AwsStagingArea(StagingArea):
         self._create_credentials()
 
     def delete(self):
+        # This may need to be offloaded to an async lambda if _empty_bucket() starts taking a long time.
         for access_key in self._user.access_keys.all():
             access_key.delete()
         for policy in self._user.policies.all():
@@ -93,4 +94,8 @@ class AwsStagingArea(StagingArea):
                              'AWS_SECRET_ACCESS_KEY': credentials.secret_access_key}
 
     def _empty_bucket(self):
-        pass  # TODO
+        paginator = s3.meta.client.get_paginator('list_objects')
+        for page in paginator.paginate(Bucket=self.bucket_name):
+            if 'Contents' in page:
+                for o in page['Contents']:
+                    s3.meta.client.delete_object(Bucket=self.bucket_name, Key=o['Key'])

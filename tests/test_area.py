@@ -53,9 +53,11 @@ class TestArea(unittest.TestCase):
 
     @mock_s3
     @mock_iam
-    def test_delete_with_id_of_real_staging_area(self):
+    def test_delete_with_id_of_real_non_empty_staging_area(self):
         area_id = str(uuid.uuid4())
-        boto3.resource('s3').Bucket(f"org-humancellatlas-staging-{area_id}").create()
+        bucket = boto3.resource('s3').Bucket(f"org-humancellatlas-staging-{area_id}")
+        bucket.create()
+        bucket.Object('test_file').put(Body="foo")
         boto3.resource('iam').User(f"staging-user-{area_id}").create()
 
         response = area.delete(area_id)
