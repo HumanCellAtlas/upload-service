@@ -34,6 +34,13 @@ def unlock(staging_area_id: str, cloud: str):
     return None, 200
 
 
+@return_exceptions_as_http_errors
+def put_file(staging_area_id: str, filename: str, cloud: str, body: str):
+    staging_area = _load_staging_area(staging_area_id, cloud)
+    staging_area.store_file(filename, content=body)
+    return None, 200
+
+
 def _load_staging_area(staging_area_id: str, cloud: str):
     staging_area = StagingArea.factory(staging_area_id, cloud)
 

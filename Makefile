@@ -1,14 +1,17 @@
+.PHONY: tests
 export STAGE=dev
 export STAGING_S3_BUCKET=org-humancellatlas-staging-$(STAGE)
 export EXPORT_ENV_VARS_TO_LAMBDA=STAGING_S3_BUCKET
 MODULES=staging tests
 
-test: lint
-	PYTHONWARNINGS=ignore:ResourceWarning coverage run --source=staging \
-		-m unittest discover --start-directory tests --top-level-directory . --verbose
+test: lint tests
 
 lint:
 	flake8 $(MODULES) *.py
+
+tests:
+	PYTHONWARNINGS=ignore:ResourceWarning coverage run --source=staging \
+		-m unittest discover --start-directory tests --top-level-directory . --verbose
 
 build:
 	cp -R staging staging-api.yml chalicelib

@@ -1,15 +1,21 @@
 swagger: '2.0'
 info:
   title: Staging API
+  description: Human Cell Atlas Data Coordination Platform Staging Service API
   version: "0.0.2"
 host: staging.dev.data.humancellatlas.org
 schemes:
   - https
 basePath: /v1
+consumes:
+  - application/json
+  - application/octet-stream
 produces:
   - application/json
 paths:
+
   /area/{staging_area_id}:
+
     post:
       summary: Create a Staging Area
       operationId: staging.api.area.create
@@ -37,6 +43,7 @@ paths:
           description: A staging area with that ID already exists.
         default:
           description: Unexpected error
+
     delete:
       description: |
         Delete a Staging Area
@@ -49,7 +56,7 @@ paths:
           type: string
         - name: cloud
           description: |
-            Which cloud storage platform sthis staging area is in.
+            Which cloud storage platform this staging area is in.
           in: query
           type: string
           enum: [aws, gcp]
@@ -61,7 +68,9 @@ paths:
           description: Could not find a staging area with that ID.
         default:
           description: Unexpected error
+
   /area/{staging_area_id}/lock:
+
     post:
       summary: Lock a Staging Area
       operationId: staging.api.area.lock
@@ -75,7 +84,7 @@ paths:
           type: string
         - name: cloud
           description: |
-            Which cloud storage platform sthis staging area is in.
+            Which cloud storage platform this staging area is in.
           in: query
           type: string
           enum: [aws, gcp]
@@ -83,6 +92,9 @@ paths:
       responses:
         204:
           description: Staging area is now locked.
+        default:
+          description: Unexpected error
+
     delete:
       summary: Unock a Staging Area
       operationId: staging.api.area.unlock
@@ -96,7 +108,7 @@ paths:
           type: string
         - name: cloud
           description: |
-            Which cloud storage platform sthis staging area is in.
+            Which cloud storage platform this staging area is in.
           in: query
           type: string
           enum: [aws, gcp]
@@ -104,3 +116,41 @@ paths:
       responses:
         204:
           description: Staging area is now unlocked.
+        default:
+          description: Unexpected error
+
+  /area/{staging_area_id}/{filename}:
+
+    put:
+      summary: Store a metadata file
+      operationId: staging.api.area.put_file
+      description: |
+        Store a JSON metadata file in the staging area.
+      parameters:
+        - name: staging_area_id
+          in: path
+          description: A RFC4122-compliant ID for the staging area.
+          required: true
+          type: string
+        - name: filename
+          in: path
+          description: Name of file to be placed in staging area.
+          required: true
+          type: string
+        - name: cloud
+          description: |
+            Which cloud storage platform this staging area is in.
+          in: query
+          type: string
+          enum: [aws, gcp]
+          required: true
+        - name: body
+          in: body
+          schema:
+            type: string
+            format: binary
+      responses:
+        201:
+          description: File was stored sucessfully.
+        default:
+          description: Unexpected error

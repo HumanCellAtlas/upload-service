@@ -99,5 +99,17 @@ class TestArea(unittest.TestCase):
         policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
         self.assertIn('{"Effect": "Allow", "Action": ["s3:ListBucket", "s3:PutObject"]', policy.policy_document)
 
+    @mock_s3
+    @mock_iam
+    def test_put_file(self):
+        area_id = str(uuid.uuid4())
+        area.create(area_id, 'aws')
+
+        area.put_file(staging_area_id=area_id, cloud='aws', filename="some.json", body="exquisite corpse")
+
+        bucket = boto3.resource('s3').Bucket(f"org-humancellatlas-staging-{area_id}")
+        obj = bucket.Object("some.json")
+        self.assertEqual(obj.get()['Body'].read(), "exquisite corpse".encode('utf8'))
+
 if __name__ == '__main__':
     unittest.main()

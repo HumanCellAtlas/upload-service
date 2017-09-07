@@ -65,6 +65,9 @@ class AwsStagingArea(StagingArea):
     def unlock(self):
         self._set_access_policy(rw_access=True)
 
+    def store_file(self, filename, content):
+        self._bucket.Object(filename).put(Body=content)
+
     def is_extant(self) -> bool:
         try:
             self._bucket.load()
