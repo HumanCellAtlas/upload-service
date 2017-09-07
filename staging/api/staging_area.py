@@ -1,4 +1,5 @@
 import json, base64
+from functools import reduce
 
 import boto3
 from botocore.exceptions import ClientError
@@ -13,6 +14,9 @@ class StagingArea:
 
     STAGING_BUCKET_NAME_PREFIX = 'org-humancellatlas-staging-'
     STAGING_USER_NAME_PREFIX = 'staging-user-'
+    CHECKSUM_TAGS = ('hca-dss-sha1', 'hca-dss-sha256', 'hca-dss-crc32c', 'hca-dss-s3_etag')
+    MIME_TAG = 'hca-dss-content-type'
+    ALL_TAGS = CHECKSUM_TAGS + (MIME_TAG,)
 
     @classmethod
     def factory(cls, uuid, cloud):
@@ -59,6 +63,9 @@ class AwsStagingArea(StagingArea):
         self._empty_bucket()
         self._bucket.delete()
 
+    def ls(self):
+        return {'files': self._file_list()}
+
     def lock(self):
         self._set_access_policy(rw_access=False)
 
@@ -77,6 +84,22 @@ class AwsStagingArea(StagingArea):
                 raise StagingException(status=500, title="Unexpected Error",
                                        detail=f"bucket.load() returned {e.response}")
             return False
+
+    def _file_list(self):
+        file_list = []
+        paginator = s3.meta.client.get_paginator('list_objects')
+        for page in paginator.paginate(Bucket=self.bucket_name):
+            if 'Contents' in page:
+                for o in page['Contents']:
+                    tagging = s3.meta.client.get_object_tagging(Bucket=self.bucket_name, Key=o['Key'])
+                    file_info = {'name': o['Key'], 'size': o['Size']}
+                    if 'TagSet' in tagging:
+                        tags = self._decode_tags(tagging['TagSet'])
+                        for tag in self.ALL_TAGS:
+                            if tag in tags:
+                                file_info[tag[8:]] = tags[tag]  # 8: = cut off hca-dss-
+                    file_list.append(file_info)
+        return file_list
 
     def _enable_transfer_acceleration(self):
         s3.meta.client.put_bucket_accelerate_configuration(
@@ -116,6 +139,13 @@ class AwsStagingArea(StagingArea):
             if 'Contents' in page:
                 for o in page['Contents']:
                     s3.meta.client.delete_object(Bucket=self.bucket_name, Key=o['Key'])
+
+    @staticmethod
+    def _decode_tags(tags: list) -> dict:
+        if not tags:
+            return {}
+        simplified_dicts = list({tag['Key']: tag['Value']} for tag in tags)
+        return reduce(lambda x, y: dict(x, **y), simplified_dicts)
 
 
 class GcpStagingArea(StagingArea):

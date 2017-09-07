@@ -41,6 +41,11 @@ def put_file(staging_area_id: str, filename: str, cloud: str, body: str):
     return None, 200
 
 
+def list_area(staging_area_id: str, cloud: str):
+    staging_area = _load_staging_area(staging_area_id, cloud)
+    return staging_area.ls(), 200
+
+
 def _load_staging_area(staging_area_id: str, cloud: str):
     staging_area = StagingArea.factory(staging_area_id, cloud)
 

@@ -45,9 +45,9 @@ paths:
           description: Unexpected error
 
     delete:
+      summary: Delete a Staging Area
       description: |
         Delete a Staging Area
-      summary: Delete a Staging Area
       parameters:
         - name: staging_area_id
           in: path
@@ -64,6 +64,32 @@ paths:
       responses:
         204:
           description: Staging area was deleted.
+        404:
+          description: Could not find a staging area with that ID.
+        default:
+          description: Unexpected error
+
+    get:
+      summary: List files in a staging area
+      operationId: staging.api.area.list
+      description: |
+        Provide a JSON object listing all the files in a staging area, including their checkums.
+      parameters:
+        - name: staging_area_id
+          in: path
+          description: A RFC4122-compliant ID for the staging area.
+          required: true
+          type: string
+        - name: cloud
+          description: |
+            Which cloud storage platform this staging area is in.
+          in: query
+          type: string
+          enum: [aws, gcp]
+          required: true
+      responses:
+        200:
+          description: Here's your listing.
         404:
           description: Could not find a staging area with that ID.
         default:
