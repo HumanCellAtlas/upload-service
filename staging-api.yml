@@ -44,9 +44,16 @@ paths:
       parameters:
         - name: staging_area_id
           in: path
-          description: The unique identifer of the staging area.
+          description: A RFC4122-compliant ID for the staging area.
           required: true
           type: string
+        - name: cloud
+          description: |
+            Which cloud storage platform sthis staging area is in.
+          in: query
+          type: string
+          enum: [aws, gcp]
+          required: true
       responses:
         204:
           description: Staging area was deleted.
@@ -54,3 +61,46 @@ paths:
           description: Could not find a staging area with that ID.
         default:
           description: Unexpected error
+  /area/{staging_area_id}/lock:
+    post:
+      summary: Lock a Staging Area
+      operationId: staging.api.area.lock
+      description: |
+        Lock a Staging area so that submitters may not add/delete/rename files in it.
+      parameters:
+        - name: staging_area_id
+          in: path
+          description: A RFC4122-compliant ID for the staging area.
+          required: true
+          type: string
+        - name: cloud
+          description: |
+            Which cloud storage platform sthis staging area is in.
+          in: query
+          type: string
+          enum: [aws, gcp]
+          required: true
+      responses:
+        204:
+          description: Staging area is now locked.
+    delete:
+      summary: Unock a Staging Area
+      operationId: staging.api.area.unlock
+      description: |
+        Unlock a Staging area so that submitters may add/delete/rename files in it.
+      parameters:
+        - name: staging_area_id
+          in: path
+          description: A RFC4122-compliant ID for the staging area.
+          required: true
+          type: string
+        - name: cloud
+          description: |
+            Which cloud storage platform sthis staging area is in.
+          in: query
+          type: string
+          enum: [aws, gcp]
+          required: true
+      responses:
+        204:
+          description: Staging area is now unlocked.

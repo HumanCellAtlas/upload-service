@@ -14,6 +14,13 @@ class StagingArea:
     STAGING_BUCKET_NAME_PREFIX = 'org-humancellatlas-staging-'
     STAGING_USER_NAME_PREFIX = 'staging-user-'
 
+    @classmethod
+    def factory(cls, uuid, cloud):
+        if cloud not in ('aws', 'gcp'):
+            raise StagingException(400, title="Invalid 'cloud'", detail="cloud must be one of 'aws', 'gcp'")
+        class_name = cloud.title() + 'StagingArea'
+        return eval(class_name)(uuid)
+
     def __init__(self, uuid):
         self.uuid = uuid
         self.bucket_name = self.STAGING_BUCKET_NAME_PREFIX + uuid
@@ -39,7 +46,7 @@ class AwsStagingArea(StagingArea):
         self._bucket.create()
         # self._enable_transfer_acceleration()
         self._user.create()
-        self._add_access_policy()
+        self._set_access_policy()
         self._create_credentials()
 
     def delete(self):
@@ -51,6 +58,12 @@ class AwsStagingArea(StagingArea):
         self._user.delete()
         self._empty_bucket()
         self._bucket.delete()
+
+    def lock(self):
+        self._set_access_policy(rw_access=False)
+
+    def unlock(self):
+        self._set_access_policy(rw_access=True)
 
     def is_extant(self) -> bool:
         try:
@@ -68,7 +81,7 @@ class AwsStagingArea(StagingArea):
             AccelerateConfiguration={'Status': 'Enabled'}
         )
 
-    def _add_access_policy(self):
+    def _set_access_policy(self, rw_access=True):
         policy_name = self.STAGING_ACCESS_POLICY_PREFIX + self.uuid
         policy_document = {
             "Version": "2012-10-17",
@@ -76,8 +89,7 @@ class AwsStagingArea(StagingArea):
                 {
                     "Effect": "Allow",
                     "Action": [
-                        "s3:ListBucket",
-                        "s3:PutObject"
+                        "s3:ListBucket"
                     ],
                     "Resource": [
                         f"arn:aws:s3:::{self.bucket_name}",
@@ -86,6 +98,8 @@ class AwsStagingArea(StagingArea):
                 }
             ]
         }
+        if rw_access:
+            policy_document['Statement'][0]['Action'].append("s3:PutObject")
         self._user.create_policy(PolicyName=policy_name, PolicyDocument=json.dumps(policy_document))
 
     def _create_credentials(self):
@@ -99,3 +113,12 @@ class AwsStagingArea(StagingArea):
             if 'Contents' in page:
                 for o in page['Contents']:
                     s3.meta.client.delete_object(Bucket=self.bucket_name, Key=o['Key'])
+
+
+class GcpStagingArea(StagingArea):
+
+    STAGING_ACCESS_POLICY_PREFIX = 'staging-'
+
+    def __init__(self, uuid):
+        super().__init__(uuid)
+        raise NotImplementedError()
