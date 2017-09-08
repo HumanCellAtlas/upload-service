@@ -2,104 +2,67 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "hcaStagingCiCdS3WriteAccess",
+      "Sid": "AllowChaliceToSetRolePolicyForLambda",
       "Effect": "Allow",
       "Action": [
-        "s3:AbortMultipartUpload",
-        "s3:DeleteBucketPolicy",
-        "s3:DeleteBucketWebsite",
-        "s3:DeleteObject",
-        "s3:DeleteObjectVersion",
-        "s3:PutAccelerateConfiguration",
-        "s3:PutBucketAcl",
-        "s3:PutBucketCORS",
-        "s3:PutBucketLogging",
-        "s3:PutBucketNotification",
-        "s3:PutBucketPolicy",
-        "s3:PutBucketRequestPayment",
-        "s3:PutBucketTagging",
-        "s3:PutBucketVersioning",
-        "s3:PutBucketWebsite",
-        "s3:PutLifecycleConfiguration",
-        "s3:PutReplicationConfiguration",
-        "s3:PutObject",
-        "s3:PutObjectAcl",
-        "s3:PutObjectTagging",
-        "s3:PutObjectVersionAcl",
-        "s3:ReplicateDelete",
-        "s3:ReplicateObject",
-        "s3:RestoreObject"
+        "iam:AttachRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:GetRole"
       ],
       "Resource": [
-        "arn:aws:s3:::$STAGING_S3_BUCKET",
-        "arn:aws:s3:::$STAGING_S3_BUCKET/*"
+        "*"
       ]
     },
     {
-      "Sid": "hcaStagingCiCdS3ReadOnlyAccess",
+      "Sid": "Stmt1471020565001",
       "Effect": "Allow",
       "Action": [
-        "s3:GetAccelerateConfiguration",
-        "s3:GetBucketAcl",
-        "s3:GetBucketCORS",
-        "s3:GetBucketLocation",
-        "s3:GetBucketLogging",
-        "s3:GetBucketNotification",
-        "s3:GetBucketPolicy",
-        "s3:GetBucketRequestPayment",
-        "s3:GetBucketTagging",
-        "s3:GetBucketVersioning",
-        "s3:GetBucketWebsite",
-        "s3:GetLifecycleConfiguration",
-        "s3:GetObject",
-        "s3:GetObjectAcl",
-        "s3:GetObjectTagging",
-        "s3:GetObjectTorrent",
-        "s3:GetObjectVersionAcl",
-        "s3:GetObjectVersionTorrent",
-        "s3:GetReplicationConfiguration",
-        "s3:ListAllMyBuckets",
-        "s3:ListBucket",
-        "s3:ListBucketMultipartUploads",
-        "s3:ListBucketVersions",
-        "s3:ListMultipartUploadParts",
-        "s3:ListObjects"
+        "apigateway:GET",
+        "apigateway:HEAD"
       ],
       "Resource": [
-        "arn:aws:s3:::$STAGING_S3_BUCKET",
-        "arn:aws:s3:::$STAGING_S3_BUCKET/*"
+        "arn:aws:apigateway:$region_name::/restapis",
+        "arn:aws:apigateway:$region_name::/restapis/*/resources",
+        "arn:aws:apigateway:$region_name::/restapis/*/resources/*"
       ]
     },
     {
-      "Sid": "hcaStagingCiCdLambdaReadAccess",
-      "Action": [
-        "lambda:ListFunctions",
-        "lambda:ListTags",
-        "lambda:TagResource",
-        "apigateway:*"
-      ],
-      "Resource": "*",
-      "Effect": "Allow"
-    },
-    {
-      "Sid": "hcaStagingCiCdIamListRolesAccess",
+      "Sid": "Stmt1471020565002",
       "Effect": "Allow",
       "Action": [
-        "iam:ListRoles"
-      ],
-      "Resource": "arn:aws:iam::$account_id:role/"
-    },
-    {
-      "Sid": "hcaStagingCiCdLambdaElasticsearchSNSAdminAccess",
-      "Action": [
-        "lambda:*",
-        "sns:*"
+        "apigateway:DELETE"
       ],
       "Resource": [
-        "arn:aws:lambda:$region_name:$account_id:function:staging-*",
-        "arn:aws:sns:$region_name:$account_id:domovoi-s3-bucket-events-$STAGING_S3_BUCKET"
+        "arn:aws:apigateway:$region_name::/restapis/*/resources/*"
+      ]
+    },
+    {
+      "Sid": "Stmt1471020565003",
+      "Effect": "Allow",
+      "Action": [
+        "apigateway:POST"
       ],
-      "Effect": "Allow"
+      "Resource": [
+        "arn:aws:apigateway:$region_name::/restapis/*/deployments",
+        "arn:aws:apigateway:$region_name::/restapis/*/resources/*"
+      ]
+    },
+    {
+      "Sid": "Stmt1471020565004",
+      "Effect": "Allow",
+      "Action": [
+        "apigateway:PUT"
+      ],
+      "Resource": [
+        "arn:aws:apigateway:$region_name::/restapis/*/methods/GET",
+        "arn:aws:apigateway:$region_name::/restapis/*/methods/GET/*",
+        "arn:aws:apigateway:$region_name::/restapis/*/methods/POST",
+        "arn:aws:apigateway:$region_name::/restapis/*/methods/POST/*",
+        "arn:aws:apigateway:$region_name::/restapis/*/methods/PUT",
+        "arn:aws:apigateway:$region_name::/restapis/*/methods/PUT/*"
+      ]
     }
   ]
 }

@@ -46,8 +46,8 @@
         "iam:ListAccessKeys"
       ],
       "Resource": [
-        "arn:aws:iam::861229788715:user/staging-*",
-        "arn:aws:iam::861229788715:policy/staging-*"
+        "arn:aws:iam::$account_id:user/staging-*",
+        "arn:aws:iam::$account_id:policy/staging-*"
       ]
     }
   ]
