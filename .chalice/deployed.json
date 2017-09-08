@@ -7,5 +7,23 @@
     "api_gateway_stage": "dev",
     "backend": "api",
     "chalice_version": "0.9.0"
+  },
+  "staging": {
+    "api_handler_name": "staging-staging",
+    "api_handler_arn": "",
+    "rest_api_id": "",
+    "region": "us-east-1",
+    "api_gateway_stage": "staging",
+    "backend": "api",
+    "chalice_version": "0.9.0"
+  },
+  "prod": {
+    "api_handler_name": "staging-staging",
+    "api_handler_arn": "",
+    "rest_api_id": "",
+    "region": "us-east-1",
+    "api_gateway_stage": "prod",
+    "backend": "api",
+    "chalice_version": "0.9.0"
   }
 }

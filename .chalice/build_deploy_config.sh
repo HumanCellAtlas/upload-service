@@ -21,12 +21,12 @@ if [[ $# != 1 ]]; then
 fi
 
 export stage=$1
-deployed_json="$(dirname $0)/.chalice/deployed.json"
-config_json="$(dirname $0)/.chalice/config.json"
-policy_json="$(dirname $0)/.chalice/policy.json"
-stage_policy_json="$(dirname $0)/.chalice/policy-${stage}.json"
+deployed_json="./deployed.json"
+config_json="./config.json"
+policy_json="./policy.json"
+stage_policy_json="./policy-${stage}.json"
 export app_name=$(cat "$config_json" | jq -r .app_name)
-policy_template="$(dirname $0)/iam/policy-templates/${app_name}-lambda.json"
+policy_template="${SS_HOME}/iam/policy-templates/${app_name}-lambda.json"
 export lambda_name="${app_name}-${stage}"
 export region_name=$(aws configure get region)
 export account_id=$(aws sts get-caller-identity | jq -r .Account)

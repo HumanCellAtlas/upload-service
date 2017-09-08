@@ -1,6 +1,6 @@
 swagger: '2.0'
 info:
-  title: Staging API
+  title: HCA DCP Staging Service API
   description: Human Cell Atlas Data Coordination Platform Staging Service API
   version: "0.0.2"
 host: staging.dev.data.humancellatlas.org

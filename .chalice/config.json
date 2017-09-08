@@ -6,6 +6,14 @@
     "dev": {
       "api_gateway_stage": "",
       "environment_variables": {}
+    },
+    "staging": {
+      "api_gateway_stage": "",
+      "environment_variables": {}
+    },
+    "prod": {
+      "api_gateway_stage": "",
+      "environment_variables": {}
     }
   },
   "lambda_timeout": 300,

@@ -1,7 +1,5 @@
+include common.mk
 .PHONY: tests
-export STAGE=dev
-export STAGING_S3_BUCKET=org-humancellatlas-staging-$(STAGE)
-export EXPORT_ENV_VARS_TO_LAMBDA=STAGING_S3_BUCKET
 MODULES=staging tests
 
 test: lint tests
@@ -16,16 +14,15 @@ tests:
 build:
 	cp -R staging staging-api.yml chalicelib
 
-deploy: clean build
-	./build_deploy_config.sh $(STAGE)
-	chalice deploy --no-autogen-policy --stage $(STAGE) --api-gateway-stage $(STAGE)
+deploy:
+	$(MAKE) -C .chalice deploy
 
 clean:
-	git clean -df chalicelib
+	$(MAKE) -C .chalice clean
 
-clobber: clean
-	git clean -df .chalice
-	git checkout .chalice/*.json
+clobber:
+	$(MAKE) -C .chalice clobber
 
 run: build
+	$(MAKE) -C chalice build
 	./staging-api

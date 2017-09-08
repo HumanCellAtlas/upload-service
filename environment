@@ -1,0 +1,16 @@
+# Resolve the location of this file and set DSS_HOME to the root
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
+export SS_HOME="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+
+set -a
+DEPLOYMENT_STAGE="${DEPLOYMENT_STAGE:-dev}"
+STAGING_S3_BUCKET=org-humancellatlas-staging-${DEPLOYMENT_STAGE}
+EXPORT_ENV_VARS_TO_LAMBDA=STAGING_S3_BUCKET
+set +a
+
+echo "DEPLOYMENT STAGE IS \"${DEPLOYMENT_STAGE}\""
+
+if [ -f environment.${DEPLOYMENT_STAGE} ] ; then
+    source environment.${DEPLOYMENT_STAGE}
+fi

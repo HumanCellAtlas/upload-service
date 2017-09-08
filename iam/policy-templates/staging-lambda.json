@@ -13,12 +13,10 @@
     {
       "Effect": "Allow",
       "Action": [
-        "s3:CreateBucket",
-        "s3:DeleteBucket",
         "s3:ListBucket"
       ],
       "Resource": [
-        "arn:aws:s3:::org-humancellatlas-staging-*"
+        "arn:aws:s3:::$STAGING_S3_BUCKET"
       ]
     },
     {
@@ -31,17 +29,13 @@
         "s3:PutObjectTagging"
       ],
       "Resource": [
-        "arn:aws:s3:::org-humancellatlas-staging-*/*"
+        "arn:aws:s3:::$STAGING_S3_BUCKET/*"
       ]
     },
     {
       "Effect": "Allow",
-      "Action": "s3:ListAllMyBuckets",
-      "Resource": "arn:aws:s3:::*"
-    },
-    {
-      "Effect": "Allow",
       "Action": [
+        "iam:GetUser",
         "iam:CreateUser",
         "iam:DeleteUser",
         "iam:PutUserPolicy",
