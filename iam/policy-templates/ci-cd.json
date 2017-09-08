@@ -2,6 +2,16 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "hcaDssCiCdLambdaReadAccess",
+      "Action": [
+        "lambda:ListFunctions",
+        "lambda:ListTags",
+        "lambda:TagResource"
+      ],
+      "Resource": "*",
+      "Effect": "Allow"
+    },
+    {
       "Sid": "AllowChaliceToSetRolePolicyForLambda",
       "Effect": "Allow",
       "Action": [
