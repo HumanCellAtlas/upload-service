@@ -136,7 +136,6 @@ class TestArea(unittest.TestCase):
                 {'Key': 'hca-dss-crc32c', 'Value': '4'}
             ]
         })
-        file1_size = 364  # for some reason adding tags to a file increases its size when testing with moto
         file2_key = f"{area_id}/file2.json"
         self.staging_bucket.Object(file2_key).put(Body="ba ba ba ba ba barane")
         boto3.client('s3').put_object_tagging(Bucket=self.staging_bucket_name, Key=file2_key, Tagging={
@@ -148,14 +147,13 @@ class TestArea(unittest.TestCase):
                 {'Key': 'hca-dss-crc32c', 'Value': 'd'}
             ]
         })
-        file2_size = 364  # for some reason adding tags to a file increases its size when testing with moto
 
         response, status_code = area.list_files(staging_area_id=area_id)
 
         self.assertEqual(status_code, 200)
         self.assertEqual(response['files'][0]['name'], "file1.json")
         self.assertEqual(response['files'][0]['content-type'], 'application/json')
-        self.assertEqual(response['files'][0]['size'], file1_size)
+        self.assertIn('size', response['files'][0].keys())  # moto file sizes are not accurate
         self.assertEqual(response['files'][0]['s3_etag'], '1')
         self.assertEqual(response['files'][0]['sha1'], '2')
         self.assertEqual(response['files'][0]['sha256'], '3')
@@ -163,7 +161,7 @@ class TestArea(unittest.TestCase):
 
         self.assertEqual(response['files'][1]['name'], "file2.json")
         self.assertEqual(response['files'][1]['content-type'], 'application/json')
-        self.assertEqual(response['files'][1]['size'], file2_size)
+        self.assertIn('size', response['files'][1].keys())  # moto file sizes are not accurate
         self.assertEqual(response['files'][1]['s3_etag'], 'a')
         self.assertEqual(response['files'][1]['sha1'], 'b')
         self.assertEqual(response['files'][1]['sha256'], 'c')
@@ -178,11 +176,6 @@ class TestArea(unittest.TestCase):
         area_2_files = ['file3', 'file4']
         [self.staging_bucket.Object(f"{area1_id}/{file}").put(Body="foo") for file in area_1_files]
         [self.staging_bucket.Object(f"{area2_id}/{file}").put(Body="foo") for file in area_2_files]
-
-        for key in [f"{area1_id}/{file}" for file in area_1_files] + [f"{area2_id}/{file}" for file in area_2_files]:
-            # moto screws up if you request tags (which we do) for a file that doesn't have any.
-            boto3.client('s3').put_object_tagging(Bucket=self.staging_bucket_name, Key=key,
-                                                  Tagging={'TagSet': [{'Key': 'foo', 'Value': 'bar'}]})
 
         response, status_code = area.list_files(staging_area_id=area2_id)
 
