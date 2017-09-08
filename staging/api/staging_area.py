@@ -1,4 +1,4 @@
-import json, base64
+import json, base64, os
 from functools import reduce
 
 import boto3
@@ -12,16 +12,16 @@ iam = boto3.resource('iam')
 
 class StagingArea:
 
-    STAGING_BUCKET_NAME_PREFIX = 'org-humancellatlas-staging-'
+    STAGING_BUCKET_NAME = os.environ['STAGING_S3_BUCKET']
     STAGING_USER_NAME_PREFIX = 'staging-user-'
     STAGING_ACCESS_POLICY_PREFIX = 'staging-'
     CHECKSUM_TAGS = ('hca-dss-sha1', 'hca-dss-sha256', 'hca-dss-crc32c', 'hca-dss-s3_etag')
     MIME_TAG = 'hca-dss-content-type'
-    ALL_TAGS = CHECKSUM_TAGS + (MIME_TAG,)
+    HCA_TAGS = CHECKSUM_TAGS + (MIME_TAG,)
 
     def __init__(self, uuid):
         self.uuid = uuid
-        self.bucket_name = self.STAGING_BUCKET_NAME_PREFIX + uuid
+        self.bucket_name = self.STAGING_BUCKET_NAME
         self.user_name = self.STAGING_USER_NAME_PREFIX + uuid
         self._bucket = s3.Bucket(self.bucket_name)
         self._user = iam.User(self.user_name)
@@ -32,8 +32,6 @@ class StagingArea:
         return f"hca:sta:aws:{self.uuid}:{encoded_credentials}"
 
     def create(self):
-        self._bucket.create()
-        # self._enable_transfer_acceleration()
         self._user.create()
         self._set_access_policy()
         self._create_credentials()
@@ -45,27 +43,30 @@ class StagingArea:
         for policy in self._user.policies.all():
             policy.delete()
         self._user.delete()
-        self._empty_bucket()
-        self._bucket.delete()
+        self._empty_staging_area()
 
     def ls(self):
         return {'files': self._file_list()}
 
     def lock(self):
-        self._set_access_policy(rw_access=False)
+        policy_name = self.STAGING_ACCESS_POLICY_PREFIX + self.uuid
+        iam.UserPolicy(self.user_name, policy_name).delete()
 
     def unlock(self):
-        self._set_access_policy(rw_access=True)
+        self._set_access_policy()
 
     def store_file(self, filename, content):
-        self._bucket.Object(filename).put(Body=content)
+        key = f"{self.uuid}/{filename}"
+        self._bucket.Object(key).put(Body=content)
 
     def is_extant(self) -> bool:
+        # A staging area is a folder, however there is no concept of folder in S3.
+        # The existence of a staging area is the existence of the user who can access that area.
         try:
-            self._bucket.load()
+            self._user.load()
             return True
         except ClientError as e:
-            if e.response['Error']['Code'] != '404':
+            if e.response['Error']['Code'] != 'NoSuchEntity':
                 raise StagingException(status=500, title="Unexpected Error",
                                        detail=f"bucket.load() returned {e.response}")
             return False
@@ -73,44 +74,40 @@ class StagingArea:
     def _file_list(self):
         file_list = []
         paginator = s3.meta.client.get_paginator('list_objects')
-        for page in paginator.paginate(Bucket=self.bucket_name):
+        prefix = f"{self.uuid}/"
+        prefix_length = len(prefix)
+        for page in paginator.paginate(Bucket=self.bucket_name, Prefix=prefix):
             if 'Contents' in page:
                 for o in page['Contents']:
-                    tagging = s3.meta.client.get_object_tagging(Bucket=self.bucket_name, Key=o['Key'])
-                    file_info = {'name': o['Key'], 'size': o['Size']}
-                    if 'TagSet' in tagging:
-                        tags = self._decode_tags(tagging['TagSet'])
-                        for tag in self.ALL_TAGS:
-                            if tag in tags:
-                                file_info[tag[8:]] = tags[tag]  # 8: = cut off hca-dss-
-                    file_list.append(file_info)
+                    file_name = o['Key'][prefix_length:]  # cut off staging-area-id/
+                    file_info = {'name': file_name, 'size': o['Size']}
+                    tags = self._hca_tags_of_file(o['Key'])
+                    file_list.append({**file_info, **tags})
         return file_list
 
-    def _enable_transfer_acceleration(self):
-        s3.meta.client.put_bucket_accelerate_configuration(
-            Bucket=self.bucket_name,
-            AccelerateConfiguration={'Status': 'Enabled'}
-        )
+    def _hca_tags_of_file(self, file_key):
+        tagging = s3.meta.client.get_object_tagging(Bucket=self.bucket_name, Key=file_key)
+        tags = {}
+        if 'TagSet' in tagging:
+            tag_set = self._decode_tags(tagging['TagSet'])
+            # k[8:] = cut off "hca-dss-" in tag name
+            tags = {k[8:]: v for k, v in tag_set.items() if k in self.HCA_TAGS}
+        return tags
 
-    def _set_access_policy(self, rw_access=True):
+    def _set_access_policy(self):
         policy_name = self.STAGING_ACCESS_POLICY_PREFIX + self.uuid
         policy_document = {
             "Version": "2012-10-17",
             "Statement": [
                 {
                     "Effect": "Allow",
-                    "Action": [
-                        "s3:ListBucket"
-                    ],
+                    "Action": ["s3:PutObject"],
                     "Resource": [
-                        f"arn:aws:s3:::{self.bucket_name}",
-                        f"arn:aws:s3:::{self.bucket_name}/*",
+                        f"arn:aws:s3:::{self.bucket_name}/{self.uuid}/*",
                     ]
                 }
             ]
         }
-        if rw_access:
-            policy_document['Statement'][0]['Action'].append("s3:PutObject")
         self._user.create_policy(PolicyName=policy_name, PolicyDocument=json.dumps(policy_document))
 
     def _create_credentials(self):
@@ -118,9 +115,9 @@ class StagingArea:
         self._credentials = {'AWS_ACCESS_KEY_ID': credentials.access_key_id,
                              'AWS_SECRET_ACCESS_KEY': credentials.secret_access_key}
 
-    def _empty_bucket(self):
+    def _empty_staging_area(self):
         paginator = s3.meta.client.get_paginator('list_objects')
-        for page in paginator.paginate(Bucket=self.bucket_name):
+        for page in paginator.paginate(Bucket=self.bucket_name, Prefix=self.uuid):
             if 'Contents' in page:
                 for o in page['Contents']:
                     s3.meta.client.delete_object(Bucket=self.bucket_name, Key=o['Key'])

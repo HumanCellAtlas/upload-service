@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.6
 
-import os, sys, unittest, uuid, json, base64
+import os, sys, unittest, uuid, json, base64, functools
 
 import boto3
 from botocore.exceptions import ClientError
@@ -16,14 +16,24 @@ from staging.api import area  # noqa
 
 class TestArea(unittest.TestCase):
 
-    @mock_s3
-    @mock_iam
+    def setUp(self):
+        self.s3_mock = mock_s3()
+        self.s3_mock.start()
+        self.iam_mock = mock_iam()
+        self.iam_mock.start()
+        self.staging_bucket_name = os.environ['STAGING_S3_BUCKET']
+        self.staging_bucket = boto3.resource('s3').Bucket(self.staging_bucket_name)
+        self.staging_bucket.create()
+
+    def tearDown(self):
+        self.s3_mock.stop()
+        self.iam_mock.stop()
+
     def test_create_with_unused_staging_area_id(self):
         area_id = str(uuid.uuid4())
 
         response = area.create(area_id)
 
-        bucket_name = f"org-humancellatlas-staging-{area_id}"
         self.assertEqual(response.__class__, tuple)
         self.assertEqual(len(response), 2)
         body, status_code = response
@@ -34,17 +44,22 @@ class TestArea(unittest.TestCase):
         self.assertEqual(urnbits[3], area_id)
         creds = json.loads(base64.b64decode(urnbits[4].encode('utf8')))
         self.assertEqual(list(creds.keys()), ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'])
-        try:
-            boto3.resource('s3').Bucket(bucket_name).load()
-        except ClientError:
-            self.fail("Bucket was not created!")
 
-    @mock_s3
-    @mock_iam
+        try:
+            user_name = f"staging-user-{area_id}"
+            user = boto3.resource('iam').User(user_name)
+            user.load()
+        except ClientError:
+            self.fail("Staging area (user) was not created!")
+        policy = user.Policy(f"staging-{area_id}")
+        self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"]', policy.policy_document)
+        self.assertIn(f'"Resource": ["arn:aws:s3:::{self.staging_bucket_name}/{area_id}/*"]',
+                      policy.policy_document)
+
     def test_create_with_already_used_staging_area_id(self):
         area_id = str(uuid.uuid4())
-        bucket_name = f"org-humancellatlas-staging-{area_id}"
-        boto3.resource('s3').Bucket(bucket_name).create()
+        user_name = f"staging-user-{area_id}"
+        boto3.resource('iam').User(user_name).create()
 
         response = area.create(area_id)
 
@@ -52,22 +67,24 @@ class TestArea(unittest.TestCase):
         self.assertEqual(response.content_type, 'application/problem+json')
         self.assertEqual(response.status_code, 409)
 
-    @mock_s3
-    @mock_iam
     def test_delete_with_id_of_real_non_empty_staging_area(self):
         area_id = str(uuid.uuid4())
-        bucket = boto3.resource('s3').Bucket(f"org-humancellatlas-staging-{area_id}")
+        user = boto3.resource('iam').User(f"staging-user-{area_id}")
+        user.create()
+        bucket = boto3.resource('s3').Bucket(self.staging_bucket_name)
         bucket.create()
-        bucket.Object('test_file').put(Body="foo")
-        boto3.resource('iam').User(f"staging-user-{area_id}").create()
+        obj = bucket.Object(f'{area_id}/test_file')
+        obj.put(Body="foo")
 
         response = area.delete(area_id)
 
         body, status_code = response
         self.assertEqual(status_code, 204)
+        with self.assertRaises(ClientError):
+            user.load()
+        with self.assertRaises(ClientError):
+            obj.load()
 
-    @mock_s3
-    @mock_iam
     def test_delete_with_unused_used_staging_area_id(self):
         area_id = str(uuid.uuid4())
 
@@ -77,49 +94,40 @@ class TestArea(unittest.TestCase):
         self.assertEqual(response.content_type, 'application/problem+json')
         self.assertEqual(response.status_code, 404)
 
-    @mock_s3
-    @mock_iam
     def test_locking_of_staging_area(self):
         area_id = str(uuid.uuid4())
         area.create(area_id)
         user_name = 'staging-user-' + area_id
         policy_name = 'staging-' + area_id
         policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
-        self.assertIn('{"Effect": "Allow", "Action": ["s3:ListBucket", "s3:PutObject"]', policy.policy_document)
+        self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"]', policy.policy_document)
 
         body, status_code = area.lock(area_id)
 
         self.assertEqual(status_code, 200)
-        policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
-        self.assertIn('{"Effect": "Allow", "Action": ["s3:ListBucket"]', policy.policy_document)
+        self.assertEqual(len(list(boto3.resource('iam').User(user_name).policies.all())), 0)
 
         body, status_code = area.unlock(area_id)
 
         self.assertEqual(status_code, 200)
         policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
-        self.assertIn('{"Effect": "Allow", "Action": ["s3:ListBucket", "s3:PutObject"]', policy.policy_document)
+        self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"]', policy.policy_document)
 
-    @mock_s3
-    @mock_iam
     def test_put_file(self):
         area_id = str(uuid.uuid4())
         area.create(area_id)
 
         area.put_file(staging_area_id=area_id, filename="some.json", body="exquisite corpse")
 
-        bucket = boto3.resource('s3').Bucket(f"org-humancellatlas-staging-{area_id}")
-        obj = bucket.Object("some.json")
+        obj = self.staging_bucket.Object(f"{area_id}/some.json")
         self.assertEqual(obj.get()['Body'].read(), "exquisite corpse".encode('utf8'))
 
-    @mock_s3
-    @mock_iam
     def test_list_files(self):
         area_id = str(uuid.uuid4())
-        bucket_name = f"org-humancellatlas-staging-{area_id}"
-        bucket = boto3.resource('s3').Bucket(bucket_name)
-        bucket.create()
-        bucket.Object('file1.json').put(Body="foo")
-        boto3.client('s3').put_object_tagging(Bucket=bucket_name, Key='file1.json', Tagging={
+        area.create(area_id)
+        file1_key = f"{area_id}/file1.json"
+        self.staging_bucket.Object(file1_key).put(Body="foo")
+        boto3.client('s3').put_object_tagging(Bucket=self.staging_bucket_name, Key=file1_key, Tagging={
             'TagSet': [
                 {'Key': 'hca-dss-content-type', 'Value': 'application/json'},
                 {'Key': 'hca-dss-s3_etag', 'Value': '1'},
@@ -129,8 +137,9 @@ class TestArea(unittest.TestCase):
             ]
         })
         file1_size = 364  # for some reason adding tags to a file increases its size when testing with moto
-        bucket.Object('file2.json').put(Body="ba ba ba ba ba barane")
-        boto3.client('s3').put_object_tagging(Bucket=bucket_name, Key='file2.json', Tagging={
+        file2_key = f"{area_id}/file2.json"
+        self.staging_bucket.Object(file2_key).put(Body="ba ba ba ba ba barane")
+        boto3.client('s3').put_object_tagging(Bucket=self.staging_bucket_name, Key=file2_key, Tagging={
             'TagSet': [
                 {'Key': 'hca-dss-content-type', 'Value': 'application/json'},
                 {'Key': 'hca-dss-s3_etag', 'Value': 'a'},
@@ -159,6 +168,25 @@ class TestArea(unittest.TestCase):
         self.assertEqual(response['files'][1]['sha1'], 'b')
         self.assertEqual(response['files'][1]['sha256'], 'c')
         self.assertEqual(response['files'][1]['crc32c'], 'd')
+
+    def test_list_files_only_lists_files_in_my_staging_area(self):
+        area1_id = str(uuid.uuid4())
+        area2_id = str(uuid.uuid4())
+        area.create(area1_id)
+        area.create(area2_id)
+        area_1_files = ['file1', 'file2']
+        area_2_files = ['file3', 'file4']
+        [self.staging_bucket.Object(f"{area1_id}/{file}").put(Body="foo") for file in area_1_files]
+        [self.staging_bucket.Object(f"{area2_id}/{file}").put(Body="foo") for file in area_2_files]
+
+        for key in [f"{area1_id}/{file}" for file in area_1_files] + [f"{area2_id}/{file}" for file in area_2_files]:
+            # moto screws up if you request tags (which we do) for a file that doesn't have any.
+            boto3.client('s3').put_object_tagging(Bucket=self.staging_bucket_name, Key=key,
+                                                  Tagging={'TagSet': [{'Key': 'foo', 'Value': 'bar'}]})
+
+        response, status_code = area.list_files(staging_area_id=area2_id)
+
+        self.assertEqual([file['name'] for file in response['files']], area_2_files)
 
 if __name__ == '__main__':
     unittest.main()
