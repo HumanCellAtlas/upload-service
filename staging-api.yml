@@ -29,13 +29,6 @@ paths:
           required: true
           type: string
           pattern: "[A-Za-z0-9]{8}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{12}"
-        - name: cloud
-          description: |
-            Which cloud storage platform should be staging area be created in.
-          in: query
-          type: string
-          enum: [aws, gcp]
-          required: true
       responses:
         201:
           description: Staging area was created.
@@ -54,13 +47,6 @@ paths:
           description: A RFC4122-compliant ID for the staging area.
           required: true
           type: string
-        - name: cloud
-          description: |
-            Which cloud storage platform this staging area is in.
-          in: query
-          type: string
-          enum: [aws, gcp]
-          required: true
       responses:
         204:
           description: Staging area was deleted.
@@ -71,7 +57,7 @@ paths:
 
     get:
       summary: List files in a staging area
-      operationId: staging.api.area.list
+      operationId: staging.api.area.list_files
       description: |
         Provide a JSON object listing all the files in a staging area, including their checkums.
       parameters:
@@ -80,13 +66,6 @@ paths:
           description: A RFC4122-compliant ID for the staging area.
           required: true
           type: string
-        - name: cloud
-          description: |
-            Which cloud storage platform this staging area is in.
-          in: query
-          type: string
-          enum: [aws, gcp]
-          required: true
       responses:
         200:
           description: Here's your listing.
@@ -108,13 +87,6 @@ paths:
           description: A RFC4122-compliant ID for the staging area.
           required: true
           type: string
-        - name: cloud
-          description: |
-            Which cloud storage platform this staging area is in.
-          in: query
-          type: string
-          enum: [aws, gcp]
-          required: true
       responses:
         204:
           description: Staging area is now locked.
@@ -132,13 +104,6 @@ paths:
           description: A RFC4122-compliant ID for the staging area.
           required: true
           type: string
-        - name: cloud
-          description: |
-            Which cloud storage platform this staging area is in.
-          in: query
-          type: string
-          enum: [aws, gcp]
-          required: true
       responses:
         204:
           description: Staging area is now unlocked.
@@ -163,13 +128,6 @@ paths:
           description: Name of file to be placed in staging area.
           required: true
           type: string
-        - name: cloud
-          description: |
-            Which cloud storage platform this staging area is in.
-          in: query
-          type: string
-          enum: [aws, gcp]
-          required: true
         - name: body
           in: body
           schema:

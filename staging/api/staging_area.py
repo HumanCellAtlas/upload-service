@@ -14,37 +14,22 @@ class StagingArea:
 
     STAGING_BUCKET_NAME_PREFIX = 'org-humancellatlas-staging-'
     STAGING_USER_NAME_PREFIX = 'staging-user-'
+    STAGING_ACCESS_POLICY_PREFIX = 'staging-'
     CHECKSUM_TAGS = ('hca-dss-sha1', 'hca-dss-sha256', 'hca-dss-crc32c', 'hca-dss-s3_etag')
     MIME_TAG = 'hca-dss-content-type'
     ALL_TAGS = CHECKSUM_TAGS + (MIME_TAG,)
-
-    @classmethod
-    def factory(cls, uuid, cloud):
-        if cloud not in ('aws', 'gcp'):
-            raise StagingException(400, title="Invalid 'cloud'", detail="cloud must be one of 'aws', 'gcp'")
-        class_name = cloud.title() + 'StagingArea'
-        return eval(class_name)(uuid)
 
     def __init__(self, uuid):
         self.uuid = uuid
         self.bucket_name = self.STAGING_BUCKET_NAME_PREFIX + uuid
         self.user_name = self.STAGING_USER_NAME_PREFIX + uuid
+        self._bucket = s3.Bucket(self.bucket_name)
+        self._user = iam.User(self.user_name)
         self._credentials = None
 
     def urn(self):
         encoded_credentials = base64.b64encode(json.dumps(self._credentials).encode('utf8')).decode('utf8')
         return f"hca:sta:aws:{self.uuid}:{encoded_credentials}"
-
-
-class AwsStagingArea(StagingArea):
-
-    STAGING_ACCESS_POLICY_PREFIX = 'staging-'
-
-    def __init__(self, uuid):
-        super().__init__(uuid)
-        self.cloud = 'aws'
-        self._bucket = s3.Bucket(self.bucket_name)
-        self._user = iam.User(self.user_name)
 
     def create(self):
         self._bucket.create()

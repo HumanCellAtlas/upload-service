@@ -21,7 +21,7 @@ class TestArea(unittest.TestCase):
     def test_create_with_unused_staging_area_id(self):
         area_id = str(uuid.uuid4())
 
-        response = area.create(area_id, 'aws')
+        response = area.create(area_id)
 
         bucket_name = f"org-humancellatlas-staging-{area_id}"
         self.assertEqual(response.__class__, tuple)
@@ -46,7 +46,7 @@ class TestArea(unittest.TestCase):
         bucket_name = f"org-humancellatlas-staging-{area_id}"
         boto3.resource('s3').Bucket(bucket_name).create()
 
-        response = area.create(area_id, 'aws')
+        response = area.create(area_id)
 
         self.assertEqual(response.__class__, ConnexionResponse)
         self.assertEqual(response.content_type, 'application/problem+json')
@@ -61,7 +61,7 @@ class TestArea(unittest.TestCase):
         bucket.Object('test_file').put(Body="foo")
         boto3.resource('iam').User(f"staging-user-{area_id}").create()
 
-        response = area.delete(area_id, 'aws')
+        response = area.delete(area_id)
 
         body, status_code = response
         self.assertEqual(status_code, 204)
@@ -71,7 +71,7 @@ class TestArea(unittest.TestCase):
     def test_delete_with_unused_used_staging_area_id(self):
         area_id = str(uuid.uuid4())
 
-        response = area.delete(area_id, 'aws')
+        response = area.delete(area_id)
 
         self.assertEqual(response.__class__, ConnexionResponse)
         self.assertEqual(response.content_type, 'application/problem+json')
@@ -81,19 +81,19 @@ class TestArea(unittest.TestCase):
     @mock_iam
     def test_locking_of_staging_area(self):
         area_id = str(uuid.uuid4())
-        area.create(area_id, 'aws')
+        area.create(area_id)
         user_name = 'staging-user-' + area_id
         policy_name = 'staging-' + area_id
         policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
         self.assertIn('{"Effect": "Allow", "Action": ["s3:ListBucket", "s3:PutObject"]', policy.policy_document)
 
-        body, status_code = area.lock(area_id, 'aws')
+        body, status_code = area.lock(area_id)
 
         self.assertEqual(status_code, 200)
         policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
         self.assertIn('{"Effect": "Allow", "Action": ["s3:ListBucket"]', policy.policy_document)
 
-        body, status_code = area.unlock(area_id, 'aws')
+        body, status_code = area.unlock(area_id)
 
         self.assertEqual(status_code, 200)
         policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
@@ -103,9 +103,9 @@ class TestArea(unittest.TestCase):
     @mock_iam
     def test_put_file(self):
         area_id = str(uuid.uuid4())
-        area.create(area_id, 'aws')
+        area.create(area_id)
 
-        area.put_file(staging_area_id=area_id, cloud='aws', filename="some.json", body="exquisite corpse")
+        area.put_file(staging_area_id=area_id, filename="some.json", body="exquisite corpse")
 
         bucket = boto3.resource('s3').Bucket(f"org-humancellatlas-staging-{area_id}")
         obj = bucket.Object("some.json")
@@ -113,37 +113,35 @@ class TestArea(unittest.TestCase):
 
     @mock_s3
     @mock_iam
-    def test_list_area(self):
+    def test_list_files(self):
         area_id = str(uuid.uuid4())
         bucket_name = f"org-humancellatlas-staging-{area_id}"
         bucket = boto3.resource('s3').Bucket(bucket_name)
         bucket.create()
         bucket.Object('file1.json').put(Body="foo")
         boto3.client('s3').put_object_tagging(Bucket=bucket_name, Key='file1.json', Tagging={
-                'TagSet': [
-                    {'Key': 'hca-dss-content-type', 'Value': 'application/json'},
-                    {'Key': 'hca-dss-s3_etag', 'Value': '1'},
-                    {'Key': 'hca-dss-sha1', 'Value': '2'},
-                    {'Key': 'hca-dss-sha256', 'Value': '3'},
-                    {'Key': 'hca-dss-crc32c', 'Value': '4'}
-                ]
-            }
-        )
+            'TagSet': [
+                {'Key': 'hca-dss-content-type', 'Value': 'application/json'},
+                {'Key': 'hca-dss-s3_etag', 'Value': '1'},
+                {'Key': 'hca-dss-sha1', 'Value': '2'},
+                {'Key': 'hca-dss-sha256', 'Value': '3'},
+                {'Key': 'hca-dss-crc32c', 'Value': '4'}
+            ]
+        })
         file1_size = 364  # for some reason adding tags to a file increases its size when testing with moto
         bucket.Object('file2.json').put(Body="ba ba ba ba ba barane")
         boto3.client('s3').put_object_tagging(Bucket=bucket_name, Key='file2.json', Tagging={
-                'TagSet': [
-                    {'Key': 'hca-dss-content-type', 'Value': 'application/json'},
-                    {'Key': 'hca-dss-s3_etag', 'Value': 'a'},
-                    {'Key': 'hca-dss-sha1', 'Value': 'b'},
-                    {'Key': 'hca-dss-sha256', 'Value': 'c'},
-                    {'Key': 'hca-dss-crc32c', 'Value': 'd'}
-                ]
-            }
-        )
+            'TagSet': [
+                {'Key': 'hca-dss-content-type', 'Value': 'application/json'},
+                {'Key': 'hca-dss-s3_etag', 'Value': 'a'},
+                {'Key': 'hca-dss-sha1', 'Value': 'b'},
+                {'Key': 'hca-dss-sha256', 'Value': 'c'},
+                {'Key': 'hca-dss-crc32c', 'Value': 'd'}
+            ]
+        })
         file2_size = 364  # for some reason adding tags to a file increases its size when testing with moto
 
-        response, status_code = area.list_area(staging_area_id=area_id, cloud='aws')
+        response, status_code = area.list_files(staging_area_id=area_id)
 
         self.assertEqual(status_code, 200)
         self.assertEqual(response['files'][0]['name'], "file1.json")
