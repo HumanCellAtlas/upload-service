@@ -2,13 +2,23 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "hcaDssCiCdLambdaReadAccess",
+      "Sid": "hcaCiCdLambdaReadAccess",
       "Action": [
         "lambda:ListFunctions",
         "lambda:ListTags",
         "lambda:TagResource"
       ],
       "Resource": "*",
+      "Effect": "Allow"
+    },
+        {
+      "Sid": "hcaCiCdLambdaAdminAccess",
+      "Action": [
+        "lambda:*"
+      ],
+      "Resource": [
+        "arn:aws:lambda:*:$account_id:function:staging-*"
+      ],
       "Effect": "Allow"
     },
     {
