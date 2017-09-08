@@ -24,6 +24,7 @@ class TestArea(unittest.TestCase):
         self.staging_bucket_name = os.environ['STAGING_S3_BUCKET']
         self.staging_bucket = boto3.resource('s3').Bucket(self.staging_bucket_name)
         self.staging_bucket.create()
+        self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
 
     def tearDown(self):
         self.s3_mock.stop()
@@ -46,7 +47,7 @@ class TestArea(unittest.TestCase):
         self.assertEqual(list(creds.keys()), ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'])
 
         try:
-            user_name = f"staging-user-{area_id}"
+            user_name = f"staging-{self.deployment_stage}-user-{area_id}"
             user = boto3.resource('iam').User(user_name)
             user.load()
         except ClientError:
@@ -58,7 +59,7 @@ class TestArea(unittest.TestCase):
 
     def test_create_with_already_used_staging_area_id(self):
         area_id = str(uuid.uuid4())
-        user_name = f"staging-user-{area_id}"
+        user_name = f"staging-{self.deployment_stage}-user-{area_id}"
         boto3.resource('iam').User(user_name).create()
 
         response = area.create(area_id)
@@ -69,7 +70,7 @@ class TestArea(unittest.TestCase):
 
     def test_delete_with_id_of_real_non_empty_staging_area(self):
         area_id = str(uuid.uuid4())
-        user = boto3.resource('iam').User(f"staging-user-{area_id}")
+        user = boto3.resource('iam').User(f"staging-{self.deployment_stage}-user-{area_id}")
         user.create()
         bucket = boto3.resource('s3').Bucket(self.staging_bucket_name)
         bucket.create()
@@ -97,7 +98,7 @@ class TestArea(unittest.TestCase):
     def test_locking_of_staging_area(self):
         area_id = str(uuid.uuid4())
         area.create(area_id)
-        user_name = 'staging-user-' + area_id
+        user_name = f"staging-{self.deployment_stage}-user-" + area_id
         policy_name = 'staging-' + area_id
         policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
         self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"]', policy.policy_document)

@@ -13,7 +13,7 @@ iam = boto3.resource('iam')
 class StagingArea:
 
     STAGING_BUCKET_NAME = os.environ['STAGING_S3_BUCKET']
-    STAGING_USER_NAME_PREFIX = 'staging-user-'
+    STAGING_USER_NAME_PREFIX = f"staging-{os.environ['DEPLOYMENT_STAGE']}-user-"
     STAGING_ACCESS_POLICY_PREFIX = 'staging-'
     CHECKSUM_TAGS = ('hca-dss-sha1', 'hca-dss-sha256', 'hca-dss-crc32c', 'hca-dss-s3_etag')
     MIME_TAG = 'hca-dss-content-type'
