@@ -1,5 +1,6 @@
 flake8
 chalice >= 0.9.0, < 0.10.0
 coverage
+awscli
 moto
 -r requirements.txt
