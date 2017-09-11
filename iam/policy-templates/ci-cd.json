@@ -6,7 +6,8 @@
       "Action": [
         "lambda:ListFunctions",
         "lambda:ListTags",
-        "lambda:TagResource"
+        "lambda:TagResource",
+        "apigateway:*"
       ],
       "Resource": "*",
       "Effect": "Allow"
