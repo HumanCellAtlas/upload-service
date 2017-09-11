@@ -38,8 +38,8 @@ def unlock(staging_area_id: str):
 @return_exceptions_as_http_errors
 def put_file(staging_area_id: str, filename: str, body: str):
     staging_area = _load_staging_area(staging_area_id)
-    staging_area.store_file(filename, content=body)
-    return None, requests.codes.ok
+    file_staged_url = staging_area.store_file(filename, content=body)
+    return {'url': file_staged_url}, requests.codes.ok
 
 
 @return_exceptions_as_http_errors

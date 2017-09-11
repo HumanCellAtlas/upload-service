@@ -58,6 +58,7 @@ class StagingArea:
     def store_file(self, filename, content):
         key = f"{self.uuid}/{filename}"
         self._bucket.Object(key).put(Body=content)
+        return f"s3://{self.bucket_name}/{key}"
 
     def is_extant(self) -> bool:
         # A staging area is a folder, however there is no concept of folder in S3.
