@@ -24,5 +24,5 @@ clobber:
 	$(MAKE) -C .chalice clobber
 
 run: build
-	$(MAKE) -C chalice build
+	$(MAKE) -C .chalice build
 	./staging-api

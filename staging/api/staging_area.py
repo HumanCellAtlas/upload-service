@@ -80,9 +80,18 @@ class StagingArea:
             if 'Contents' in page:
                 for o in page['Contents']:
                     file_name = o['Key'][prefix_length:]  # cut off staging-area-id/
-                    file_info = {'name': file_name, 'size': o['Size']}
                     tags = self._hca_tags_of_file(o['Key'])
-                    file_list.append({**file_info, **tags})
+                    content_type = tags.get('content-type', 'unknown')
+                    if 'content-type' in tags:
+                        del tags['content-type']
+                    file_info = {
+                        'name': file_name,
+                        'size': o['Size'],
+                        'content_type': content_type,
+                        'url': f"s3://{self.bucket_name}/{o['Key']}",
+                        'checksums': tags
+                    }
+                    file_list.append(file_info)
         return file_list
 
     def _hca_tags_of_file(self, file_key):

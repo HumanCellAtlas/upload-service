@@ -153,20 +153,14 @@ class TestArea(unittest.TestCase):
 
         self.assertEqual(status_code, 200)
         self.assertEqual(response['files'][0]['name'], "file1.json")
-        self.assertEqual(response['files'][0]['content-type'], 'application/json')
+        self.assertEqual(response['files'][0]['content_type'], 'application/json')
         self.assertIn('size', response['files'][0].keys())  # moto file sizes are not accurate
-        self.assertEqual(response['files'][0]['s3_etag'], '1')
-        self.assertEqual(response['files'][0]['sha1'], '2')
-        self.assertEqual(response['files'][0]['sha256'], '3')
-        self.assertEqual(response['files'][0]['crc32c'], '4')
+        self.assertEqual(response['files'][0]['checksums'], {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'})
 
         self.assertEqual(response['files'][1]['name'], "file2.json")
-        self.assertEqual(response['files'][1]['content-type'], 'application/json')
+        self.assertEqual(response['files'][1]['content_type'], 'application/json')
         self.assertIn('size', response['files'][1].keys())  # moto file sizes are not accurate
-        self.assertEqual(response['files'][1]['s3_etag'], 'a')
-        self.assertEqual(response['files'][1]['sha1'], 'b')
-        self.assertEqual(response['files'][1]['sha256'], 'c')
-        self.assertEqual(response['files'][1]['crc32c'], 'd')
+        self.assertEqual(response['files'][1]['checksums'], {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
 
     def test_list_files_only_lists_files_in_my_staging_area(self):
         area1_id = str(uuid.uuid4())

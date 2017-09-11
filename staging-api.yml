@@ -32,10 +32,22 @@ paths:
       responses:
         201:
           description: Staging area was created.
+          schema:
+            type: object
+            properties:
+              urn:
+                type: string
+                description: URN of the form "hca:sta:aws:<staging-area-id>:<encoded-credentials>".
+            required:
+              - urn
         409:
           description: A staging area with that ID already exists.
+          schema:
+            $ref: '#/definitions/Error'
         default:
           description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
 
     delete:
       summary: Delete a Staging Area
@@ -52,8 +64,12 @@ paths:
           description: Staging area was deleted.
         404:
           description: Could not find a staging area with that ID.
+          schema:
+            $ref: '#/definitions/Error'
         default:
           description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
 
     get:
       summary: List files in a staging area
@@ -69,10 +85,46 @@ paths:
       responses:
         200:
           description: Here's your listing.
+          schema:
+            type: object
+            properties:
+              files:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: File name.
+                    size:
+                      type: integer
+                      description: File size.
+                    url:
+                      type: string
+                      description: URL of storage location of file.
+                    checksums:
+                      type: object
+                      properties:
+                        s3_etag:
+                          type: string
+                          description: S3 ETag
+                        sha1:
+                          type: string
+                          description: SHA1
+                        sha256:
+                          type: string
+                          description: SHA256
+                        crc32c:
+                          type: string
+                          description: CRC32C
         404:
           description: Could not find a staging area with that ID.
+          schema:
+            $ref: '#/definitions/Error'
         default:
           description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
 
   /area/{staging_area_id}/lock:
 
@@ -92,6 +144,8 @@ paths:
           description: Staging area is now locked.
         default:
           description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
 
     delete:
       summary: Unock a Staging Area
@@ -109,6 +163,8 @@ paths:
           description: Staging area is now unlocked.
         default:
           description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
 
   /area/{staging_area_id}/{filename}:
 
@@ -138,3 +194,23 @@ paths:
           description: File was stored sucessfully.
         default:
           description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+definitions:
+  Error:
+    type: object
+    properties:
+      status:
+        type: integer
+        format: int32
+        description: HTTP error code.
+      title:
+        type: string
+        description: Human-readable error message.
+      stacktrace:
+        type: string
+        description: Exception stacktrace, if any.
+    required:
+      # once we fix up all the existing endpoints, we can add 'code' to the set of required fields.
+      - title
+      - status
