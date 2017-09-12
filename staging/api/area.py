@@ -28,7 +28,7 @@ def delete(staging_area_id: str):
 def lock(staging_area_id: str):
     staging_area = _load_staging_area(staging_area_id)
     staging_area.lock()
-    return None, requests.codes.ok
+    return None, requests.codes.no_content
 
 
 @return_exceptions_as_http_errors
@@ -36,7 +36,7 @@ def lock(staging_area_id: str):
 def unlock(staging_area_id: str):
     staging_area = _load_staging_area(staging_area_id)
     staging_area.unlock()
-    return None, requests.codes.ok
+    return None, requests.codes.no_content
 
 
 @return_exceptions_as_http_errors

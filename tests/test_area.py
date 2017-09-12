@@ -132,12 +132,12 @@ class TestArea(unittest.TestCase):
 
         response = self.client.post(f"/v1/area/{area_id}/lock", headers=self.authentication_header)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
         self.assertEqual(len(list(boto3.resource('iam').User(user_name).policies.all())), 0)
 
         response = self.client.delete(f"/v1/area/{area_id}/lock", headers=self.authentication_header)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
         policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
         self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"]', policy.policy_document)
 
