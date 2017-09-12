@@ -12,6 +12,9 @@ addons:
     - jq
     - moreutils
     - gettext
+before_install:
+- openssl aes-256-cbc -K $encrypted_a0ec93c5f6cc_key -iv $encrypted_a0ec93c5f6cc_iv
+  -in config/deployment_secrets.${DEPLOYMENT_STAGE}.enc -out config/deployment_secrets.${DEPLOYMENT_STAGE} -d
 install:
 - pip install -r requirements.txt
 - pip install -r requirements-dev.txt
@@ -22,7 +25,9 @@ after_success:
 - bash <(curl -s https://codecov.io/bash)
 deploy:
   provider: script
-  script: make deploy
+  script:
+  - source config/deployment_secrets.${DEPLOYMENT_STAGE}
+  - make deploy
   skip_cleanup: true
   on:
     branch: master

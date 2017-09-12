@@ -6,6 +6,7 @@ export SS_HOME="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 EXPORT_ENV_VARS_TO_LAMBDA_ARRAY=(
     STAGING_S3_BUCKET
     DEPLOYMENT_STAGE
+    INGEST_API_KEY
 )
 
 set -a
