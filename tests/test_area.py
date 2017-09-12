@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.6
 
-import os, sys, unittest, uuid, json, base64
+import os, sys, unittest, uuid, json, base64, functools
 
 import connexion
 import boto3
@@ -10,6 +10,22 @@ from moto import mock_s3, mock_iam
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
     sys.path.insert(0, pkg_root)  # noqa
+
+
+class TestAreaWithoutAuthSetup(unittest.TestCase):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Setup app
+        flask_app = connexion.FlaskApp(__name__)
+        flask_app.add_api('../staging-api.yml')
+        self.client = flask_app.app.test_client()
+
+    def test_create_raises_exception(self):
+        response = self.client.post(f"/v1/area/{str(uuid.uuid4())}")
+
+        self.assertEqual(response.status_code, 500)
+        self.assertIn("INGEST_API_KEY", response.data.decode('utf8'))
 
 
 class TestArea(unittest.TestCase):
@@ -37,6 +53,7 @@ class TestArea(unittest.TestCase):
     def tearDown(self):
         self.s3_mock.stop()
         self.iam_mock.stop()
+        del os.environ['INGEST_API_KEY']
 
     def test_create_while_unauthenticated(self):
         area_id = str(uuid.uuid4())

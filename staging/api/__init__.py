@@ -41,10 +41,15 @@ def return_exceptions_as_http_errors(func):
 def require_authenticated(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        api_key = connexion.request.headers.get('Api-Key', None)
-        if not api_key == os.environ['INGEST_API_KEY']:
-            raise StagingException(status=requests.codes.unauthorized, title="Access Denied.")
-        return func(*args, **kwargs)
+        try:
+            api_key = connexion.request.headers.get('Api-Key', None)
+            if not api_key == os.environ['INGEST_API_KEY']:
+                raise StagingException(status=requests.codes.unauthorized, title="Access Denied.")
+            return func(*args, **kwargs)
+        except KeyError:
+            raise StagingException(status=requests.codes.server_error,
+                                   title="Authentication is not configured",
+                                   detail="INGEST_API_KEY is not set.")
 
     return wrapper
 
