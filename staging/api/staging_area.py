@@ -1,10 +1,10 @@
 import json, base64, os
-from functools import reduce
 
 import boto3
 from botocore.exceptions import ClientError
 
 from . import StagingException
+from .staged_file import StagedFile
 
 s3 = boto3.resource('s3')
 iam = boto3.resource('iam')
@@ -15,12 +15,11 @@ class StagingArea:
     STAGING_BUCKET_NAME = os.environ['STAGING_S3_BUCKET']
     STAGING_USER_NAME_PREFIX = f"staging-{os.environ['DEPLOYMENT_STAGE']}-user-"
     STAGING_ACCESS_POLICY_PREFIX = 'staging-'
-    CHECKSUM_TAGS = ('hca-dss-sha1', 'hca-dss-sha256', 'hca-dss-crc32c', 'hca-dss-s3_etag')
-    MIME_TAG = 'hca-dss-content-type'
-    HCA_TAGS = CHECKSUM_TAGS + (MIME_TAG,)
 
     def __init__(self, uuid):
         self.uuid = uuid
+        self.key_prefix = f"{self.uuid}/"
+        self.key_prefix_length = len(self.key_prefix)
         self.bucket_name = self.STAGING_BUCKET_NAME
         self.user_name = self.STAGING_USER_NAME_PREFIX + uuid
         self._bucket = s3.Bucket(self.bucket_name)
@@ -75,34 +74,12 @@ class StagingArea:
     def _file_list(self):
         file_list = []
         paginator = s3.meta.client.get_paginator('list_objects')
-        prefix = f"{self.uuid}/"
-        prefix_length = len(prefix)
-        for page in paginator.paginate(Bucket=self.bucket_name, Prefix=prefix):
+        for page in paginator.paginate(Bucket=self.bucket_name, Prefix=self.key_prefix):
             if 'Contents' in page:
                 for o in page['Contents']:
-                    file_name = o['Key'][prefix_length:]  # cut off staging-area-id/
-                    tags = self._hca_tags_of_file(o['Key'])
-                    content_type = tags.get('content-type', 'unknown')
-                    if 'content-type' in tags:
-                        del tags['content-type']
-                    file_info = {
-                        'name': file_name,
-                        'size': o['Size'],
-                        'content_type': content_type,
-                        'url': f"s3://{self.bucket_name}/{o['Key']}",
-                        'checksums': tags
-                    }
-                    file_list.append(file_info)
+                    file = StagedFile.from_listobject_dict(self, o)
+                    file_list.append(file.info())
         return file_list
-
-    def _hca_tags_of_file(self, file_key):
-        tagging = s3.meta.client.get_object_tagging(Bucket=self.bucket_name, Key=file_key)
-        tags = {}
-        if 'TagSet' in tagging:
-            tag_set = self._decode_tags(tagging['TagSet'])
-            # k[8:] = cut off "hca-dss-" in tag name
-            tags = {k[8:]: v for k, v in tag_set.items() if k in self.HCA_TAGS}
-        return tags
 
     def _set_access_policy(self):
         policy_name = self.STAGING_ACCESS_POLICY_PREFIX + self.uuid
@@ -131,19 +108,3 @@ class StagingArea:
             if 'Contents' in page:
                 for o in page['Contents']:
                     s3.meta.client.delete_object(Bucket=self.bucket_name, Key=o['Key'])
-
-    @staticmethod
-    def _decode_tags(tags: list) -> dict:
-        if not tags:
-            return {}
-        simplified_dicts = list({tag['Key']: tag['Value']} for tag in tags)
-        return reduce(lambda x, y: dict(x, **y), simplified_dicts)
-
-
-class GcpStagingArea(StagingArea):
-
-    STAGING_ACCESS_POLICY_PREFIX = 'staging-'
-
-    def __init__(self, uuid):
-        super().__init__(uuid)
-        raise NotImplementedError()
