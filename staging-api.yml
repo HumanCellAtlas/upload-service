@@ -12,20 +12,28 @@ consumes:
   - application/octet-stream
 produces:
   - application/json
-paths:
+securityDefinitions:
+  api_key:
+    description: Your API Key.  Only required for Ingestion Service API endpoints.
+    type: apiKey
+    name: Api-Key
+    in: header
 
+paths:
   /area/{staging_area_id}:
 
     post:
       summary: Create a Staging Area
       operationId: staging.api.area.create
-      description: |
-        Create a Staging Area
+      description: Create a Staging Area
+      tags:
+        - For Ingestion Service Use Only
+      security:
+        - api_key: []
       parameters:
         - name: staging_area_id
           in: path
-          description: |
-            A RFC4122-compliant ID for the staging area.
+          description: A RFC4122-compliant ID for the staging area.
           required: true
           type: string
           pattern: "[A-Za-z0-9]{8}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{12}"
@@ -51,8 +59,11 @@ paths:
 
     delete:
       summary: Delete a Staging Area
-      description: |
-        Delete a Staging Area
+      description: Delete a Staging Area
+      tags:
+        - For Ingestion Service Use Only
+      security:
+        - api_key: []
       parameters:
         - name: staging_area_id
           in: path
@@ -76,6 +87,8 @@ paths:
       operationId: staging.api.area.list_files
       description: |
         Provide a JSON object listing all the files in a staging area, including their checkums.
+      tags:
+        - All
       parameters:
         - name: staging_area_id
           in: path
@@ -110,6 +123,10 @@ paths:
       operationId: staging.api.area.lock
       description: |
         Lock a Staging area so that submitters may not add/delete/rename files in it.
+      tags:
+        - For Ingestion Service Use Only
+      security:
+        - api_key: []
       parameters:
         - name: staging_area_id
           in: path
@@ -129,6 +146,10 @@ paths:
       operationId: staging.api.area.unlock
       description: |
         Unlock a Staging area so that submitters may add/delete/rename files in it.
+      tags:
+        - For Ingestion Service Use Only
+      security:
+        - api_key: []
       parameters:
         - name: staging_area_id
           in: path
@@ -148,8 +169,11 @@ paths:
     put:
       summary: Store a metadata file
       operationId: staging.api.area.put_file
-      description: |
-        Store a JSON metadata file in the staging area.
+      description: Store a JSON metadata file in the staging area.
+      tags:
+        - For Ingestion Service Use Only
+      security:
+        - api_key: []
       parameters:
         - name: staging_area_id
           in: path
@@ -175,7 +199,9 @@ paths:
           description: Unexpected error
           schema:
             $ref: '#/definitions/Error'
+
 definitions:
+
   Error:
     type: object
     properties:
@@ -189,6 +215,10 @@ definitions:
       detail:
         type: string
         description: Exception stacktrace, if any.
+    required:
+      - status
+      - title
+
   FileInfo:
     type: object
     properties:
