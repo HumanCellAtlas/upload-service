@@ -40,6 +40,7 @@ def unlock(staging_area_id: str):
 
 
 @return_exceptions_as_http_errors
+@require_authenticated
 def put_file(staging_area_id: str, filename: str, body: str):
     staging_area = _load_staging_area(staging_area_id)
     fileinfo = staging_area.store_file(filename, content=body)

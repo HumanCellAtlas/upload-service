@@ -145,7 +145,8 @@ class TestArea(unittest.TestCase):
         area_id = str(uuid.uuid4())
         self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
 
-        response = self.client.put(f"/v1/area/{area_id}/some.json", data="exquisite corpse")
+        response = self.client.put(f"/v1/area/{area_id}/some.json", data="exquisite corpse",
+                                   headers=self.authentication_header)
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content_type, 'application/json')

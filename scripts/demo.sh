@@ -83,6 +83,11 @@ function delete() {
     run_curl -X DELETE "${API_URL}/area/${STAGING_AREA_ID}"
 }
 
+if [[ "${INGEST_API_KEY}" == "" ]] ; then
+    echo "Please set INGEST_API_KEY"
+    exit 1
+fi
+
 create ; waiting; pause
 upload ; pause
 put_file ; pause

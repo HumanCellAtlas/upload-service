@@ -48,6 +48,10 @@ paths:
                 description: URN of the form "hca:sta:aws:<staging-area-id>:<encoded-credentials>".
             required:
               - urn
+        401:
+          description: Unauthorized. Did you provide an Api-Key header?
+          schema:
+            $ref: '#/definitions/Error'
         409:
           description: A staging area with that ID already exists.
           schema:
@@ -74,6 +78,10 @@ paths:
       responses:
         204:
           description: Staging area was deleted.
+        401:
+          description: Unauthorized. Did you provide an Api-Key header?
+          schema:
+            $ref: '#/definitions/Error'
         404:
           description: Could not find a staging area with that ID.
           schema:
@@ -137,6 +145,10 @@ paths:
       responses:
         204:
           description: Staging area is now locked.
+        401:
+          description: Unauthorized. Did you provide an Api-Key header?
+          schema:
+            $ref: '#/definitions/Error'
         default:
           description: Unexpected error
           schema:
@@ -160,6 +172,10 @@ paths:
       responses:
         204:
           description: Staging area is now unlocked.
+        401:
+          description: Unauthorized. Did you provide an Api-Key header?
+          schema:
+            $ref: '#/definitions/Error'
         default:
           description: Unexpected error
           schema:
@@ -196,6 +212,10 @@ paths:
           description: File was stored sucessfully.
           schema:
             $ref: "#/definitions/FileInfo"
+        401:
+          description: Unauthorized. Did you provide an Api-Key header?
+          schema:
+            $ref: '#/definitions/Error'
         default:
           description: Unexpected error
           schema:
