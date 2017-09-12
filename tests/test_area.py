@@ -121,7 +121,13 @@ class TestArea(unittest.TestCase):
         response, status_code = area.put_file(staging_area_id=area_id, filename="some.json", body="exquisite corpse")
 
         self.assertEqual(status_code, 200)
-        self.assertEqual(response, { 'url': f"s3://{self.staging_bucket_name}/{area_id}/some.json"})
+        self.assertEqual(response, {
+            'name': 'some.json',
+            'size': 16,
+            'content_type': 'unknown',  # TODO
+            'url': f"s3://{self.staging_bucket_name}/{area_id}/some.json",
+            'checksums': {}
+        })
         obj = self.staging_bucket.Object(f"{area_id}/some.json")
         self.assertEqual(obj.get()['Body'].read(), "exquisite corpse".encode('utf8'))
 

@@ -52,11 +52,13 @@ function upload() {
 function put_file() {
     echo "PUT FILE VIA API:"
     echo curl -X PUT -H \"Content-type: application/json\" -d 'sdfjdsllfds' "${API_URL}/area/${STAGING_AREA_ID}/foobar2.json"
-    curl --silent --dump-header - \
+    curl --silent --dump-header /tmp/header --output /tmp/response  \
          -X PUT \
          -H "Content-type: application/json" \
          -d 'sdfjdsllfds' \
-         "${API_URL}/area/${STAGING_AREA_ID}/foobar2.json" | head -1
+         "${API_URL}/area/${STAGING_AREA_ID}/foobar2.json"
+    head -1 /tmp/header
+    cat /tmp/response
 }
 
 function list() {

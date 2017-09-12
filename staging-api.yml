@@ -91,32 +91,9 @@ paths:
               files:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    name:
-                      type: string
-                      description: File name.
-                    size:
-                      type: integer
-                      description: File size.
-                    url:
-                      type: string
-                      description: URL of storage location of file.
-                    checksums:
-                      type: object
-                      properties:
-                        s3_etag:
-                          type: string
-                          description: S3 ETag
-                        sha1:
-                          type: string
-                          description: SHA1
-                        sha256:
-                          type: string
-                          description: SHA256
-                        crc32c:
-                          type: string
-                          description: CRC32C
+                  $ref: "#/definitions/FileInfo"
+            required:
+              - files
         404:
           description: Could not find a staging area with that ID.
           schema:
@@ -193,11 +170,7 @@ paths:
         201:
           description: File was stored sucessfully.
           schema:
-            type: object
-            properties:
-              url:
-                type: string
-                description: Staged location of file.
+            $ref: "#/definitions/FileInfo"
         default:
           description: Unexpected error
           schema:
@@ -213,10 +186,36 @@ definitions:
       title:
         type: string
         description: Human-readable error message.
-      stacktrace:
+      detail:
         type: string
         description: Exception stacktrace, if any.
-    required:
-      # once we fix up all the existing endpoints, we can add 'code' to the set of required fields.
-      - title
-      - status
+  FileInfo:
+    type: object
+    properties:
+      name:
+        type: string
+        description: File name.
+      content_type:
+        type: string
+        description: MIME type.
+      size:
+        type: integer
+        description: File size.
+      url:
+        type: string
+        description: URL of storage location of file.
+      checksums:
+        type: object
+        properties:
+          s3_etag:
+            type: string
+            description: S3 ETag
+          sha1:
+            type: string
+            description: SHA1
+          sha256:
+            type: string
+            description: SHA256
+          crc32c:
+            type: string
+            description: CRC32C

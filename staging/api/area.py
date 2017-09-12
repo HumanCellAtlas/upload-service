@@ -18,7 +18,7 @@ def create(staging_area_id: str):
 def delete(staging_area_id: str):
     staging_area = _load_staging_area(staging_area_id)
     staging_area.delete()
-    return None, 204
+    return None, requests.codes.no_content
 
 
 @return_exceptions_as_http_errors
@@ -38,8 +38,8 @@ def unlock(staging_area_id: str):
 @return_exceptions_as_http_errors
 def put_file(staging_area_id: str, filename: str, body: str):
     staging_area = _load_staging_area(staging_area_id)
-    file_staged_url = staging_area.store_file(filename, content=body)
-    return {'url': file_staged_url}, requests.codes.ok
+    fileinfo = staging_area.store_file(filename, content=body)
+    return fileinfo, requests.codes.ok
 
 
 @return_exceptions_as_http_errors

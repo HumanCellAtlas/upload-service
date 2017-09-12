@@ -13,13 +13,16 @@ class StagedFile:
 
     @classmethod
     def from_listobject_dict(cls, staging_area, object_dict):
-        name = object_dict['Key'][staging_area.key_prefix_length:]  # cut off staging-area-id/
-        return cls(staging_area, s3_key=object_dict['Key'], name=name, size=object_dict['Size'])
+        return cls(staging_area, s3_key=object_dict['Key'], size=object_dict['Size'])
 
-    def __init__(self, staging_area, s3_key=None, name=None, size=None):
-        self.staging_area = staging_area
+    @classmethod
+    def from_s3object(cls, staging_area, s3obj):
+        return cls(staging_area, s3_key=s3obj.key, size=s3obj.content_length)
+
+    def __init__(self, staging_area, s3_key=None, size=None):
         self.s3_key = s3_key
-        self.name = name
+        self.name = s3_key[staging_area.key_prefix_length:]  # cut off staging-area-id/
+        self.staging_area = staging_area
         self.size = size
         tags = self._hca_tags_of_file()
         self.content_type = tags.get('content-type', 'unknown')
@@ -32,7 +35,7 @@ class StagedFile:
             'name': self.name,
             'size': self.size,
             'content_type': self.content_type,
-            'url': f"s3://{self.staging_area.bucket_name}/{self.staging_area.uuid}/{self.s3_key}",
+            'url': f"s3://{self.staging_area.bucket_name}/{self.s3_key}",
             'checksums': self.checksums
         }
 
