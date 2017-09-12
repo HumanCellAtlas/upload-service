@@ -1,10 +1,11 @@
 import requests
 
-from . import StagingException, return_exceptions_as_http_errors
+from . import StagingException, return_exceptions_as_http_errors, require_authenticated
 from .staging_area import StagingArea
 
 
 @return_exceptions_as_http_errors
+@require_authenticated
 def create(staging_area_id: str):
     staging_area = StagingArea(staging_area_id)
     if staging_area.is_extant():
@@ -15,6 +16,7 @@ def create(staging_area_id: str):
 
 
 @return_exceptions_as_http_errors
+@require_authenticated
 def delete(staging_area_id: str):
     staging_area = _load_staging_area(staging_area_id)
     staging_area.delete()
@@ -22,6 +24,7 @@ def delete(staging_area_id: str):
 
 
 @return_exceptions_as_http_errors
+@require_authenticated
 def lock(staging_area_id: str):
     staging_area = _load_staging_area(staging_area_id)
     staging_area.lock()
@@ -29,6 +32,7 @@ def lock(staging_area_id: str):
 
 
 @return_exceptions_as_http_errors
+@require_authenticated
 def unlock(staging_area_id: str):
     staging_area = _load_staging_area(staging_area_id)
     staging_area.unlock()

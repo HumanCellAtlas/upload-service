@@ -1,44 +1,57 @@
 #!/usr/bin/env python3.6
 
-import os, sys, unittest, uuid, json, base64, functools
+import os, sys, unittest, uuid, json, base64
 
+import connexion
 import boto3
 from botocore.exceptions import ClientError
 from moto import mock_s3, mock_iam
-from connexion.lifecycle import ConnexionResponse
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
     sys.path.insert(0, pkg_root)  # noqa
 
-from staging.api import area  # noqa
-
 
 class TestArea(unittest.TestCase):
 
     def setUp(self):
+        # Setup mock AWS
         self.s3_mock = mock_s3()
         self.s3_mock.start()
         self.iam_mock = mock_iam()
         self.iam_mock.start()
+        # Setup Staging bucket
         self.staging_bucket_name = os.environ['STAGING_S3_BUCKET']
         self.staging_bucket = boto3.resource('s3').Bucket(self.staging_bucket_name)
         self.staging_bucket.create()
         self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
+        # Setup authentication
+        self.api_key = "foo"
+        os.environ['INGEST_API_KEY'] = self.api_key
+        self.authentication_header = {'Api-Key': self.api_key}
+        # Setup app
+        flask_app = connexion.FlaskApp(__name__)
+        flask_app.add_api('../staging-api.yml')
+        self.client = flask_app.app.test_client()
 
     def tearDown(self):
         self.s3_mock.stop()
         self.iam_mock.stop()
 
+    def test_create_while_unauthenticated(self):
+        area_id = str(uuid.uuid4())
+
+        response = self.client.post(f"/v1/area/{area_id}")
+
+        self.assertEqual(response.status_code, 401)
+
     def test_create_with_unused_staging_area_id(self):
         area_id = str(uuid.uuid4())
 
-        response = area.create(area_id)
+        response = self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
 
-        self.assertEqual(response.__class__, tuple)
-        self.assertEqual(len(response), 2)
-        body, status_code = response
-        self.assertEqual(status_code, 201)
+        self.assertEqual(response.status_code, 201)
+        body = json.loads(response.data)
         self.assertEqual(list(body.keys()), ['urn'])
         urnbits = body['urn'].split(':')
         self.assertEqual(urnbits[0:3], ['hca', 'sta', 'aws'])
@@ -62,11 +75,10 @@ class TestArea(unittest.TestCase):
         user_name = f"staging-{self.deployment_stage}-user-{area_id}"
         boto3.resource('iam').User(user_name).create()
 
-        response = area.create(area_id)
+        response = self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
 
-        self.assertEqual(response.__class__, ConnexionResponse)
-        self.assertEqual(response.content_type, 'application/problem+json')
         self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.content_type, 'application/problem+json')
 
     def test_delete_with_id_of_real_non_empty_staging_area(self):
         area_id = str(uuid.uuid4())
@@ -77,10 +89,9 @@ class TestArea(unittest.TestCase):
         obj = bucket.Object(f'{area_id}/test_file')
         obj.put(Body="foo")
 
-        response = area.delete(area_id)
+        response = self.client.delete(f"/v1/area/{area_id}", headers=self.authentication_header)
 
-        body, status_code = response
-        self.assertEqual(status_code, 204)
+        self.assertEqual(response.status_code, 204)
         with self.assertRaises(ClientError):
             user.load()
         with self.assertRaises(ClientError):
@@ -89,39 +100,39 @@ class TestArea(unittest.TestCase):
     def test_delete_with_unused_used_staging_area_id(self):
         area_id = str(uuid.uuid4())
 
-        response = area.delete(area_id)
+        response = self.client.delete(f"/v1/area/{area_id}", headers=self.authentication_header)
 
-        self.assertEqual(response.__class__, ConnexionResponse)
-        self.assertEqual(response.content_type, 'application/problem+json')
         self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.content_type, 'application/problem+json')
 
     def test_locking_of_staging_area(self):
         area_id = str(uuid.uuid4())
-        area.create(area_id)
+        self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
         user_name = f"staging-{self.deployment_stage}-user-" + area_id
         policy_name = 'staging-' + area_id
         policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
         self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"]', policy.policy_document)
 
-        body, status_code = area.lock(area_id)
+        response = self.client.post(f"/v1/area/{area_id}/lock", headers=self.authentication_header)
 
-        self.assertEqual(status_code, 200)
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(len(list(boto3.resource('iam').User(user_name).policies.all())), 0)
 
-        body, status_code = area.unlock(area_id)
+        response = self.client.delete(f"/v1/area/{area_id}/lock", headers=self.authentication_header)
 
-        self.assertEqual(status_code, 200)
+        self.assertEqual(response.status_code, 200)
         policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
         self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"]', policy.policy_document)
 
     def test_put_file(self):
         area_id = str(uuid.uuid4())
-        area.create(area_id)
+        self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
 
-        response, status_code = area.put_file(staging_area_id=area_id, filename="some.json", body="exquisite corpse")
+        response = self.client.put(f"/v1/area/{area_id}/some.json", data="exquisite corpse")
 
-        self.assertEqual(status_code, 200)
-        self.assertEqual(response, {
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content_type, 'application/json')
+        self.assertEqual(json.loads(response.data), {
             'name': 'some.json',
             'size': 16,
             'content_type': 'unknown',  # TODO
@@ -133,7 +144,7 @@ class TestArea(unittest.TestCase):
 
     def test_list_files(self):
         area_id = str(uuid.uuid4())
-        area.create(area_id)
+        self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
         file1_key = f"{area_id}/file1.json"
         self.staging_bucket.Object(file1_key).put(Body="foo")
         boto3.client('s3').put_object_tagging(Bucket=self.staging_bucket_name, Key=file1_key, Tagging={
@@ -157,32 +168,35 @@ class TestArea(unittest.TestCase):
             ]
         })
 
-        response, status_code = area.list_files(staging_area_id=area_id)
+        response = self.client.get(f"/v1/area/{area_id}")
 
-        self.assertEqual(status_code, 200)
-        self.assertEqual(response['files'][0]['name'], "file1.json")
-        self.assertEqual(response['files'][0]['content_type'], 'application/json')
-        self.assertIn('size', response['files'][0].keys())  # moto file sizes are not accurate
-        self.assertEqual(response['files'][0]['checksums'], {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'})
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data)
+        self.assertEqual(data['files'][0]['name'], "file1.json")
+        self.assertEqual(data['files'][0]['content_type'], 'application/json')
+        self.assertIn('size', data['files'][0].keys())  # moto file sizes are not accurate
+        self.assertEqual(data['files'][0]['checksums'], {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'})
 
-        self.assertEqual(response['files'][1]['name'], "file2.json")
-        self.assertEqual(response['files'][1]['content_type'], 'application/json')
-        self.assertIn('size', response['files'][1].keys())  # moto file sizes are not accurate
-        self.assertEqual(response['files'][1]['checksums'], {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
+        self.assertEqual(data['files'][1]['name'], "file2.json")
+        self.assertEqual(data['files'][1]['content_type'], 'application/json')
+        self.assertIn('size', data['files'][1].keys())  # moto file sizes are not accurate
+        self.assertEqual(data['files'][1]['checksums'], {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
 
     def test_list_files_only_lists_files_in_my_staging_area(self):
         area1_id = str(uuid.uuid4())
         area2_id = str(uuid.uuid4())
-        area.create(area1_id)
-        area.create(area2_id)
+        self.client.post(f"/v1/area/{area1_id}", headers=self.authentication_header)
+        self.client.post(f"/v1/area/{area2_id}", headers=self.authentication_header)
         area_1_files = ['file1', 'file2']
         area_2_files = ['file3', 'file4']
         [self.staging_bucket.Object(f"{area1_id}/{file}").put(Body="foo") for file in area_1_files]
         [self.staging_bucket.Object(f"{area2_id}/{file}").put(Body="foo") for file in area_2_files]
 
-        response, status_code = area.list_files(staging_area_id=area2_id)
+        response = self.client.get(f"/v1/area/{area2_id}")
 
-        self.assertEqual([file['name'] for file in response['files']], area_2_files)
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data)
+        self.assertEqual([file['name'] for file in data['files']], area_2_files)
 
 if __name__ == '__main__':
     unittest.main()

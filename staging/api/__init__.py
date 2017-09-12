@@ -1,6 +1,7 @@
-import logging, functools, traceback
+import logging, functools, traceback, os
 
 import requests
+import connexion
 from connexion.lifecycle import ConnexionResponse
 
 logging.getLogger('boto3').setLevel(logging.WARNING)
@@ -33,6 +34,17 @@ def return_exceptions_as_http_errors(func):
             detail = traceback.format_exc()
 
         return rfc7807error_response(title, status, detail)
+
+    return wrapper
+
+
+def require_authenticated(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        api_key = connexion.request.headers.get('Api-Key', None)
+        if not api_key == os.environ['INGEST_API_KEY']:
+            raise StagingException(status=requests.codes.unauthorized, title="Access Denied.")
+        return func(*args, **kwargs)
 
     return wrapper
 

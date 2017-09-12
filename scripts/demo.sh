@@ -1,5 +1,5 @@
 #!/bin/bash
-# API_URL=http://localhost:5000/v1
+#API_URL=http://localhost:5000/v1
 API_URL=https://staging.dev.data.humancellatlas.org/v1
 STAGING_AREA_ID=deadbeef-dead-dead-dead-beeeeeeeeeef
 
@@ -29,7 +29,7 @@ sys.stdout.write(creds['${cred}'])"
 function run_curl() {
     curl_command=$*
     echo curl ${curl_command}
-    curl --silent --dump-header /tmp/header --output /tmp/response ${curl_command}
+    curl --silent --dump-header /tmp/header --output /tmp/response -H "Api-Key: ${INGEST_API_KEY}" ${curl_command}
     head -1 /tmp/header
     cat /tmp/response
 }
@@ -54,6 +54,7 @@ function put_file() {
     echo curl -X PUT -H \"Content-type: application/json\" -d 'sdfjdsllfds' "${API_URL}/area/${STAGING_AREA_ID}/foobar2.json"
     curl --silent --dump-header /tmp/header --output /tmp/response  \
          -X PUT \
+         -H "Api-Key: ${INGEST_API_KEY}" \
          -H "Content-type: application/json" \
          -d 'sdfjdsllfds' \
          "${API_URL}/area/${STAGING_AREA_ID}/foobar2.json"

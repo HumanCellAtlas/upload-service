@@ -59,6 +59,7 @@ paths:
 
     delete:
       summary: Delete a Staging Area
+      operationId: staging.api.area.delete
       description: Delete a Staging Area
       tags:
         - For Ingestion Service Use Only
