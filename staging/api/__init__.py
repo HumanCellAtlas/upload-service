@@ -43,8 +43,7 @@ RFC7807_MIMETYPE = 'application/problem+json'
 def rfc7807error_response(title, status, detail=None):
     body = {
         'title': title,
-        'status': status,
-        'detail': detail
+        'status': status
     }
     if detail:
         body['detail'] = detail
