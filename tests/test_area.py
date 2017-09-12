@@ -148,7 +148,7 @@ class TestArea(unittest.TestCase):
         response = self.client.put(f"/v1/area/{area_id}/some.json", data="exquisite corpse",
                                    headers=self.authentication_header)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
         self.assertEqual(response.content_type, 'application/json')
         self.assertEqual(json.loads(response.data), {
             'name': 'some.json',

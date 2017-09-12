@@ -44,7 +44,7 @@ def unlock(staging_area_id: str):
 def put_file(staging_area_id: str, filename: str, body: str):
     staging_area = _load_staging_area(staging_area_id)
     fileinfo = staging_area.store_file(filename, content=body)
-    return fileinfo, requests.codes.ok
+    return fileinfo, requests.codes.created
 
 
 @return_exceptions_as_http_errors
