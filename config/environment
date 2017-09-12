@@ -1,7 +1,7 @@
 # Resolve the location of this file and set DSS_HOME to the root
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
-export SS_HOME="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+export SS_HOME="$(cd -P "$(dirname "$SOURCE")/.." && pwd)"
 
 EXPORT_ENV_VARS_TO_LAMBDA_ARRAY=(
     STAGING_S3_BUCKET

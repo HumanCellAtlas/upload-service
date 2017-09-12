@@ -24,9 +24,7 @@ after_success:
 - bash <(curl -s https://codecov.io/bash)
 deploy:
   provider: script
-  script:
-  - source config/deployment_secrets.${DEPLOYMENT_STAGE}
-  - make deploy
+  script: scripts/deploy.sh
   skip_cleanup: true
   on:
     branch: master
