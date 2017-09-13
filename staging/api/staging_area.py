@@ -58,7 +58,10 @@ class StagingArea:
         key = f"{self.uuid}/{filename}"
         s3obj = self._bucket.Object(key)
         s3obj.put(Body=content)
-        return StagedFile.from_s3object(staging_area=self, s3obj=s3obj).info()
+        file = StagedFile.from_s3object(staging_area=self, s3obj=s3obj)
+        file.compute_checksums()
+        file.save_tags()
+        return file.info()
 
     def is_extant(self) -> bool:
         # A staging area is a folder, however there is no concept of folder in S3.

@@ -156,7 +156,12 @@ class TestArea(unittest.TestCase):
             'size': 16,
             'content_type': 'unknown',  # TODO
             'url': f"s3://{self.staging_bucket_name}/{area_id}/some.json",
-            'checksums': {}
+            'checksums': {
+                "crc32c": "FE9ADA52",
+                "s3_etag": "18f17fbfdd21cf869d664731e10d4ffd",
+                "sha1": "b1b101e21cf9cf8a4729da44d7818f935eec0ce8",
+                "sha256": "29f5572dfbe07e1db9422a4c84e3f9e455aab9ac596f0bf3340be17841f26f70"
+            }
         })
         obj = self.staging_bucket.Object(f"{area_id}/some.json")
         self.assertEqual(obj.get()['Body'].read(), "exquisite corpse".encode('utf8'))
