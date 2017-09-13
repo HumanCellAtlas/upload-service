@@ -83,7 +83,7 @@ class TestArea(unittest.TestCase):
         except ClientError:
             self.fail("Staging area (user) was not created!")
         policy = user.Policy(f"staging-{area_id}")
-        self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"]', policy.policy_document)
+        self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
         self.assertIn(f'"Resource": ["arn:aws:s3:::{self.staging_bucket_name}/{area_id}/*"]',
                       policy.policy_document)
 
@@ -128,7 +128,7 @@ class TestArea(unittest.TestCase):
         user_name = f"staging-{self.deployment_stage}-user-" + area_id
         policy_name = 'staging-' + area_id
         policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
-        self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"]', policy.policy_document)
+        self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
 
         response = self.client.post(f"/v1/area/{area_id}/lock", headers=self.authentication_header)
 
@@ -139,7 +139,7 @@ class TestArea(unittest.TestCase):
 
         self.assertEqual(response.status_code, 204)
         policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
-        self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"]', policy.policy_document)
+        self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
 
     def test_put_file(self):
         area_id = str(uuid.uuid4())

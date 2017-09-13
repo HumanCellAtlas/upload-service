@@ -89,7 +89,10 @@ class StagingArea:
             "Statement": [
                 {
                     "Effect": "Allow",
-                    "Action": ["s3:PutObject"],
+                    "Action": [
+                        "s3:PutObject",
+                        "s3:PutObjectTagging"
+                    ],
                     "Resource": [
                         f"arn:aws:s3:::{self.bucket_name}/{self.uuid}/*",
                     ]
