@@ -151,6 +151,7 @@ class TestArea(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.content_type, 'application/json')
         self.assertEqual(json.loads(response.data), {
+            'staging_area_id': area_id,
             'name': 'some.json',
             'size': 16,
             'content_type': 'unknown',  # TODO
@@ -190,15 +191,23 @@ class TestArea(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.data)
-        self.assertEqual(data['files'][0]['name'], "file1.json")
-        self.assertEqual(data['files'][0]['content_type'], 'application/json')
         self.assertIn('size', data['files'][0].keys())  # moto file sizes are not accurate
-        self.assertEqual(data['files'][0]['checksums'], {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'})
-
-        self.assertEqual(data['files'][1]['name'], "file2.json")
-        self.assertEqual(data['files'][1]['content_type'], 'application/json')
-        self.assertIn('size', data['files'][1].keys())  # moto file sizes are not accurate
-        self.assertEqual(data['files'][1]['checksums'], {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
+        for fileinfo in data['files']:
+            del fileinfo['size']
+        self.assertEqual(data['files'][0], {
+            'staging_area_id': area_id,
+            'name': 'file1.json',
+            'content_type': 'application/json',
+            'url': f"s3://{self.staging_bucket_name}/{area_id}/file1.json",
+            'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
+        })
+        self.assertEqual(data['files'][1], {
+            'staging_area_id': area_id,
+            'name': 'file2.json',
+            'content_type': 'application/json',
+            'url': f"s3://{self.staging_bucket_name}/{area_id}/file2.json",
+            'checksums': {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'}
+        })
 
     def test_list_files_only_lists_files_in_my_staging_area(self):
         area1_id = str(uuid.uuid4())

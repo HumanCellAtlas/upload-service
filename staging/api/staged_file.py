@@ -32,6 +32,7 @@ class StagedFile:
 
     def info(self):
         return {
+            'staging_area_id': self.staging_area.uuid,
             'name': self.name,
             'size': self.size,
             'content_type': self.content_type,
