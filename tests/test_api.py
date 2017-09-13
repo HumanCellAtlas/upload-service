@@ -12,7 +12,7 @@ if __name__ == '__main__':
     sys.path.insert(0, pkg_root)  # noqa
 
 
-class TestAreaWithoutAuthSetup(unittest.TestCase):
+class TestApiWithoutAuthSetup(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -28,7 +28,7 @@ class TestAreaWithoutAuthSetup(unittest.TestCase):
         self.assertIn("INGEST_API_KEY", response.data.decode('utf8'))
 
 
-class TestArea(unittest.TestCase):
+class TestApi(unittest.TestCase):
 
     def setUp(self):
         # Setup mock AWS
