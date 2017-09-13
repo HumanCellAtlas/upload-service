@@ -18,7 +18,7 @@ class TestAreaWithoutAuthSetup(unittest.TestCase):
         super().__init__(*args, **kwargs)
         # Setup app
         flask_app = connexion.FlaskApp(__name__)
-        flask_app.add_api('../staging-api.yml')
+        flask_app.add_api('../config/staging-api.yml')
         self.client = flask_app.app.test_client()
 
     def test_create_raises_exception(self):
@@ -47,7 +47,7 @@ class TestArea(unittest.TestCase):
         self.authentication_header = {'Api-Key': self.api_key}
         # Setup app
         flask_app = connexion.FlaskApp(__name__)
-        flask_app.add_api('../staging-api.yml')
+        flask_app.add_api('../config/staging-api.yml')
         self.client = flask_app.app.test_client()
 
     def tearDown(self):

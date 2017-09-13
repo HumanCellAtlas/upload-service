@@ -8,7 +8,7 @@ clobber: clean
 	git checkout .chalice/*.json
 
 build:
-	cp -R ../staging ../staging-api.yml chalicelib
+	cp -R ../staging ../config/staging-api.yml chalicelib
 
 deploy: clean build
 	@echo -e "\n\n#########################################################"

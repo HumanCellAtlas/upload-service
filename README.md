@@ -14,7 +14,7 @@ the HCA DCP Ingestion Service may use it.
 ### staging-api
 
 Is a Lambda Chalice/Connexion/Flask app that presents the HCASS REST API.
-The API is defined using an OpenAPI 2.0 Specification (Swagger) in `staging-api.yml`. 
+The API is defined using an OpenAPI 2.0 Specification (Swagger) in `config/staging-api.yml`. 
 
 ## Development Setup
 
