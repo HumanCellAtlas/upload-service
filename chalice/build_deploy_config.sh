@@ -21,10 +21,10 @@ if [[ $# != 1 ]]; then
 fi
 
 export stage=$1
-deployed_json="./deployed.json"
-config_json="./config.json"
-policy_json="./policy.json"
-stage_policy_json="./policy-${stage}.json"
+deployed_json=".chalice/deployed.json"
+config_json=".chalice/config.json"
+policy_json=".chalice/policy.json"
+stage_policy_json=".chalice/policy-${stage}.json"
 export app_name=$(cat "$config_json" | jq -r .app_name)
 policy_template="${SS_HOME}/iam/policy-templates/${app_name}-lambda.json"
 export lambda_name="${app_name}-${stage}"

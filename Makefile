@@ -12,17 +12,16 @@ tests:
 		-m unittest discover --start-directory tests --top-level-directory . --verbose
 
 build:
-	cp -R staging staging-api.yml chalicelib
+	$(MAKE) -C chalice build
 
 deploy:
-	$(MAKE) -C .chalice deploy
+	$(MAKE) -C chalice deploy
 
 clean:
-	$(MAKE) -C .chalice clean
+	$(MAKE) -C chalice clean
 
 clobber:
-	$(MAKE) -C .chalice clobber
+	$(MAKE) -C chalice clobber
 
 run: build
-	$(MAKE) -C .chalice build
 	./staging-api

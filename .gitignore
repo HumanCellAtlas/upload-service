@@ -41,8 +41,8 @@ npm-debug.log
 # Temporary folder
 /tmp
 
-.chalice/deployments/
-.chalice/venv/
+chalice/.chalice/deployments/
+chalice/.chalice/venv/
 
 /config/environment.dev
 /config/deployment_secrets.dev
