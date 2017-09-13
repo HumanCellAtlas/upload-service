@@ -45,8 +45,8 @@ function create() {
 
 function upload() {
     echo "UPLOAD TO S3:"
-    echo aws s3 cp staging-api.yml s3://org-humancellatlas-staging-dev/${STAGING_AREA_ID}/
-    env AWS_ACCESS_KEY_ID=${aws_access_key_id} AWS_SECRET_ACCESS_KEY=${aws_secret_access_key} aws s3 cp staging-api.yml s3://org-humancellatlas-staging-dev/${STAGING_AREA_ID}/
+    echo aws s3 cp LICENSE s3://org-humancellatlas-staging-dev/${STAGING_AREA_ID}/
+    env AWS_ACCESS_KEY_ID=${aws_access_key_id} AWS_SECRET_ACCESS_KEY=${aws_secret_access_key} aws s3 cp LICENSE s3://org-humancellatlas-staging-dev/${STAGING_AREA_ID}/
 }
 
 function put_file() {
