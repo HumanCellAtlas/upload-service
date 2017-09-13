@@ -39,7 +39,7 @@ make test
 ## Running Locally
 ```bash
 source config/environment
-./staging-api
+scripts/staging-api
 ```
 
 ## Deployment
