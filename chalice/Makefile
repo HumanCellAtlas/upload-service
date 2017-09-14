@@ -1,14 +1,15 @@
 include ../common.mk
 
 clean:
-	git clean -df chalicelib
+	git clean -df .
 
 clobber: clean
-	git clean -df .chalice
 	git checkout .chalice/*.json
 
 build:
+	cp ../requirements.txt .
 	cp -R ../staging ../checksumming_io ../config/staging-api.yml chalicelib
+	shopt -s nullglob; for wheel in vendor.in/*/*.whl; do unzip -q -o -d vendor $$wheel; done
 
 deploy: clean build
 	@echo -e "\n\n#########################################################"
