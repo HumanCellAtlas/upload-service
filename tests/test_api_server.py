@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.6
 
-import os, sys, unittest, uuid, json, base64, functools
+import os, sys, unittest, uuid, json, base64
 
 import connexion
 import boto3

@@ -24,7 +24,7 @@ paths:
 
     post:
       summary: Create a Staging Area
-      operationId: staging.api.area.create
+      operationId: staging.api_server.area.create
       description: Create a Staging Area
       tags:
         - For Ingestion Service Use Only
@@ -63,7 +63,7 @@ paths:
 
     delete:
       summary: Delete a Staging Area
-      operationId: staging.api.area.delete
+      operationId: staging.api_server.area.delete
       description: Delete a Staging Area
       tags:
         - For Ingestion Service Use Only
@@ -93,7 +93,7 @@ paths:
 
     get:
       summary: List files in a staging area
-      operationId: staging.api.area.list_files
+      operationId: staging.api_server.area.list_files
       description: |
         Provide a JSON object listing all the files in a staging area, including their checkums.
       tags:
@@ -129,7 +129,7 @@ paths:
 
     post:
       summary: Lock a Staging Area
-      operationId: staging.api.area.lock
+      operationId: staging.api_server.area.lock
       description: |
         Lock a Staging area so that submitters may not add/delete/rename files in it.
       tags:
@@ -156,7 +156,7 @@ paths:
 
     delete:
       summary: Unock a Staging Area
-      operationId: staging.api.area.unlock
+      operationId: staging.api_server.area.unlock
       description: |
         Unlock a Staging area so that submitters may add/delete/rename files in it.
       tags:
@@ -185,7 +185,7 @@ paths:
 
     put:
       summary: Store a metadata file
-      operationId: staging.api.area.put_file
+      operationId: staging.api_server.area.put_file
       description: Store a JSON metadata file in the staging area.
       tags:
         - For Ingestion Service Use Only

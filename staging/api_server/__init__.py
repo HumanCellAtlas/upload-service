@@ -1,12 +1,29 @@
 import logging, functools, traceback, os
 
 import requests
-import connexion
+import flask, connexion
+from flask_failsafe import failsafe
+from connexion.resolver import RestyResolver
 from connexion.lifecycle import ConnexionResponse
 
 logging.getLogger('boto3').setLevel(logging.WARNING)
 logging.getLogger('botocore').setLevel(logging.WARNING)
 logging.getLogger('nose').setLevel(logging.WARNING)
+
+
+def get_logger():
+    try:
+        return flask.current_app.logger
+    except RuntimeError:
+        return logging.getLogger(__name__)
+
+
+@failsafe
+def create_app():
+    app = connexion.App(__name__)
+    resolver = RestyResolver("staging.api_server", collection_endpoint_name="list")
+    app.add_api('../../staging-api.yml', resolver=resolver, validate_responses=True)
+    return app
 
 
 class StagingException(Exception):
