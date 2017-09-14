@@ -1,5 +1,6 @@
 flake8
 chalice >= 0.9.0, < 0.10.0
+domovoi >= 1.2.6
 coverage
 awscli
 moto

@@ -1,5 +1,7 @@
 include ../common.mk
 
+export EXPORT_ENV_VARS_TO_LAMBDA=STAGING_S3_BUCKET DEPLOYMENT_STAGE INGEST_API_KEY
+
 clean:
 	git clean -df .
 
