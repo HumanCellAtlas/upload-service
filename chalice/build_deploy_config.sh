@@ -47,7 +47,7 @@ for var in $EXPORT_ENV_VARS_TO_LAMBDA; do
 done
 
 if [[ ${CI:-} == true ]]; then
-    export iam_role_arn="arn:aws:iam::${account_id}:role/staging-${stage}"
+    export iam_role_arn="arn:aws:iam::${account_id}:role/${lambda_name}"
     cat "$config_json" | jq .manage_iam_role=false | jq .iam_role_arn=env.iam_role_arn | sponge "$config_json"
 fi
 
