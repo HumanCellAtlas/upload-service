@@ -62,6 +62,10 @@ class StagingArea:
         file.save_tags()
         return file.info()
 
+    def staged_file(self, filename):
+        key = f"{self.uuid}/{filename}"
+        return staging.StagedFile.from_s3_key(self, key)
+
     def is_extant(self) -> bool:
         # A staging area is a folder, however there is no concept of folder in S3.
         # The existence of a staging area is the existence of the user who can access that area.

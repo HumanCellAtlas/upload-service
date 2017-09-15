@@ -1,6 +1,4 @@
-import boto3
-
-from staging import StagingArea, StagedFile
+from staging import StagingArea
 from .ingest_notifier import IngestNotifier
 
 
@@ -15,15 +13,26 @@ class ChecksumDaemon:
             if record['eventName'] != 'ObjectCreated:Put':
                 self.log(f"WARNING: Unexpected event: {record['eventName']}")
                 continue
-            bucket = boto3.resource('s3').Bucket(record['s3']['bucket']['name'])
             file_key = record['s3']['object']['key']
-            area_uuid = file_key.split('/')[0]
-            staging_area = StagingArea(area_uuid)
-            obj = bucket.Object(file_key)
-            staged_file = StagedFile(staging_area, obj)
-            staged_file.compute_checksums()
-            staged_file.save_tags()
-            IngestNotifier().file_was_staged(staged_file.info())
+            staged_file = self._retrieve_file(file_key)
+            self._checksum_file(staged_file)
+            self._notify_ingest(staged_file)
+
+    def _retrieve_file(self, file_key):
+        self.log(f"File: {file_key}")
+        area_uuid = file_key.split('/')[0]
+        filename = file_key[len(area_uuid) + 1:]
+        return StagingArea(area_uuid).staged_file(filename)
+
+    def _checksum_file(self, staged_file):
+        staged_file.compute_checksums()
+        tags = staged_file.save_tags()
+        self.log(f"Checksummed and tagged with: {tags}")
+
+    def _notify_ingest(self, staged_file):
+        payload = staged_file.info()
+        status = IngestNotifier().file_was_staged(payload)
+        self.log(f"Notified Ingest: payload={payload}, status={status}")
 
     def log(self, message):
         self._context.log(message)

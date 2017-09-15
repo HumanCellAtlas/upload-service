@@ -64,6 +64,7 @@ class StagedFile:
         }
         tagging = dict(TagSet=self._encode_tags(tags))
         s3client.put_object_tagging(Bucket=self.staging_area.bucket_name, Key=self.s3obj.key, Tagging=tagging)
+        return tags
 
     def _hca_tags_of_file(self):
         tagging = s3client.get_object_tagging(Bucket=self.staging_area.bucket_name, Key=self.s3obj.key)

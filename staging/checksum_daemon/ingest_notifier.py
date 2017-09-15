@@ -20,3 +20,4 @@ class IngestNotifier:
             raise StagingException(status=requests.codes.server_error, title="Unexpected Error",
                                    detail=f"basic_publish to {self.INGEST_AMQP_SERVER} returned {success}")
         connection.close()
+        return success
