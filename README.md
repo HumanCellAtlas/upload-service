@@ -49,7 +49,6 @@ Deployment is typically performed by Travis.
 To manually deploy to e.g. staging:
 
 ```bash
-DEPLOYMENT_STAGE=staging
-source config/environment
-make deploy
+export enc_password="<password-used-to-encrypt-deployment-secrets>"
+scripts/deploy.sh staging
 ```
