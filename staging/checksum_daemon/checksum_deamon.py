@@ -1,6 +1,7 @@
 import boto3
 
 from staging import StagingArea, StagedFile
+from .ingest_notifier import IngestNotifier
 
 
 class ChecksumDaemon:
@@ -22,6 +23,7 @@ class ChecksumDaemon:
             staged_file = StagedFile(staging_area, obj)
             staged_file.compute_checksums()
             staged_file.save_tags()
+            IngestNotifier().file_was_staged(staged_file.info())
 
     def log(self, message):
         self._context.log(message)
