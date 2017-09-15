@@ -1,7 +1,7 @@
-import requests
+import connexion, requests
 
 from . import StagingException, return_exceptions_as_http_errors, require_authenticated
-from .staging_area import StagingArea
+from .. import StagingArea
 
 
 @return_exceptions_as_http_errors
@@ -43,7 +43,8 @@ def unlock(staging_area_id: str):
 @require_authenticated
 def put_file(staging_area_id: str, filename: str, body: str):
     staging_area = _load_staging_area(staging_area_id)
-    fileinfo = staging_area.store_file(filename, content=body)
+    content_type = connexion.request.headers['Content-Type']
+    fileinfo = staging_area.store_file(filename, content=body, content_type=content_type)
     return fileinfo, requests.codes.created
 
 

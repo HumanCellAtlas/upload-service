@@ -3,8 +3,7 @@ import json, base64, os
 import boto3
 from botocore.exceptions import ClientError
 
-from . import StagingException
-from .staged_file import StagedFile
+import staging
 
 s3 = boto3.resource('s3')
 iam = boto3.resource('iam')
@@ -54,11 +53,11 @@ class StagingArea:
     def unlock(self):
         self._set_access_policy()
 
-    def store_file(self, filename, content):
+    def store_file(self, filename, content, content_type):
         key = f"{self.uuid}/{filename}"
         s3obj = self._bucket.Object(key)
-        s3obj.put(Body=content)
-        file = StagedFile.from_s3object(staging_area=self, s3obj=s3obj)
+        s3obj.put(Body=content, ContentType=content_type)
+        file = staging.StagedFile(staging_area=self, s3object=s3obj)
         file.compute_checksums()
         file.save_tags()
         return file.info()
@@ -71,8 +70,8 @@ class StagingArea:
             return True
         except ClientError as e:
             if e.response['Error']['Code'] != 'NoSuchEntity':
-                raise StagingException(status=500, title="Unexpected Error",
-                                       detail=f"bucket.load() returned {e.response}")
+                raise staging.StagingException(status=500, title="Unexpected Error",
+                                               detail=f"bucket.load() returned {e.response}")
             return False
 
     def _file_list(self):
@@ -81,7 +80,7 @@ class StagingArea:
         for page in paginator.paginate(Bucket=self.bucket_name, Prefix=self.key_prefix):
             if 'Contents' in page:
                 for o in page['Contents']:
-                    file = StagedFile.from_listobject_dict(self, o)
+                    file = staging.StagedFile.from_s3_key(self, o['Key'])
                     file_list.append(file.info())
         return file_list
 

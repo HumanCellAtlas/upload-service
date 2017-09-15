@@ -6,6 +6,8 @@ from flask_failsafe import failsafe
 from connexion.resolver import RestyResolver
 from connexion.lifecycle import ConnexionResponse
 
+from .. import StagingException
+
 logging.getLogger('boto3').setLevel(logging.WARNING)
 logging.getLogger('botocore').setLevel(logging.WARNING)
 logging.getLogger('nose').setLevel(logging.WARNING)
@@ -24,14 +26,6 @@ def create_app():
     resolver = RestyResolver("staging.api_server", collection_endpoint_name="list")
     app.add_api('../../staging-api.yml', resolver=resolver, validate_responses=True)
     return app
-
-
-class StagingException(Exception):
-    def __init__(self, status: int, title: str, detail: str=None, *args) -> None:
-        super().__init__(*args)
-        self.status = status
-        self.title = title
-        self.detail = detail
 
 
 def return_exceptions_as_http_errors(func):

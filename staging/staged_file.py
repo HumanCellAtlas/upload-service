@@ -5,6 +5,7 @@ from boto3.s3.transfer import TransferConfig
 
 from checksumming_io.checksumming_io import ChecksummingSink
 
+s3 = boto3.resource('s3')
 s3client = boto3.client('s3')
 
 KB = 1024
@@ -22,17 +23,18 @@ class StagedFile:
         return cls(staging_area, s3_key=object_dict['Key'], size=object_dict['Size'])
 
     @classmethod
-    def from_s3object(cls, staging_area, s3obj):
-        return cls(staging_area, s3_key=s3obj.key, size=s3obj.content_length)
+    def from_s3_key(cls, staging_area, s3_key):
+        s3object = s3.Bucket(staging_area.bucket_name).Object(s3_key)
+        return cls(staging_area, s3object)
 
-    def __init__(self, staging_area, s3_key=None, size=None):
-        self.s3_key = s3_key
-        self.name = s3_key[staging_area.key_prefix_length:]  # cut off staging-area-id/
+    def __init__(self, staging_area, s3object):
         self.staging_area = staging_area
-        self.size = size
+        self.s3obj = s3object
+        self.name = s3object.key[staging_area.key_prefix_length:]  # cut off staging-area-id/
+        self.content_type_tag = None
         tags = self._hca_tags_of_file()
-        self.content_type = tags.get('content-type', 'unknown')
         if 'content-type' in tags:
+            self.content_type_tag = tags['content-type']
             del tags['content-type']
         self.checksums = tags
 
@@ -40,30 +42,31 @@ class StagedFile:
         return {
             'staging_area_id': self.staging_area.uuid,
             'name': self.name,
-            'size': self.size,
-            'content_type': self.content_type,
-            'url': f"s3://{self.staging_area.bucket_name}/{self.s3_key}",
+            'size': self.s3obj.content_length,
+            'content_type': self.content_type_tag or self.s3obj.content_type,
+            'url': f"s3://{self.staging_area.bucket_name}/{self.s3obj.key}",
             'checksums': self.checksums
         }
 
     def compute_checksums(self):
         with ChecksummingSink() as sink:
-            s3client.download_fileobj(self.staging_area.bucket_name, self.s3_key, sink, Config=self._transfer_config())
+            s3client.download_fileobj(self.staging_area.bucket_name, self.s3obj.key, sink,
+                                      Config=self._transfer_config())
             self.checksums = sink.get_checksums()
 
     def save_tags(self):
         tags = {
-            'hca-dss-content-type': self.content_type,
+            'hca-dss-content-type': self.s3obj.content_type,
             'hca-dss-s3_etag': self.checksums['s3_etag'],
             'hca-dss-sha1': self.checksums['sha1'],
             'hca-dss-sha256': self.checksums['sha256'],
             'hca-dss-crc32c': self.checksums['crc32c'],
         }
         tagging = dict(TagSet=self._encode_tags(tags))
-        s3client.put_object_tagging(Bucket=self.staging_area.bucket_name, Key=self.s3_key, Tagging=tagging)
+        s3client.put_object_tagging(Bucket=self.staging_area.bucket_name, Key=self.s3obj.key, Tagging=tagging)
 
     def _hca_tags_of_file(self):
-        tagging = s3client.get_object_tagging(Bucket=self.staging_area.bucket_name, Key=self.s3_key)
+        tagging = s3client.get_object_tagging(Bucket=self.staging_area.bucket_name, Key=self.s3obj.key)
         tags = {}
         if 'TagSet' in tagging:
             tag_set = self._decode_tags(tagging['TagSet'])
@@ -72,7 +75,7 @@ class StagedFile:
         return tags
 
     def _transfer_config(self) -> TransferConfig:
-        etag_stride = self._s3_chunk_size(self.size)
+        etag_stride = self._s3_chunk_size(self.s3obj.content_length)
         return TransferConfig(multipart_threshold=etag_stride,
                               multipart_chunksize=etag_stride)
 

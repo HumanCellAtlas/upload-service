@@ -144,9 +144,9 @@ class TestApi(unittest.TestCase):
     def test_put_file(self):
         area_id = str(uuid.uuid4())
         self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
-
-        response = self.client.put(f"/v1/area/{area_id}/some.json", data="exquisite corpse",
-                                   headers=self.authentication_header)
+        headers = {'Content-Type': 'application/json'}
+        headers.update(self.authentication_header)
+        response = self.client.put(f"/v1/area/{area_id}/some.json", data="exquisite corpse", headers=headers)
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.content_type, 'application/json')
@@ -154,7 +154,7 @@ class TestApi(unittest.TestCase):
             'staging_area_id': area_id,
             'name': 'some.json',
             'size': 16,
-            'content_type': 'unknown',  # TODO
+            'content_type': 'application/json',
             'url': f"s3://{self.staging_bucket_name}/{area_id}/some.json",
             'checksums': {
                 "crc32c": "FE9ADA52",
@@ -170,7 +170,7 @@ class TestApi(unittest.TestCase):
         area_id = str(uuid.uuid4())
         self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
         file1_key = f"{area_id}/file1.json"
-        self.staging_bucket.Object(file1_key).put(Body="foo")
+        self.staging_bucket.Object(file1_key).put(Body="foo", ContentType="application/json")
         boto3.client('s3').put_object_tagging(Bucket=self.staging_bucket_name, Key=file1_key, Tagging={
             'TagSet': [
                 {'Key': 'hca-dss-content-type', 'Value': 'application/json'},
@@ -181,10 +181,10 @@ class TestApi(unittest.TestCase):
             ]
         })
         file2_key = f"{area_id}/file2.json"
-        self.staging_bucket.Object(file2_key).put(Body="ba ba ba ba ba barane")
+        self.staging_bucket.Object(file2_key).put(Body="ba ba ba ba ba barane", ContentType="hca-data-file")
         boto3.client('s3').put_object_tagging(Bucket=self.staging_bucket_name, Key=file2_key, Tagging={
             'TagSet': [
-                {'Key': 'hca-dss-content-type', 'Value': 'application/json'},
+                {'Key': 'hca-dss-content-type', 'Value': 'hca-data-file'},
                 {'Key': 'hca-dss-s3_etag', 'Value': 'a'},
                 {'Key': 'hca-dss-sha1', 'Value': 'b'},
                 {'Key': 'hca-dss-sha256', 'Value': 'c'},
@@ -209,7 +209,7 @@ class TestApi(unittest.TestCase):
         self.assertEqual(data['files'][1], {
             'staging_area_id': area_id,
             'name': 'file2.json',
-            'content_type': 'application/json',
+            'content_type': 'hca-data-file',
             'url': f"s3://{self.staging_bucket_name}/{area_id}/file2.json",
             'checksums': {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'}
         })
