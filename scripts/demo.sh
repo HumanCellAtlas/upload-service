@@ -1,6 +1,7 @@
 #!/bin/bash
+STAGE=staging
 #API_URL=http://localhost:5000/v1
-API_URL=https://staging.dev.data.humancellatlas.org/v1
+API_URL=https://staging.${STAGE}.data.humancellatlas.org/v1
 STAGING_AREA_ID=deadbeef-dead-dead-dead-beeeeeeeeeef
 
 function pause() {
@@ -45,8 +46,9 @@ function create() {
 
 function upload() {
     echo "UPLOAD TO S3:"
-    echo aws s3 cp LICENSE s3://org-humancellatlas-staging-dev/${STAGING_AREA_ID}/
-    env AWS_ACCESS_KEY_ID=${aws_access_key_id} AWS_SECRET_ACCESS_KEY=${aws_secret_access_key} aws s3 cp LICENSE s3://org-humancellatlas-staging-dev/${STAGING_AREA_ID}/
+    area_url="s3://org-humancellatlas-staging-${STAGE}/${STAGING_AREA_ID}/"
+    echo aws s3 cp LICENSE ${area_url}
+    env AWS_ACCESS_KEY_ID=${aws_access_key_id} AWS_SECRET_ACCESS_KEY=${aws_secret_access_key} aws s3 cp LICENSE ${area_url}
 }
 
 function put_file() {
