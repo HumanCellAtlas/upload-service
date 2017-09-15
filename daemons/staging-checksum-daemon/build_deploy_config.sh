@@ -11,6 +11,9 @@ export daemon_name=$1 stage=$2
 export lambda_name="${daemon_name}-${stage}" iam_role_name="${daemon_name}-${stage}"
 config_json=".chalice/config.json"
 deployed_json=".chalice/deployed.json"
+policy_template="${SS_HOME}/iam/policy-templates/${daemon_name}.json"
+policy_json=".chalice/policy.json"
+stage_policy_json=".chalice/policy-${stage}.json"
 
 function update_env_in_config_json() {
     for var in ${EXPORT_ENV_VARS_TO_LAMBDA}; do
@@ -35,5 +38,11 @@ function detect_existing_deployment() {
     fi
 }
 
+function create_policy_document() {
+    cat "$policy_template" | envsubst '$STAGING_S3_BUCKET $account_id $stage $region_name' > "$policy_json"
+    cp "$policy_json" "$stage_policy_json"
+}
+
 update_env_in_config_json
 detect_existing_deployment
+create_policy_document

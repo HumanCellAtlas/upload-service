@@ -1,0 +1,51 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "LambdaPolicy",
+      "Action": [
+        "events:*",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies",
+        "iam:ListRoles",
+        "iam:PassRole"
+      ],
+      "Resource": "*",
+      "Effect": "Allow"
+    },
+    {
+      "Sid": "PubSub",
+      "Action": [
+        "sns:CreateTopic",
+        "sns:Publish"
+      ],
+      "Resource": "arn:aws:sns:*:*:*",
+      "Effect": "Allow"
+    },
+    {
+      "Sid": "LambdaLogging",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogStreams"
+      ],
+      "Resource": [
+        "arn:aws:logs:*:*:*"
+      ],
+      "Effect": "Allow"
+    },
+    {
+      "Sid": "S3Access",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:GetObjectTagging",
+        "s3:PutObjectTagging"
+      ],
+      "Resource": [
+        "arn:aws:s3:::$STAGING_S3_BUCKET/*"
+      ]
+    }
+  ]
+}
