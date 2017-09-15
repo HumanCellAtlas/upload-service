@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source "$(dirname $0)/../environment"
+source "$(dirname $0)/../config/environment"
 
 set -euo pipefail
 

@@ -11,6 +11,7 @@ set +a
 
 echo "DEPLOYMENT STAGE IS \"${DEPLOYMENT_STAGE}\""
 
-if [ -f config/environment.${DEPLOYMENT_STAGE} ] ; then
-    source config/environment.${DEPLOYMENT_STAGE}
+if [ -f ${SOURCE}.${DEPLOYMENT_STAGE} ] ; then
+    echo source ${SOURCE}.${DEPLOYMENT_STAGE}
+    source ${SOURCE}.${DEPLOYMENT_STAGE}
 fi

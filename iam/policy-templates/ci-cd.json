@@ -12,7 +12,7 @@
       "Resource": "*",
       "Effect": "Allow"
     },
-        {
+    {
       "Sid": "hcaCiCdLambdaAdminAccess",
       "Action": [
         "lambda:*"
@@ -21,6 +21,16 @@
         "arn:aws:lambda:*:$account_id:function:staging-*"
       ],
       "Effect": "Allow"
+    },
+        {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetBucketNotification",
+        "s3:PutBucketNotification"
+      ],
+      "Resource": [
+        "arn:aws:s3:::org-humancellatlas-staging-*"
+      ]
     },
     {
       "Sid": "AllowChaliceToSetRolePolicyForLambda",
