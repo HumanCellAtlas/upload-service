@@ -1,6 +1,5 @@
 import sys, unittest, os
-from unittest.mock import Mock
-
+from unittest.mock import Mock, patch
 import boto3, uuid
 from moto import mock_s3
 
@@ -9,6 +8,7 @@ if __name__ == '__main__':
     sys.path.insert(0, pkg_root)  # noqa
 
 from staging.checksum_daemon import ChecksumDaemon  # noqa
+import staging.checksum_daemon.checksum_daemon  # noqa
 
 
 class TestChecksumDaemon(unittest.TestCase):
@@ -25,9 +25,11 @@ class TestChecksumDaemon(unittest.TestCase):
         # daemon
         context = Mock()
         self.daemon = ChecksumDaemon(context)
-        area_id = str(uuid.uuid4())
-        self.file_key = f"{area_id}/foo"
-        self.staging_bucket.put_object(Key=self.file_key, Body="exquisite corpse", ContentType='text/html')
+        # File
+        self.area_id = str(uuid.uuid4())
+        self.content_type = 'text/html'
+        self.file_key = f"{self.area_id}/foo"
+        self.staging_bucket.put_object(Key=self.file_key, Body="exquisite corpse", ContentType=self.content_type)
         self.event = {'Records': [
             {'eventVersion': '2.0', 'eventSource': 'aws:s3', 'awsRegion': 'us-east-1',
              'eventTime': '2017-09-15T00:05:10.378Z', 'eventName': 'ObjectCreated:Put',
@@ -47,7 +49,8 @@ class TestChecksumDaemon(unittest.TestCase):
     def tearDown(self):
         self.s3_mock.stop()
 
-    def test_consume_event_sets_tags(self):
+    @patch('staging.checksum_daemon.checksum_daemon.IngestNotifier.file_was_staged')
+    def test_consume_event_sets_tags(self, mock_file_was_staged):
 
         self.daemon.consume_event(self.event)
 
@@ -59,3 +62,24 @@ class TestChecksumDaemon(unittest.TestCase):
             {'Key': "hca-dss-sha256", 'Value': "29f5572dfbe07e1db9422a4c84e3f9e455aab9ac596f0bf3340be17841f26f70"},
             {'Key': "hca-dss-crc32c", 'Value': "FE9ADA52"}
         ])
+
+    @patch('staging.checksum_daemon.checksum_daemon.IngestNotifier.file_was_staged')
+    def test_consume_event_notifies_ingest(self, mock_file_was_staged):
+
+        self.daemon.consume_event(self.event)
+
+        self.assertTrue(mock_file_was_staged.called,
+                        'IngestNotifier.file_was_staged should have been called')
+        mock_file_was_staged.assert_called_once_with({
+            'staging_area_id': self.area_id,
+            'name': os.path.basename(self.file_key),
+            'size': 16,
+            'content_type': self.content_type,
+            'url': f"s3://{self.STAGING_BUCKET_NAME}/{self.area_id}/foo",
+            'checksums': {
+                "s3_etag": "18f17fbfdd21cf869d664731e10d4ffd",
+                "sha1": "b1b101e21cf9cf8a4729da44d7818f935eec0ce8",
+                "sha256": "29f5572dfbe07e1db9422a4c84e3f9e455aab9ac596f0bf3340be17841f26f70",
+                "crc32c": "FE9ADA52"
+            }
+        })

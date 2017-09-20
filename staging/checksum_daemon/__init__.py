@@ -1,1 +1,1 @@
-from .checksum_deamon import ChecksumDaemon
+from .checksum_daemon import ChecksumDaemon
