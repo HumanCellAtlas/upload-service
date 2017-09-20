@@ -23,4 +23,6 @@ source config/environment
 openssl aes-256-cbc -k $enc_password -in config/deployment_secrets.${DEPLOYMENT_STAGE}.enc -out config/deployment_secrets.${DEPLOYMENT_STAGE} -d
 source config/deployment_secrets.${DEPLOYMENT_STAGE}
 make deploy
-tag_deploy
+if [ ${DEPLOYMENT_STAGE} != dev ] ; then
+    tag_deploy
+fi
