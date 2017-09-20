@@ -1,7 +1,35 @@
 #!/bin/bash
-STAGE=staging
-#API_URL=http://localhost:5000/v1
-API_URL=https://staging.${STAGE}.data.humancellatlas.org/v1
+
+function usage() {
+    cat <<-EOF
+
+Usage: $(basename $0) <deployment>
+
+Deployment = "local", "dev", or "staging"
+
+EOF
+    exit 1
+}
+
+[ $# -ne 1 ] && usage
+
+DEPLOYMENT=$1
+
+case ${DEPLOYMENT} in
+dev|staging)
+    API_URL=https://staging.${DEPLOYMENT}.data.humancellatlas.org/v1
+    ;;
+local)
+    API_URL=http://localhost:5000/v1
+    DEPLOYMENT=dev
+    ;;
+esac
+
+if [ -z "${INGEST_API_KEY}" ] ; then
+    echo -e "\nPlease source the appropriate config/deployment_secrets.py before running.\n"
+    exit 1
+fi
+
 STAGING_AREA_ID=deadbeef-dead-dead-dead-beeeeeeeeeef
 
 function pause() {
@@ -46,7 +74,7 @@ function create() {
 
 function upload() {
     echo "UPLOAD TO S3:"
-    area_url="s3://org-humancellatlas-staging-${STAGE}/${STAGING_AREA_ID}/"
+    area_url="s3://org-humancellatlas-staging-${DEPLOYMENT}/${STAGING_AREA_ID}/"
     echo aws s3 cp LICENSE ${area_url}
     env AWS_ACCESS_KEY_ID=${aws_access_key_id} AWS_SECRET_ACCESS_KEY=${aws_secret_access_key} aws s3 cp LICENSE ${area_url}
 }
