@@ -24,7 +24,7 @@ def get_logger():
 def create_app():
     app = connexion.App(__name__)
     resolver = RestyResolver("staging.api_server", collection_endpoint_name="list")
-    app.add_api('../../staging-api.yml', resolver=resolver, validate_responses=True)
+    app.add_api('../../config/staging-api.yml', resolver=resolver, validate_responses=True)
     return app
 
 

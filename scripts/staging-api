@@ -11,6 +11,10 @@ import argparse
 
 from chalice.cli import CLIFactory, run_local_server
 
+if __name__ == '__main__':
+    pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
+    sys.path.insert(0, pkg_root)  # noqa
+
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--port", type=int, default=5000)
 parser.add_argument("--no-debug", dest="debug", action="store_false",
