@@ -4,13 +4,15 @@ from .ingest_notifier import IngestNotifier
 
 class ChecksumDaemon:
 
+    RECOGNIZED_S3_EVENTS = ('ObjectCreated:Put', 'ObjectCreated:CompleteMultipartUpload')
+
     def __init__(self, context):
         self._context = context
         self.log("Ahm ahliiivvve!")
 
     def consume_event(self, event):
         for record in event['Records']:
-            if record['eventName'] != 'ObjectCreated:Put':
+            if record['eventName'] not in self.RECOGNIZED_S3_EVENTS:
                 self.log(f"WARNING: Unexpected event: {record['eventName']}")
                 continue
             file_key = record['s3']['object']['key']
