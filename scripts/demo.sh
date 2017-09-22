@@ -50,7 +50,7 @@ function get_cred() {
     python -c "\
 import sys, json, base64 ; \
 response = open('/tmp/response').read() ; \
-encoded_creds = json.loads(response)['urn'].split(':')[4] ; \
+encoded_creds = json.loads(response)['urn'].split(':')[5] ; \
 creds = json.loads(base64.b64decode(encoded_creds)) ; \
 sys.stdout.write(creds['${cred}'])"
 }
