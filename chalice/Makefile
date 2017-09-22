@@ -10,7 +10,9 @@ clobber: clean
 
 build:
 	cp ../requirements.txt .
-	cp -R ../staging ../checksumming_io ../config/staging-api.yml chalicelib
+	cp -R ../staging ../checksumming_io chalicelib
+	mkdir -p chalicelib/config
+	cp ../config/staging-api.yml chalicelib/config
 	shopt -s nullglob; for wheel in vendor.in/*/*.whl; do unzip -q -o -d vendor $$wheel; done
 
 deploy: clean build
