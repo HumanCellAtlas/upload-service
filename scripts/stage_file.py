@@ -10,6 +10,7 @@ Usage:
 """
 
 import argparse, base64, json, os, sys
+from collections import deque
 
 try:
     import boto3
@@ -40,10 +41,8 @@ class Main:
 
     def __init__(self):
         self._parse_args()
-        junk, junk, junk, self.area_uuid, encoded_credentials = self.args.urn.split(':')
-        uppercase_credentials = json.loads(base64.b64decode(encoded_credentials))
-        credentials = {k.lower(): v for k, v in uppercase_credentials.items()}
-        session = boto3.session.Session(**credentials)
+        self._parse_urn(self.args.urn)
+        session = boto3.session.Session(**self.aws_credentials)
         self.s3 = session.resource('s3')
         self._stage_file(self.args.file_path)
 
@@ -54,9 +53,23 @@ class Main:
                             help="name of file to stage")
         parser.add_argument('urn', metavar='<URN>',
                             help="URN of staging area (given to you by Ingest Broker)")
-        parser.add_argument('-d', '--deployment', metavar="<deployment>", default='dev',
-                            help="Deployment to use (default=dev)")
         self.args = parser.parse_args()
+
+    def _parse_urn(self, urn):
+        # TODO reimplement as deque
+        urnbits = urn.split(':')
+        if len(urnbits) == 6:
+            self.deployment_stage = urnbits[3]
+            self.area_uuid = urnbits[4]
+            encoded_credentials = urnbits[5]
+        elif len(urnbits) == 5:
+            self.deployment_stage = 'dev'
+            self.area_uuid = urnbits[3]
+            encoded_credentials = urnbits[4]
+        else:
+            raise RuntimeError("Bad URN")
+        uppercase_credentials = json.loads(base64.b64decode(encoded_credentials))
+        self.aws_credentials = {k.lower(): v for k, v in uppercase_credentials.items()}
 
     def callback(self, bytes_transferred):
         self.cumulative_bytes_transferred += bytes_transferred
@@ -71,7 +84,7 @@ class Main:
     def _stage_file(self, file_path):
         print("Uploading %s to staging area %s..." % (os.path.basename(file_path), self.area_uuid))
         self.file_size = os.stat(file_path).st_size
-        bucket_name = self.STAGING_BUCKET_TEMPLATE % (self.args.deployment,)
+        bucket_name = self.STAGING_BUCKET_TEMPLATE % (self.deployment_stage,)
         file_s3_key = "%s/%s" % (self.area_uuid, os.path.basename(file_path))
         bucket = self.s3.Bucket(bucket_name)
         obj = bucket.Object(file_s3_key)
