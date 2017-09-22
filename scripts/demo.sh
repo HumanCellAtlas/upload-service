@@ -45,16 +45,6 @@ function waiting() {
     echo "done."
 }
 
-function get_cred() {
-    cred=$1
-    python -c "\
-import sys, json, base64 ; \
-response = open('/tmp/response').read() ; \
-encoded_creds = json.loads(response)['urn'].split(':')[5] ; \
-creds = json.loads(base64.b64decode(encoded_creds)) ; \
-sys.stdout.write(creds['${cred}'])"
-}
-
 function run_curl() {
     curl_command=$*
     echo curl ${curl_command}
@@ -66,17 +56,13 @@ function run_curl() {
 function create() {
     echo "CREATE:"
     run_curl -X POST "${API_URL}/area/${STAGING_AREA_ID}"
-    aws_access_key_id=`get_cred AWS_ACCESS_KEY_ID`
-    aws_secret_access_key=`get_cred AWS_SECRET_ACCESS_KEY`
-    echo AWS_ACCESS_KEY_ID=${aws_access_key_id}
-    echo AWS_SECRET_ACCESS_KEY=${aws_secret_access_key}
+    urn=`jq .urn /tmp/response`
 }
 
 function upload() {
-    echo "UPLOAD TO S3:"
-    area_url="s3://org-humancellatlas-staging-${DEPLOYMENT}/${STAGING_AREA_ID}/"
-    echo aws s3 cp LICENSE ${area_url}
-    env AWS_ACCESS_KEY_ID=${aws_access_key_id} AWS_SECRET_ACCESS_KEY=${aws_secret_access_key} aws s3 cp LICENSE ${area_url}
+    echo "STAGE A FILE:"
+    echo scripts/stage_file.py LICENSE ${urn}
+    scripts/stage_file.py LICENSE ${urn}
 }
 
 function put_file() {
