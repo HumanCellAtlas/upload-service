@@ -12,6 +12,20 @@ if __name__ == '__main__':
     sys.path.insert(0, pkg_root)  # noqa
 
 
+class SetDeploymentStage:
+
+    def __init__(self, stage):
+        self.temporary_stage = stage
+
+    def __enter__(self):
+        self.saved_stage = os.environ['DEPLOYMENT_STAGE']
+        os.environ['DEPLOYMENT_STAGE'] = self.temporary_stage
+        return None
+
+    def __exit__(self, type, value, traceback):
+        os.environ['DEPLOYMENT_STAGE'] = self.saved_stage
+
+
 class TestApiWithoutAuthSetup(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
@@ -71,9 +85,10 @@ class TestApi(unittest.TestCase):
         body = json.loads(response.data)
         self.assertEqual(list(body.keys()), ['urn'])
         urnbits = body['urn'].split(':')
-        self.assertEqual(urnbits[0:3], ['hca', 'sta', 'aws'])
-        self.assertEqual(urnbits[3], area_id)
-        creds = json.loads(base64.b64decode(urnbits[4].encode('utf8')))
+        self.assertEqual(len(urnbits), 6)  # hca:sta:aws:dev:uuid:encoded-creds
+        self.assertEqual(urnbits[0:4], ['hca', 'sta', 'aws', 'dev'])
+        self.assertEqual(urnbits[4], area_id)
+        creds = json.loads(base64.b64decode(urnbits[5].encode('utf8')))
         self.assertEqual(list(creds.keys()), ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'])
 
         try:
@@ -86,6 +101,23 @@ class TestApi(unittest.TestCase):
         self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
         self.assertIn(f'"Resource": ["arn:aws:s3:::{self.staging_bucket_name}/{area_id}/*"]',
                       policy.policy_document)
+
+    def test_create_in_production_only_returns_5_part_urn(self):
+        with SetDeploymentStage('prod'):
+
+            area_id = str(uuid.uuid4())
+
+            response = self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
+
+            self.assertEqual(response.status_code, 201)
+            body = json.loads(response.data)
+            self.assertEqual(list(body.keys()), ['urn'])
+            urnbits = body['urn'].split(':')
+            self.assertEqual(len(urnbits), 5)  # hca:sta:aws:uuid:encoded-creds
+            self.assertEqual(urnbits[0:3], ['hca', 'sta', 'aws'])
+            self.assertEqual(urnbits[3], area_id)
+            creds = json.loads(base64.b64decode(urnbits[4].encode('utf8')))
+            self.assertEqual(list(creds.keys()), ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'])
 
     def test_create_with_already_used_staging_area_id(self):
         area_id = str(uuid.uuid4())

@@ -27,7 +27,10 @@ class StagingArea:
 
     def urn(self):
         encoded_credentials = base64.b64encode(json.dumps(self._credentials).encode('utf8')).decode('utf8')
-        return f"hca:sta:aws:{self.uuid}:{encoded_credentials}"
+        if os.environ['DEPLOYMENT_STAGE'] == 'prod':
+            return f"hca:sta:aws:{self.uuid}:{encoded_credentials}"
+        else:
+            return f"hca:sta:aws:{os.environ['DEPLOYMENT_STAGE']}:{self.uuid}:{encoded_credentials}"
 
     def create(self):
         self._user.create()
