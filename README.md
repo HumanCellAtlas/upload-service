@@ -14,7 +14,11 @@ the HCA DCP Ingestion Service may use it.
 ### staging-api
 
 Is a Lambda Chalice/Connexion/Flask app that presents the HCASS REST API.
-The API is defined using an OpenAPI 2.0 Specification (Swagger) in `config/staging-api.yml`. 
+The API is defined using an OpenAPI 2.0 Specification (Swagger) in `config/staging-api.yml`.
+
+### staging-checksum-daemon
+
+Is a Lambda Domovoi app triggered by S3 ObjectCreated events that computes checksums for uploaded files.
 
 ## Development Setup
 
