@@ -10,7 +10,6 @@ Usage:
 """
 
 import argparse, base64, json, os, sys
-from collections import deque
 
 try:
     import boto3
@@ -56,8 +55,8 @@ class Main:
         self.args = parser.parse_args()
 
     def _parse_urn(self, urn):
-        # TODO reimplement as deque
         urnbits = urn.split(':')
+        assert(urnbits[0:3] == ['hca', 'sta', 'aws'])
         if len(urnbits) == 6:
             self.deployment_stage = urnbits[3]
             self.area_uuid = urnbits[4]
