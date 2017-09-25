@@ -9,7 +9,7 @@ Usage:
 
 """
 
-import argparse, base64, json, os, sys
+import argparse, base64, json, os, sys, re
 
 try:
     import boto3
@@ -87,10 +87,12 @@ class Main:
         file_s3_key = "%s/%s" % (self.area_uuid, os.path.basename(file_path))
         bucket = self.s3.Bucket(bucket_name)
         obj = bucket.Object(file_s3_key)
+        content_type = 'application/json' if re.search('.json$', file_path) else 'hca-data-file'
         with open(file_path, 'rb') as fh:
             self.cumulative_bytes_transferred = 0
             obj.upload_fileobj(fh,
-                               ExtraArgs={'ACL': 'bucket-owner-full-control'},
+                               ExtraArgs={'ContentType': content_type,
+                                          'ACL': 'bucket-owner-full-control'},
                                Callback=self.callback,
                                Config=self.transfer_config(self.file_size)
                                )
