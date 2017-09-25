@@ -18,6 +18,8 @@ except ImportError:
     print("\nPlease install boto3 to use this script, e.g. \"pip install boto3\"\n")
     exit(1)
 
+__version__ = "0.1.0"
+
 KB = 1024
 MB = KB * KB
 
@@ -52,6 +54,8 @@ class Main:
                             help="name of file to stage")
         parser.add_argument('urn', metavar='<URN>',
                             help="URN of staging area (given to you by Ingest Broker)")
+        parser.add_argument('-v', '--version', action='version', version='%(prog)s version {}'.format(__version__),
+                            help="show version and exit")
         self.args = parser.parse_args()
 
     def _parse_urn(self, urn):
