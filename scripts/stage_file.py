@@ -18,7 +18,7 @@ except ImportError:
     print("\nPlease install boto3 to use this script, e.g. \"pip install boto3\"\n")
     exit(1)
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 KB = 1024
 MB = KB * KB
@@ -45,7 +45,7 @@ class Main:
         self._parse_urn(self.args.urn)
         session = boto3.session.Session(**self.aws_credentials)
         self.s3 = session.resource('s3')
-        self._stage_file(self.args.file_path)
+        self._stage_file(self.args.file_path, self.args.target_filename)
 
     def _parse_args(self):
         parser = argparse.ArgumentParser(description=__doc__,
@@ -54,6 +54,7 @@ class Main:
                             help="name of file to stage")
         parser.add_argument('urn', metavar='<URN>',
                             help="URN of staging area (given to you by Ingest Broker)")
+        parser.add_argument('-t', '--target_filename', metavar="<target_filename>", default=None)
         parser.add_argument('-v', '--version', action='version', version='%(prog)s version {}'.format(__version__),
                             help="show version and exit")
         self.args = parser.parse_args()
@@ -84,11 +85,11 @@ class Main:
                           self.CLEAR_TO_EOL))
         sys.stdout.flush()
 
-    def _stage_file(self, file_path):
-        print("Uploading %s to staging area %s..." % (os.path.basename(file_path), self.area_uuid))
+    def _stage_file(self, file_path, target_filename=None):
+        file_s3_key = "%s/%s" % (self.area_uuid, target_filename or os.path.basename(file_path))
+        print("Uploading %s to staging area %s..." % (os.path.basename(file_path), file_s3_key))
         self.file_size = os.stat(file_path).st_size
         bucket_name = self.STAGING_BUCKET_TEMPLATE % (self.deployment_stage,)
-        file_s3_key = "%s/%s" % (self.area_uuid, os.path.basename(file_path))
         bucket = self.s3.Bucket(bucket_name)
         obj = bucket.Object(file_s3_key)
         content_type = 'application/json' if re.search('.json$', file_path) else 'hca-data-file'
