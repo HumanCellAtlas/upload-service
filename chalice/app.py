@@ -1,8 +1,6 @@
-import os, sys, re, logging, collections, datetime
+import os, sys, re, logging, collections
 
-import flask
 import chalice
-import boto3
 
 pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), 'chalicelib')) # noqa
 sys.path.insert(0, pkg_root) # noqa

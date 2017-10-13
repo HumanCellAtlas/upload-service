@@ -1,5 +1,4 @@
 boto3
 connexion
-flask-failsafe
 crcmod
 pika
