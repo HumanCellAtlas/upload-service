@@ -1,6 +1,8 @@
 # Human Cell Atlas, Data Coordination Platform, Staging System
 
 [![Staging Service Build Status](https://travis-ci.org/HumanCellAtlas/staging-service.svg?branch=master)](https://travis-ci.org/HumanCellAtlas/staging-service)
+[![CodeClimate Maintainability](https://api.codeclimate.com/v1/badges/4003ac7c053107137873/maintainability)](https://codeclimate.com/github/HumanCellAtlas/staging-service/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/4003ac7c053107137873/test_coverage)](https://codeclimate.com/github/HumanCellAtlas/staging-service/test_coverage)
 
 ## Overview
 
