@@ -44,6 +44,13 @@ class TestApiWithoutAuthSetup(unittest.TestCase):
 
 class TestApi(unittest.TestCase):
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Setup app
+        flask_app = connexion.FlaskApp(__name__)
+        flask_app.add_api('../config/staging-api.yml')
+        self.client = flask_app.app.test_client()
+
     def setUp(self):
         # Setup mock AWS
         self.s3_mock = mock_s3()
@@ -56,13 +63,9 @@ class TestApi(unittest.TestCase):
         self.staging_bucket.create()
         self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
         # Setup authentication
-        self.api_key = "foo"
-        os.environ['INGEST_API_KEY'] = self.api_key
-        self.authentication_header = {'Api-Key': self.api_key}
-        # Setup app
-        flask_app = connexion.FlaskApp(__name__)
-        flask_app.add_api('../config/staging-api.yml')
-        self.client = flask_app.app.test_client()
+        api_key = "foo"
+        os.environ['INGEST_API_KEY'] = api_key
+        self.authentication_header = {'Api-Key': api_key}
 
     def tearDown(self):
         self.s3_mock.stop()
@@ -146,7 +149,7 @@ class TestApi(unittest.TestCase):
         with self.assertRaises(ClientError):
             obj.load()
 
-    def test_delete_with_unused_used_staging_area_id(self):
+    def test_delete_with_unused_staging_area_id(self):
         area_id = str(uuid.uuid4())
 
         response = self.client.delete(f"/v1/area/{area_id}", headers=self.authentication_header)
@@ -197,6 +200,24 @@ class TestApi(unittest.TestCase):
         })
         obj = self.staging_bucket.Object(f"{area_id}/some.json")
         self.assertEqual(obj.get()['Body'].read(), "exquisite corpse".encode('utf8'))
+
+    def test_put_file_hca_content_type_header_overrides_content_type(self):
+        area_id = str(uuid.uuid4())
+        content_type = 'application/json'
+        hca_content_type = 'hca/sample'
+        self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
+        headers = {'Content-Type': content_type, 'HCA-Content-Type': hca_content_type}
+        headers.update(self.authentication_header)
+        response = self.client.put(f"/v1/area/{area_id}/some.json", data="exquisite corpse", headers=headers)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.content_type, 'application/json')
+        file_s3_key = f"{area_id}/some.json"
+        obj = self.staging_bucket.Object(file_s3_key)
+        self.assertEqual(obj.content_type, hca_content_type)
+        tagging = boto3.client('s3').get_object_tagging(Bucket=self.staging_bucket_name, Key=file_s3_key)
+        content_type_tag = next(tag['Value'] for tag in tagging['TagSet'] if tag['Key'] == 'hca-dss-content-type')
+        self.assertEqual(content_type_tag, hca_content_type)
 
     def test_list_files(self):
         area_id = str(uuid.uuid4())
@@ -261,6 +282,7 @@ class TestApi(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.data)
         self.assertEqual([file['name'] for file in data['files']], area_2_files)
+
 
 if __name__ == '__main__':
     unittest.main()

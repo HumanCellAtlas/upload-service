@@ -43,7 +43,8 @@ def unlock(staging_area_id: str):
 @require_authenticated
 def put_file(staging_area_id: str, filename: str, body: str):
     staging_area = _load_staging_area(staging_area_id)
-    content_type = connexion.request.headers['Content-Type']
+    headers = connexion.request.headers
+    content_type = headers['HCA-Content-Type'] if 'HCA-Content-Type' in headers else headers['Content-Type']
     fileinfo = staging_area.store_file(filename, content=body, content_type=content_type)
     return fileinfo, requests.codes.created
 
