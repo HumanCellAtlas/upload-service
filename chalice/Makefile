@@ -1,6 +1,6 @@
 include ../common.mk
 
-export EXPORT_ENV_VARS_TO_LAMBDA=STAGING_S3_BUCKET DEPLOYMENT_STAGE INGEST_API_KEY
+export EXPORT_ENV_VARS_TO_LAMBDA=UPLOAD_SERVICE_S3_BUCKET DEPLOYMENT_STAGE INGEST_API_KEY
 
 clean:
 	git clean -df .
@@ -10,9 +10,9 @@ clobber: clean
 
 build:
 	cp ../requirements.txt .
-	cp -R ../staging ../checksumming_io chalicelib
+	cp -R ../upload ../checksumming_io chalicelib
 	mkdir -p chalicelib/config
-	cp ../config/staging-api.yml chalicelib/config
+	cp ../config/upload-api.yml chalicelib/config
 	shopt -s nullglob; for wheel in vendor.in/*/*.whl; do unzip -q -o -d vendor $$wheel; done
 
 deploy: clean build

@@ -1,6 +1,6 @@
 {
   "dev": {
-    "api_handler_name": "staging-api-dev",
+    "api_handler_name": "upload-api-dev",
     "api_handler_arn": "",
     "rest_api_id": "",
     "region": "us-east-1",
@@ -9,7 +9,7 @@
     "chalice_version": "0.9.0"
   },
   "staging": {
-    "api_handler_name": "staging-api-staging",
+    "api_handler_name": "upload-api-staging",
     "api_handler_arn": "",
     "rest_api_id": "",
     "region": "us-east-1",
@@ -18,7 +18,7 @@
     "chalice_version": "0.9.0"
   },
   "prod": {
-    "api_handler_name": "staging-api-prod",
+    "api_handler_name": "upload-api-prod",
     "api_handler_arn": "",
     "rest_api_id": "",
     "region": "us-east-1",

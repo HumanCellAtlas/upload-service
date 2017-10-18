@@ -16,7 +16,7 @@
         "s3:ListBucket"
       ],
       "Resource": [
-        "arn:aws:s3:::$STAGING_S3_BUCKET"
+        "arn:aws:s3:::$UPLOAD_SERVICE_S3_BUCKET"
       ]
     },
     {
@@ -29,7 +29,7 @@
         "s3:PutObjectTagging"
       ],
       "Resource": [
-        "arn:aws:s3:::$STAGING_S3_BUCKET/*"
+        "arn:aws:s3:::$UPLOAD_SERVICE_S3_BUCKET/*"
       ]
     },
     {
@@ -46,8 +46,8 @@
         "iam:ListAccessKeys"
       ],
       "Resource": [
-        "arn:aws:iam::$account_id:user/staging-*",
-        "arn:aws:iam::$account_id:policy/staging-*"
+        "arn:aws:iam::$account_id:user/upload-*",
+        "arn:aws:iam::$account_id:policy/upload-*"
       ]
     }
   ]

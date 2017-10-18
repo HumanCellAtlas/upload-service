@@ -17,7 +17,7 @@ DEPLOYMENT=$1
 
 case ${DEPLOYMENT} in
 dev|staging)
-    API_URL=https://staging.${DEPLOYMENT}.data.humancellatlas.org/v1
+    API_URL=https://upload.${DEPLOYMENT}.data.humancellatlas.org/v1
     ;;
 local)
     API_URL=http://localhost:5000/v1
@@ -30,7 +30,7 @@ if [ -z "${INGEST_API_KEY}" ] ; then
     exit 1
 fi
 
-STAGING_AREA_ID=deadbeef-dead-dead-dead-beeeeeeeeeef
+UPLOAD_AREA_ID=deadbeef-dead-dead-dead-beeeeeeeeeef
 
 function pause() {
     echo
@@ -55,7 +55,7 @@ function run_curl() {
 
 function create() {
     echo "CREATE:"
-    run_curl -X POST "${API_URL}/area/${STAGING_AREA_ID}"
+    run_curl -X POST "${API_URL}/area/${UPLOAD_AREA_ID}"
     urn=`jq .urn /tmp/response`
 }
 
@@ -67,36 +67,36 @@ function upload() {
 
 function put_file() {
     echo "PUT FILE VIA API:"
-    echo curl -X PUT -H \"Content-type: application/json\" -d 'sdfjdsllfds' "${API_URL}/area/${STAGING_AREA_ID}/foobar2.json"
+    echo curl -X PUT -H \"Content-type: application/json\" -d 'sdfjdsllfds' "${API_URL}/area/${UPLOAD_AREA_ID}/foobar2.json"
     curl --silent --dump-header /tmp/header --output /tmp/response  \
          -X PUT \
          -H "Api-Key: ${INGEST_API_KEY}" \
          -H "Content-type: application/json" \
          -d 'sdfjdsllfds' \
-         "${API_URL}/area/${STAGING_AREA_ID}/foobar2.json"
+         "${API_URL}/area/${UPLOAD_AREA_ID}/foobar2.json"
     head -1 /tmp/header
     cat /tmp/response
 }
 
 function list() {
     echo "LIST FILES:"
-    echo curl "${API_URL}/area/${STAGING_AREA_ID}"
-    curl --silent "${API_URL}/area/${STAGING_AREA_ID}"
+    echo curl "${API_URL}/area/${UPLOAD_AREA_ID}"
+    curl --silent "${API_URL}/area/${UPLOAD_AREA_ID}"
 }
 
 function lock() {
     echo "LOCK:"
-    run_curl -X POST "${API_URL}/area/${STAGING_AREA_ID}/lock"
+    run_curl -X POST "${API_URL}/area/${UPLOAD_AREA_ID}/lock"
 }
 
 function unlock() {
     echo "UNLOCK:"
-    run_curl -X DELETE "${API_URL}/area/${STAGING_AREA_ID}/lock"
+    run_curl -X DELETE "${API_URL}/area/${UPLOAD_AREA_ID}/lock"
 }
 
 function delete() {
     echo "DELETE:"
-    run_curl -X DELETE "${API_URL}/area/${STAGING_AREA_ID}"
+    run_curl -X DELETE "${API_URL}/area/${UPLOAD_AREA_ID}"
 }
 
 if [[ "${INGEST_API_KEY}" == "" ]] ; then

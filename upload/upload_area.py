@@ -3,24 +3,24 @@ import json, base64, os
 import boto3
 from botocore.exceptions import ClientError
 
-import staging
+import upload
 
 s3 = boto3.resource('s3')
 iam = boto3.resource('iam')
 
 
-class StagingArea:
+class UploadArea:
 
-    STAGING_BUCKET_NAME = os.environ['STAGING_S3_BUCKET']
-    STAGING_USER_NAME_PREFIX = f"staging-{os.environ['DEPLOYMENT_STAGE']}-user-"
-    STAGING_ACCESS_POLICY_PREFIX = 'staging-'
+    UPLOAD_BUCKET_NAME = os.environ['UPLOAD_SERVICE_S3_BUCKET']
+    UPLOAD_USER_NAME_PREFIX = f"upload-{os.environ['DEPLOYMENT_STAGE']}-user-"
+    UPLOAD_ACCESS_POLICY_PREFIX = 'upload-'
 
     def __init__(self, uuid):
         self.uuid = uuid
         self.key_prefix = f"{self.uuid}/"
         self.key_prefix_length = len(self.key_prefix)
-        self.bucket_name = self.STAGING_BUCKET_NAME
-        self.user_name = self.STAGING_USER_NAME_PREFIX + uuid
+        self.bucket_name = self.UPLOAD_BUCKET_NAME
+        self.user_name = self.UPLOAD_USER_NAME_PREFIX + uuid
         self._bucket = s3.Bucket(self.bucket_name)
         self._user = iam.User(self.user_name)
         self._credentials = None
@@ -28,9 +28,9 @@ class StagingArea:
     def urn(self):
         encoded_credentials = base64.b64encode(json.dumps(self._credentials).encode('utf8')).decode('utf8')
         if os.environ['DEPLOYMENT_STAGE'] == 'prod':
-            return f"hca:sta:aws:{self.uuid}:{encoded_credentials}"
+            return f"dcp:upl:aws:{self.uuid}:{encoded_credentials}"
         else:
-            return f"hca:sta:aws:{os.environ['DEPLOYMENT_STAGE']}:{self.uuid}:{encoded_credentials}"
+            return f"dcp:upl:aws:{os.environ['DEPLOYMENT_STAGE']}:{self.uuid}:{encoded_credentials}"
 
     def create(self):
         self._user.create()
@@ -44,13 +44,13 @@ class StagingArea:
         for policy in self._user.policies.all():
             policy.delete()
         self._user.delete()
-        self._empty_staging_area()
+        self._empty_upload_area()
 
     def ls(self):
         return {'files': self._file_list()}
 
     def lock(self):
-        policy_name = self.STAGING_ACCESS_POLICY_PREFIX + self.uuid
+        policy_name = self.UPLOAD_ACCESS_POLICY_PREFIX + self.uuid
         iam.UserPolicy(self.user_name, policy_name).delete()
 
     def unlock(self):
@@ -60,25 +60,25 @@ class StagingArea:
         key = f"{self.uuid}/{filename}"
         s3obj = self._bucket.Object(key)
         s3obj.put(Body=content, ContentType=content_type)
-        file = staging.StagedFile(staging_area=self, s3object=s3obj)
+        file = upload.UploadedFile(upload_area=self, s3object=s3obj)
         file.compute_checksums()
         file.save_tags()
         return file.info()
 
-    def staged_file(self, filename):
+    def uploaded_file(self, filename):
         key = f"{self.uuid}/{filename}"
-        return staging.StagedFile.from_s3_key(self, key)
+        return upload.UploadedFile.from_s3_key(self, key)
 
     def is_extant(self) -> bool:
-        # A staging area is a folder, however there is no concept of folder in S3.
-        # The existence of a staging area is the existence of the user who can access that area.
+        # A upload area is a folder, however there is no concept of folder in S3.
+        # The existence of a upload area is the existence of the user who can access that area.
         try:
             self._user.load()
             return True
         except ClientError as e:
             if e.response['Error']['Code'] != 'NoSuchEntity':
-                raise staging.StagingException(status=500, title="Unexpected Error",
-                                               detail=f"bucket.load() returned {e.response}")
+                raise upload.UploadException(status=500, title="Unexpected Error",
+                                             detail=f"bucket.load() returned {e.response}")
             return False
 
     def _file_list(self):
@@ -87,12 +87,12 @@ class StagingArea:
         for page in paginator.paginate(Bucket=self.bucket_name, Prefix=self.key_prefix):
             if 'Contents' in page:
                 for o in page['Contents']:
-                    file = staging.StagedFile.from_s3_key(self, o['Key'])
+                    file = upload.UploadedFile.from_s3_key(self, o['Key'])
                     file_list.append(file.info())
         return file_list
 
     def _set_access_policy(self):
-        policy_name = self.STAGING_ACCESS_POLICY_PREFIX + self.uuid
+        policy_name = self.UPLOAD_ACCESS_POLICY_PREFIX + self.uuid
         policy_document = {
             "Version": "2012-10-17",
             "Statement": [
@@ -115,7 +115,7 @@ class StagingArea:
         self._credentials = {'AWS_ACCESS_KEY_ID': credentials.access_key_id,
                              'AWS_SECRET_ACCESS_KEY': credentials.secret_access_key}
 
-    def _empty_staging_area(self):
+    def _empty_upload_area(self):
         paginator = s3.meta.client.get_paginator('list_objects')
         for page in paginator.paginate(Bucket=self.bucket_name, Prefix=self.uuid):
             if 'Contents' in page:

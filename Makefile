@@ -1,6 +1,6 @@
 include common.mk
 .PHONY: tests
-MODULES=staging tests
+MODULES=upload tests
 
 test: lint tests
 
@@ -8,7 +8,7 @@ lint:
 	flake8 $(MODULES) *.py
 
 tests:
-	PYTHONWARNINGS=ignore:ResourceWarning coverage run --source=staging \
+	PYTHONWARNINGS=ignore:ResourceWarning coverage run --source=upload \
 		-m unittest discover --start-directory tests --top-level-directory . --verbose
 
 clean clobber build deploy:
@@ -16,7 +16,7 @@ clean clobber build deploy:
 	$(MAKE) -C daemons $@
 
 run: build
-	scripts/staging-api
+	scripts/upload-api
 
 secrets:
 	openssl enc -aes-256-cbc -k $(enc_password) -in config/deployment_secrets.dev     -out config/deployment_secrets.dev.enc

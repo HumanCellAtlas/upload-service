@@ -10,7 +10,7 @@ function tag_deploy(){
          --header "Authorization: token ${GITHUB_ACCESS_TOKEN}" \
          --header "Content-Type: application/json" \
          --data @- \
-         https://api.github.com/repos/HumanCellAtlas/staging-service/git/refs <<-EOF
+         https://api.github.com/repos/HumanCellAtlas/upload-service/git/refs <<-EOF
 {
   "ref": "`date -u +"refs/tags/${DEPLOYMENT_STAGE}-%Y%m%dT%H%M%SZ"`",
   "sha": "`git rev-parse HEAD`"

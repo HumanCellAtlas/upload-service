@@ -1,2 +1,2 @@
 build clean clobber deploy:
-	$(MAKE) -C staging-checksum-daemon $@
+	$(MAKE) -C upload-checksum-daemon $@

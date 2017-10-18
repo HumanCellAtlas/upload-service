@@ -2,51 +2,6 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "hcaCiCdLambdaReadAccess",
-      "Action": [
-        "lambda:ListFunctions",
-        "lambda:ListTags",
-        "lambda:TagResource",
-        "apigateway:*"
-      ],
-      "Resource": "*",
-      "Effect": "Allow"
-    },
-    {
-      "Sid": "hcaCiCdLambdaAdminAccess",
-      "Action": [
-        "lambda:*"
-      ],
-      "Resource": [
-        "arn:aws:lambda:*:$account_id:function:staging-*"
-      ],
-      "Effect": "Allow"
-    },
-        {
-      "Effect": "Allow",
-      "Action": [
-        "s3:GetBucketNotification",
-        "s3:PutBucketNotification"
-      ],
-      "Resource": [
-        "arn:aws:s3:::org-humancellatlas-staging-*"
-      ]
-    },
-    {
-      "Sid": "AllowChaliceToSetRolePolicyForLambda",
-      "Effect": "Allow",
-      "Action": [
-        "iam:AttachRolePolicy",
-        "iam:DeleteRolePolicy",
-        "iam:DetachRolePolicy",
-        "iam:PutRolePolicy",
-        "iam:GetRole"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
       "Sid": "Stmt1471020565001",
       "Effect": "Allow",
       "Action": [

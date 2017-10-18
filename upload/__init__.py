@@ -1,8 +1,8 @@
-from .staged_file import StagedFile
-from .staging_area import StagingArea
+from .uploaded_file import UploadedFile
+from .upload_area import UploadArea
 
 
-class StagingException(Exception):
+class UploadException(Exception):
     def __init__(self, status: int, title: str, detail: str=None, *args) -> None:
         super().__init__(*args)
         self.status = status

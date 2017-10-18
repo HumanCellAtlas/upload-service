@@ -1,24 +1,24 @@
-# Human Cell Atlas, Data Coordination Platform, Staging System
+# Data Coordination Platform, Upload Service
 
-[![Staging Service Build Status](https://travis-ci.org/HumanCellAtlas/staging-service.svg?branch=master)](https://travis-ci.org/HumanCellAtlas/staging-service)
-[![CodeClimate Maintainability](https://api.codeclimate.com/v1/badges/4003ac7c053107137873/maintainability)](https://codeclimate.com/github/HumanCellAtlas/staging-service/maintainability)
-[![Test Coverage](https://api.codeclimate.com/v1/badges/4003ac7c053107137873/test_coverage)](https://codeclimate.com/github/HumanCellAtlas/staging-service/test_coverage)
+[![Staging Service Build Status](https://travis-ci.org/HumanCellAtlas/upload-service.svg?branch=master)](https://travis-ci.org/HumanCellAtlas/upload-service)
+[![CodeClimate Maintainability](https://api.codeclimate.com/v1/badges/4003ac7c053107137873/maintainability)](https://codeclimate.com/github/HumanCellAtlas/upload-service/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/4003ac7c053107137873/test_coverage)](https://codeclimate.com/github/HumanCellAtlas/upload-service/test_coverage)
 
 ## Overview
 
-The HCA DCP Staging Service (HCASS) provides a file staging facility for the HCA.
-It stages files into AWS S3 and computes chceksums for the files.
-Staging Areas are created/deleted using a REST API, which is secured so only
-the HCA DCP Ingestion Service may use it.
+The DCP Upload Service provides a file staging facility for the DCP.
+It stages files into AWS S3 and computes checksums for the files.
+Upload Areas are created/deleted using a REST API, which is secured so only
+the DCP Ingestion Service may use it.
 
 ## Components
 
-### staging-api
+### upload-api
 
-Is a Lambda Chalice/Connexion/Flask app that presents the HCASS REST API.
-The API is defined using an OpenAPI 2.0 Specification (Swagger) in `config/staging-api.yml`.
+Is a Lambda Chalice/Connexion/Flask app that presents the Upload Service REST API.
+The API is defined using an OpenAPI 2.0 Specification (Swagger) in `config/upload-api.yml`.
 
-### staging-checksum-daemon
+### upload-checksum-daemon
 
 Is a Lambda Domovoi app triggered by S3 ObjectCreated events that computes checksums for uploaded files.
 
@@ -45,14 +45,14 @@ make test
 ## Running Locally
 ```bash
 source config/environment
-scripts/staging-api
+scripts/upload-api
 ```
 
 ## Deployment
 
 Deployment is typically performed by Travis.
 
-To manually deploy to e.g. staging:
+To manually deploy to e.g. the staging deployment:
 
 ```bash
 export enc_password="<password-used-to-encrypt-deployment-secrets>"

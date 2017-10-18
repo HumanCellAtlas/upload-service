@@ -1,0 +1,50 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "dcpCiCdLambdaReadAccess",
+      "Action": [
+        "lambda:ListFunctions",
+        "lambda:ListTags",
+        "lambda:TagResource",
+        "apigateway:*"
+      ],
+      "Resource": "*",
+      "Effect": "Allow"
+    },
+    {
+      "Sid": "dcpCiCdLambdaAdminAccess",
+      "Action": [
+        "lambda:*"
+      ],
+      "Resource": [
+        "arn:aws:lambda:*:$account_id:function:upload-*"
+      ],
+      "Effect": "Allow"
+    },
+        {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetBucketNotification",
+        "s3:PutBucketNotification"
+      ],
+      "Resource": [
+        "arn:aws:s3:::org-humancellatlas-upload-*"
+      ]
+    },
+    {
+      "Sid": "AllowChaliceToSetRolePolicyForLambda",
+      "Effect": "Allow",
+      "Action": [
+        "iam:AttachRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:GetRole"
+      ],
+      "Resource": [
+        "*"
+      ]
+    }
+  ]
+}

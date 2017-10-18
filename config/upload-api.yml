@@ -1,9 +1,9 @@
 swagger: '2.0'
 info:
-  title: HCA DCP Staging Service API
-  description: Human Cell Atlas Data Coordination Platform Staging Service API
+  title: DCP Upload Service API
+  description: Data Coordination Platform Upload Service API
   version: "0.0.2"
-host: staging.dev.data.humancellatlas.org
+host: upload.dev.data.humancellatlas.org
 schemes:
   - https
 basePath: /v1
@@ -20,32 +20,32 @@ securityDefinitions:
     in: header
 
 paths:
-  /area/{staging_area_id}:
+  /area/{upload_area_id}:
 
     post:
-      summary: Create a Staging Area
-      operationId: staging.api_server.area.create
-      description: Create a Staging Area
+      summary: Create an Upload Area
+      operationId: upload.api_server.area.create
+      description: Create an Upload Area
       tags:
         - For Ingestion Service Use Only
       security:
         - api_key: []
       parameters:
-        - name: staging_area_id
+        - name: upload_area_id
           in: path
-          description: A RFC4122-compliant ID for the staging area.
+          description: A RFC4122-compliant ID for the upload area.
           required: true
           type: string
           pattern: "[A-Za-z0-9]{8}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{12}"
       responses:
         201:
-          description: Staging area was created.
+          description: Upload area was created.
           schema:
             type: object
             properties:
               urn:
                 type: string
-                description: URN of the form "hca:sta:aws:<staging-area-id>:<encoded-credentials>".
+                description: URN of the form "dcp:upl:aws:<upload-area-id>:<encoded-credentials>".
             required:
               - urn
         401:
@@ -53,7 +53,7 @@ paths:
           schema:
             $ref: '#/definitions/Error'
         409:
-          description: A staging area with that ID already exists.
+          description: An upload area with that ID already exists.
           schema:
             $ref: '#/definitions/Error'
         default:
@@ -62,28 +62,28 @@ paths:
             $ref: '#/definitions/Error'
 
     delete:
-      summary: Delete a Staging Area
-      operationId: staging.api_server.area.delete
-      description: Delete a Staging Area
+      summary: Delete an Upload Area
+      operationId: upload.api_server.area.delete
+      description: Delete an Upload Area
       tags:
         - For Ingestion Service Use Only
       security:
         - api_key: []
       parameters:
-        - name: staging_area_id
+        - name: upload_area_id
           in: path
-          description: A RFC4122-compliant ID for the staging area.
+          description: A RFC4122-compliant ID for the upload area.
           required: true
           type: string
       responses:
         204:
-          description: Staging area was deleted.
+          description: Upload area was deleted.
         401:
           description: Unauthorized. Did you provide an Api-Key header?
           schema:
             $ref: '#/definitions/Error'
         404:
-          description: Could not find a staging area with that ID.
+          description: Could not find an upload area with that ID.
           schema:
             $ref: '#/definitions/Error'
         default:
@@ -92,16 +92,16 @@ paths:
             $ref: '#/definitions/Error'
 
     get:
-      summary: List files in a staging area
-      operationId: staging.api_server.area.list_files
+      summary: List files in an upload area
+      operationId: upload.api_server.area.list_files
       description: |
-        Provide a JSON object listing all the files in a staging area, including their checkums.
+        Provide a JSON object listing all the files in an upload area, including their checkums.
       tags:
         - All
       parameters:
-        - name: staging_area_id
+        - name: upload_area_id
           in: path
-          description: A RFC4122-compliant ID for the staging area.
+          description: A RFC4122-compliant ID for the upload area.
           required: true
           type: string
       responses:
@@ -117,7 +117,7 @@ paths:
             required:
               - files
         404:
-          description: Could not find a staging area with that ID.
+          description: Could not find an upload area with that ID.
           schema:
             $ref: '#/definitions/Error'
         default:
@@ -125,26 +125,26 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /area/{staging_area_id}/lock:
+  /area/{upload_area_id}/lock:
 
     post:
-      summary: Lock a Staging Area
-      operationId: staging.api_server.area.lock
+      summary: Lock an Upload Area
+      operationId: upload.api_server.area.lock
       description: |
-        Lock a Staging area so that submitters may not add/delete/rename files in it.
+        Lock an Upload area so that submitters may not add/delete/rename files in it.
       tags:
         - For Ingestion Service Use Only
       security:
         - api_key: []
       parameters:
-        - name: staging_area_id
+        - name: upload_area_id
           in: path
-          description: A RFC4122-compliant ID for the staging area.
+          description: A RFC4122-compliant ID for the upload area.
           required: true
           type: string
       responses:
         204:
-          description: Staging area is now locked.
+          description: Upload area is now locked.
         401:
           description: Unauthorized. Did you provide an Api-Key header?
           schema:
@@ -155,23 +155,23 @@ paths:
             $ref: '#/definitions/Error'
 
     delete:
-      summary: Unock a Staging Area
-      operationId: staging.api_server.area.unlock
+      summary: Unock an Upload Area
+      operationId: upload.api_server.area.unlock
       description: |
-        Unlock a Staging area so that submitters may add/delete/rename files in it.
+        Unlock an Upload area so that submitters may add/delete/rename files in it.
       tags:
         - For Ingestion Service Use Only
       security:
         - api_key: []
       parameters:
-        - name: staging_area_id
+        - name: upload_area_id
           in: path
-          description: A RFC4122-compliant ID for the staging area.
+          description: A RFC4122-compliant ID for the upload area.
           required: true
           type: string
       responses:
         204:
-          description: Staging area is now unlocked.
+          description: Upload area is now unlocked.
         401:
           description: Unauthorized. Did you provide an Api-Key header?
           schema:
@@ -181,25 +181,25 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /area/{staging_area_id}/{filename}:
+  /area/{upload_area_id}/{filename}:
 
     put:
       summary: Store a metadata file
-      operationId: staging.api_server.area.put_file
-      description: Store a JSON metadata file in the staging area.
+      operationId: upload.api_server.area.put_file
+      description: Store a JSON metadata file in the upload area.
       tags:
         - For Ingestion Service Use Only
       security:
         - api_key: []
       parameters:
-        - name: staging_area_id
+        - name: upload_area_id
           in: path
-          description: A RFC4122-compliant ID for the staging area.
+          description: A RFC4122-compliant ID for the upload area.
           required: true
           type: string
         - name: filename
           in: path
-          description: Name of file to be placed in staging area.
+          description: Name of file to be placed in upload area.
           required: true
           type: string
         - name: body

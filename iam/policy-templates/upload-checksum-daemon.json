@@ -44,7 +44,7 @@
         "s3:PutObjectTagging"
       ],
       "Resource": [
-        "arn:aws:s3:::$STAGING_S3_BUCKET/*"
+        "arn:aws:s3:::$UPLOAD_SERVICE_S3_BUCKET/*"
       ]
     }
   ]

@@ -39,7 +39,7 @@ function detect_existing_deployment() {
 }
 
 function create_policy_document() {
-    cat "$policy_template" | envsubst '$STAGING_S3_BUCKET $account_id $stage $region_name' > "$policy_json"
+    cat "$policy_template" | envsubst '$UPLOAD_SERVICE_S3_BUCKET $account_id $stage $region_name' > "$policy_json"
     cp "$policy_json" "$stage_policy_json"
 }
 

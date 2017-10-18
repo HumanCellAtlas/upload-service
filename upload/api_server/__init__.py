@@ -9,7 +9,7 @@ import requests
 from connexion.resolver import RestyResolver
 from connexion.lifecycle import ConnexionResponse
 
-from .. import StagingException
+from .. import UploadException
 
 logging.getLogger('boto3').setLevel(logging.WARNING)
 logging.getLogger('botocore').setLevel(logging.WARNING)
@@ -25,8 +25,8 @@ def get_logger():
 
 def create_app():
     app = connexion.App(__name__)
-    resolver = RestyResolver("staging.api_server", collection_endpoint_name="list")
-    app.add_api('../../config/staging-api.yml', resolver=resolver, validate_responses=True)
+    resolver = RestyResolver("upload.api_server", collection_endpoint_name="list")
+    app.add_api('../../config/upload-api.yml', resolver=resolver, validate_responses=True)
     return app
 
 
@@ -36,7 +36,7 @@ def return_exceptions_as_http_errors(func):
         try:
             return func(*args, **kwargs)
 
-        except StagingException as ex:
+        except UploadException as ex:
             status = ex.status
             title = ex.title
             detail = ex.detail
@@ -57,12 +57,12 @@ def require_authenticated(func):
         try:
             api_key = connexion.request.headers.get('Api-Key', None)
             if not api_key == os.environ['INGEST_API_KEY']:
-                raise StagingException(status=requests.codes.unauthorized, title="Access Denied.")
+                raise UploadException(status=requests.codes.unauthorized, title="Access Denied.")
             return func(*args, **kwargs)
         except KeyError:
-            raise StagingException(status=requests.codes.server_error,
-                                   title="Authentication is not configured",
-                                   detail="INGEST_API_KEY is not set.")
+            raise UploadException(status=requests.codes.server_error,
+                                  title="Authentication is not configured",
+                                  detail="INGEST_API_KEY is not set.")
 
     return wrapper
 

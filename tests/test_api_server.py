@@ -32,7 +32,7 @@ class TestApiWithoutAuthSetup(unittest.TestCase):
         super().__init__(*args, **kwargs)
         # Setup app
         flask_app = connexion.FlaskApp(__name__)
-        flask_app.add_api('../config/staging-api.yml')
+        flask_app.add_api('../config/upload-api.yml')
         self.client = flask_app.app.test_client()
 
     def test_create_raises_exception(self):
@@ -50,10 +50,10 @@ class TestApi(unittest.TestCase):
         self.s3_mock.start()
         self.iam_mock = mock_iam()
         self.iam_mock.start()
-        # Setup Staging bucket
-        self.staging_bucket_name = os.environ['STAGING_S3_BUCKET']
-        self.staging_bucket = boto3.resource('s3').Bucket(self.staging_bucket_name)
-        self.staging_bucket.create()
+        # Setup upload bucket
+        self.upload_bucket_name = os.environ['UPLOAD_SERVICE_S3_BUCKET']
+        self.upload_bucket = boto3.resource('s3').Bucket(self.upload_bucket_name)
+        self.upload_bucket.create()
         self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
         # Setup authentication
         self.api_key = "foo"
@@ -61,7 +61,7 @@ class TestApi(unittest.TestCase):
         self.authentication_header = {'Api-Key': self.api_key}
         # Setup app
         flask_app = connexion.FlaskApp(__name__)
-        flask_app.add_api('../config/staging-api.yml')
+        flask_app.add_api('../config/upload-api.yml')
         self.client = flask_app.app.test_client()
 
     def tearDown(self):
@@ -76,7 +76,7 @@ class TestApi(unittest.TestCase):
 
         self.assertEqual(response.status_code, 401)
 
-    def test_create_with_unused_staging_area_id(self):
+    def test_create_with_unused_upload_area_id(self):
         area_id = str(uuid.uuid4())
 
         response = self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
@@ -85,21 +85,21 @@ class TestApi(unittest.TestCase):
         body = json.loads(response.data)
         self.assertEqual(list(body.keys()), ['urn'])
         urnbits = body['urn'].split(':')
-        self.assertEqual(len(urnbits), 6)  # hca:sta:aws:dev:uuid:encoded-creds
-        self.assertEqual(urnbits[0:4], ['hca', 'sta', 'aws', 'dev'])
+        self.assertEqual(len(urnbits), 6)  # dcp:upl:aws:dev:uuid:encoded-creds
+        self.assertEqual(urnbits[0:4], ['dcp', 'upl', 'aws', 'dev'])
         self.assertEqual(urnbits[4], area_id)
         creds = json.loads(base64.b64decode(urnbits[5].encode('utf8')))
         self.assertEqual(list(creds.keys()), ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'])
 
         try:
-            user_name = f"staging-{self.deployment_stage}-user-{area_id}"
+            user_name = f"upload-{self.deployment_stage}-user-{area_id}"
             user = boto3.resource('iam').User(user_name)
             user.load()
         except ClientError:
             self.fail("Staging area (user) was not created!")
-        policy = user.Policy(f"staging-{area_id}")
+        policy = user.Policy(f"upload-{area_id}")
         self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
-        self.assertIn(f'"Resource": ["arn:aws:s3:::{self.staging_bucket_name}/{area_id}/*"]',
+        self.assertIn(f'"Resource": ["arn:aws:s3:::{self.upload_bucket_name}/{area_id}/*"]',
                       policy.policy_document)
 
     def test_create_in_production_only_returns_5_part_urn(self):
@@ -113,15 +113,15 @@ class TestApi(unittest.TestCase):
             body = json.loads(response.data)
             self.assertEqual(list(body.keys()), ['urn'])
             urnbits = body['urn'].split(':')
-            self.assertEqual(len(urnbits), 5)  # hca:sta:aws:uuid:encoded-creds
-            self.assertEqual(urnbits[0:3], ['hca', 'sta', 'aws'])
+            self.assertEqual(len(urnbits), 5)  # dcp:upl:aws:uuid:encoded-creds
+            self.assertEqual(urnbits[0:3], ['dcp', 'upl', 'aws'])
             self.assertEqual(urnbits[3], area_id)
             creds = json.loads(base64.b64decode(urnbits[4].encode('utf8')))
             self.assertEqual(list(creds.keys()), ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'])
 
-    def test_create_with_already_used_staging_area_id(self):
+    def test_create_with_already_used_upload_area_id(self):
         area_id = str(uuid.uuid4())
-        user_name = f"staging-{self.deployment_stage}-user-{area_id}"
+        user_name = f"upload-{self.deployment_stage}-user-{area_id}"
         boto3.resource('iam').User(user_name).create()
 
         response = self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
@@ -129,11 +129,11 @@ class TestApi(unittest.TestCase):
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.content_type, 'application/problem+json')
 
-    def test_delete_with_id_of_real_non_empty_staging_area(self):
+    def test_delete_with_id_of_real_non_empty_upload_area(self):
         area_id = str(uuid.uuid4())
-        user = boto3.resource('iam').User(f"staging-{self.deployment_stage}-user-{area_id}")
+        user = boto3.resource('iam').User(f"upload-{self.deployment_stage}-user-{area_id}")
         user.create()
-        bucket = boto3.resource('s3').Bucket(self.staging_bucket_name)
+        bucket = boto3.resource('s3').Bucket(self.upload_bucket_name)
         bucket.create()
         obj = bucket.Object(f'{area_id}/test_file')
         obj.put(Body="foo")
@@ -146,7 +146,7 @@ class TestApi(unittest.TestCase):
         with self.assertRaises(ClientError):
             obj.load()
 
-    def test_delete_with_unused_used_staging_area_id(self):
+    def test_delete_with_unused_used_upload_area_id(self):
         area_id = str(uuid.uuid4())
 
         response = self.client.delete(f"/v1/area/{area_id}", headers=self.authentication_header)
@@ -154,11 +154,11 @@ class TestApi(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.content_type, 'application/problem+json')
 
-    def test_locking_of_staging_area(self):
+    def test_locking_of_upload_area(self):
         area_id = str(uuid.uuid4())
         self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
-        user_name = f"staging-{self.deployment_stage}-user-" + area_id
-        policy_name = 'staging-' + area_id
+        user_name = f"upload-{self.deployment_stage}-user-" + area_id
+        policy_name = 'upload-' + area_id
         policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
         self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
 
@@ -183,11 +183,11 @@ class TestApi(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.content_type, 'application/json')
         self.assertEqual(json.loads(response.data), {
-            'staging_area_id': area_id,
+            'upload_area_id': area_id,
             'name': 'some.json',
             'size': 16,
             'content_type': 'application/json',
-            'url': f"s3://{self.staging_bucket_name}/{area_id}/some.json",
+            'url': f"s3://{self.upload_bucket_name}/{area_id}/some.json",
             'checksums': {
                 "crc32c": "FE9ADA52",
                 "s3_etag": "18f17fbfdd21cf869d664731e10d4ffd",
@@ -195,15 +195,15 @@ class TestApi(unittest.TestCase):
                 "sha256": "29f5572dfbe07e1db9422a4c84e3f9e455aab9ac596f0bf3340be17841f26f70"
             }
         })
-        obj = self.staging_bucket.Object(f"{area_id}/some.json")
+        obj = self.upload_bucket.Object(f"{area_id}/some.json")
         self.assertEqual(obj.get()['Body'].read(), "exquisite corpse".encode('utf8'))
 
     def test_list_files(self):
         area_id = str(uuid.uuid4())
         self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
         file1_key = f"{area_id}/file1.json"
-        self.staging_bucket.Object(file1_key).put(Body="foo", ContentType="application/json")
-        boto3.client('s3').put_object_tagging(Bucket=self.staging_bucket_name, Key=file1_key, Tagging={
+        self.upload_bucket.Object(file1_key).put(Body="foo", ContentType="application/json")
+        boto3.client('s3').put_object_tagging(Bucket=self.upload_bucket_name, Key=file1_key, Tagging={
             'TagSet': [
                 {'Key': 'hca-dss-content-type', 'Value': 'application/json'},
                 {'Key': 'hca-dss-s3_etag', 'Value': '1'},
@@ -213,10 +213,10 @@ class TestApi(unittest.TestCase):
             ]
         })
         file2_key = f"{area_id}/file2.json"
-        self.staging_bucket.Object(file2_key).put(Body="ba ba ba ba ba barane", ContentType="hca-data-file")
-        boto3.client('s3').put_object_tagging(Bucket=self.staging_bucket_name, Key=file2_key, Tagging={
+        self.upload_bucket.Object(file2_key).put(Body="ba ba ba ba ba barane", ContentType="dcp/data-file")
+        boto3.client('s3').put_object_tagging(Bucket=self.upload_bucket_name, Key=file2_key, Tagging={
             'TagSet': [
-                {'Key': 'hca-dss-content-type', 'Value': 'hca-data-file'},
+                {'Key': 'hca-dss-content-type', 'Value': 'dcp/data-file'},
                 {'Key': 'hca-dss-s3_etag', 'Value': 'a'},
                 {'Key': 'hca-dss-sha1', 'Value': 'b'},
                 {'Key': 'hca-dss-sha256', 'Value': 'c'},
@@ -232,29 +232,29 @@ class TestApi(unittest.TestCase):
         for fileinfo in data['files']:
             del fileinfo['size']
         self.assertEqual(data['files'][0], {
-            'staging_area_id': area_id,
+            'upload_area_id': area_id,
             'name': 'file1.json',
             'content_type': 'application/json',
-            'url': f"s3://{self.staging_bucket_name}/{area_id}/file1.json",
+            'url': f"s3://{self.upload_bucket_name}/{area_id}/file1.json",
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         })
         self.assertEqual(data['files'][1], {
-            'staging_area_id': area_id,
+            'upload_area_id': area_id,
             'name': 'file2.json',
-            'content_type': 'hca-data-file',
-            'url': f"s3://{self.staging_bucket_name}/{area_id}/file2.json",
+            'content_type': 'dcp/data-file',
+            'url': f"s3://{self.upload_bucket_name}/{area_id}/file2.json",
             'checksums': {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'}
         })
 
-    def test_list_files_only_lists_files_in_my_staging_area(self):
+    def test_list_files_only_lists_files_in_my_upload_area(self):
         area1_id = str(uuid.uuid4())
         area2_id = str(uuid.uuid4())
         self.client.post(f"/v1/area/{area1_id}", headers=self.authentication_header)
         self.client.post(f"/v1/area/{area2_id}", headers=self.authentication_header)
         area_1_files = ['file1', 'file2']
         area_2_files = ['file3', 'file4']
-        [self.staging_bucket.Object(f"{area1_id}/{file}").put(Body="foo") for file in area_1_files]
-        [self.staging_bucket.Object(f"{area2_id}/{file}").put(Body="foo") for file in area_2_files]
+        [self.upload_bucket.Object(f"{area1_id}/{file}").put(Body="foo") for file in area_1_files]
+        [self.upload_bucket.Object(f"{area2_id}/{file}").put(Body="foo") for file in area_2_files]
 
         response = self.client.get(f"/v1/area/{area2_id}")
 
