@@ -15,8 +15,6 @@ MB = KB * KB
 class UploadedFile:
 
     CHECKSUM_TAGS = ('hca-dss-sha1', 'hca-dss-sha256', 'hca-dss-crc32c', 'hca-dss-s3_etag')
-    MIME_TAG = 'hca-dss-content-type'
-    DCP_TAGS = CHECKSUM_TAGS + (MIME_TAG,)
 
     @classmethod
     def from_listobject_dict(cls, upload_area, object_dict):
@@ -56,7 +54,6 @@ class UploadedFile:
 
     def save_tags(self):
         tags = {
-            'hca-dss-content-type': self.s3obj.content_type,
             'hca-dss-s3_etag': self.checksums['s3_etag'],
             'hca-dss-sha1': self.checksums['sha1'],
             'hca-dss-sha256': self.checksums['sha256'],
@@ -72,7 +69,7 @@ class UploadedFile:
         if 'TagSet' in tagging:
             tag_set = self._decode_tags(tagging['TagSet'])
             # k[8:] = cut off "hca-dss-" in tag name
-            tags = {k[8:]: v for k, v in tag_set.items() if k in self.DCP_TAGS}
+            tags = {k[8:]: v for k, v in tag_set.items() if k in self.CHECKSUM_TAGS}
         return tags
 
     def _transfer_config(self) -> TransferConfig:
