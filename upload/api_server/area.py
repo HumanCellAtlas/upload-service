@@ -12,7 +12,7 @@ def create(upload_area_id: str):
         raise UploadException(status=requests.codes.conflict, title="Upload Area Already Exists",
                               detail=f"Upload area {upload_area_id} already exists.")
     upload_area.create()
-    return {'urn': upload_area.urn()}, requests.codes.created
+    return {'urn': upload_area.urn}, requests.codes.created
 
 
 @return_exceptions_as_http_errors

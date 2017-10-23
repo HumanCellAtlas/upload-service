@@ -25,6 +25,7 @@ class UploadArea:
         self._user = iam.User(self.user_name)
         self._credentials = None
 
+    @property
     def urn(self):
         encoded_credentials = base64.b64encode(json.dumps(self._credentials).encode('utf8')).decode('utf8')
         if os.environ['DEPLOYMENT_STAGE'] == 'prod':
