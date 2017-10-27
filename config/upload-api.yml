@@ -37,6 +37,11 @@ paths:
           required: true
           type: string
           pattern: "[A-Za-z0-9]{8}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{12}"
+        - name: Api-Key
+          in: header
+          description: An authentication token provided by the service provider.
+          required: true
+          type: string
       responses:
         201:
           description: Upload area was created.
@@ -49,7 +54,7 @@ paths:
             required:
               - urn
         401:
-          description: Unauthorized. Did you provide an Api-Key header?
+          description: Unrecognized Api-Key.
           schema:
             $ref: '#/definitions/Error'
         409:
@@ -75,11 +80,16 @@ paths:
           description: A RFC4122-compliant ID for the upload area.
           required: true
           type: string
+        - name: Api-Key
+          in: header
+          description: An authentication token provided by the service provider.
+          required: true
+          type: string
       responses:
         204:
           description: Upload area was deleted.
         401:
-          description: Unauthorized. Did you provide an Api-Key header?
+          description: Unrecognized Api-Key.
           schema:
             $ref: '#/definitions/Error'
         404:
@@ -142,11 +152,16 @@ paths:
           description: A RFC4122-compliant ID for the upload area.
           required: true
           type: string
+        - name: Api-Key
+          in: header
+          description: An authentication token provided by the service provider.
+          required: true
+          type: string
       responses:
         204:
           description: Upload area is now locked.
         401:
-          description: Unauthorized. Did you provide an Api-Key header?
+          description: Unrecognized Api-Key.
           schema:
             $ref: '#/definitions/Error'
         default:
@@ -169,11 +184,16 @@ paths:
           description: A RFC4122-compliant ID for the upload area.
           required: true
           type: string
+        - name: Api-Key
+          in: header
+          description: An authentication token provided by the service provider.
+          required: true
+          type: string
       responses:
         204:
           description: Upload area is now unlocked.
         401:
-          description: Unauthorized. Did you provide an Api-Key header?
+          description: Unrecognized Api-Key.
           schema:
             $ref: '#/definitions/Error'
         default:
@@ -207,13 +227,18 @@ paths:
           schema:
             type: string
             format: binary
+        - name: Api-Key
+          in: header
+          description: An authentication token provided by the service provider.
+          required: true
+          type: string
       responses:
         201:
           description: File was stored sucessfully.
           schema:
             $ref: "#/definitions/FileInfo"
         401:
-          description: Unauthorized. Did you provide an Api-Key header?
+          description: Unrecognized Api-Key.
           schema:
             $ref: '#/definitions/Error'
         default:

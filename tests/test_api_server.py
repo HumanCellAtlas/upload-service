@@ -36,7 +36,7 @@ class TestApiWithoutAuthSetup(unittest.TestCase):
         self.client = flask_app.app.test_client()
 
     def test_create_raises_exception(self):
-        response = self.client.post(f"/v1/area/{str(uuid.uuid4())}")
+        response = self.client.post(f"/v1/area/{str(uuid.uuid4())}", headers={'Api-Key': 'foo'})
 
         self.assertEqual(response.status_code, 500)
         self.assertIn("INGEST_API_KEY", response.data.decode('utf8'))
@@ -73,7 +73,13 @@ class TestApi(unittest.TestCase):
         area_id = str(uuid.uuid4())
 
         response = self.client.post(f"/v1/area/{area_id}")
+        self.assertEqual(response.status_code, 400)
+        self.assertRegex(str(response.data), "Missing header.*Api-Key")
 
+    def test_create_with_bad_api_key(self):
+        area_id = str(uuid.uuid4())
+
+        response = self.client.post(f"/v1/area/{area_id}", headers={'Api-Key': 'I HAXX0RD U'})
         self.assertEqual(response.status_code, 401)
 
     def test_create_with_unused_upload_area_id(self):
