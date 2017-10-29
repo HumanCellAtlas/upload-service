@@ -246,6 +246,30 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+  /config/client:
+    get:
+      summary: Configuration information required by upload clients to use this Upload Service deployment.
+      operationId: upload.api_server.config.client_config
+      description: |
+        Provides information about this deployment, required for the Upload Service clients to operate.
+      tags:
+        - All
+      responses:
+        200:
+          description: Upload Service deployment configuration information.
+          schema:
+            type: object
+            properties:
+              upload_bucket_template:
+                type: string
+                description: Template in Python str.format() for producing an upload bucket name.
+            required:
+              - upload_bucket_template
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
 definitions:
 
   Error:
