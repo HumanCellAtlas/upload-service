@@ -1,19 +1,26 @@
-import sys, unittest, os
+import sys
+import unittest
+import os
 from unittest.mock import Mock, patch
-import boto3, uuid
+import uuid
+
+import boto3
 from moto import mock_s3
+
+from . import EnvironmentSetup
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
     sys.path.insert(0, pkg_root)  # noqa
 
 from upload.checksum_daemon import ChecksumDaemon  # noqa
-import upload.checksum_daemon.checksum_daemon  # noqa
 
 
 class TestChecksumDaemon(unittest.TestCase):
 
-    UPLOAD_BUCKET_NAME = os.environ['UPLOAD_SERVICE_S3_BUCKET']
+    UPLOAD_BUCKET_PREFIX = 'bogobucket-'
+    DEPLOYMENT_STAGE = 'test'
+    UPLOAD_BUCKET_NAME = f'{UPLOAD_BUCKET_PREFIX}{DEPLOYMENT_STAGE}'
 
     def setUp(self):
         # Setup mock AWS
@@ -24,7 +31,11 @@ class TestChecksumDaemon(unittest.TestCase):
         self.upload_bucket.create()
         # daemon
         context = Mock()
-        self.daemon = ChecksumDaemon(context)
+        with EnvironmentSetup({
+            'UPLOAD_SERVICE_BUCKET_PREFIX': self.UPLOAD_BUCKET_PREFIX,
+            'DEPLOYMENT_STAGE': self.DEPLOYMENT_STAGE
+        }):
+            self.daemon = ChecksumDaemon(context)
         # File
         self.area_id = str(uuid.uuid4())
         self.content_type = 'text/html'
@@ -41,7 +52,7 @@ class TestChecksumDaemon(unittest.TestCase):
                     'configurationId': 'NGZjNmM0M2ItZTk0Yi00YTExLWE2NDMtMzYzY2UwN2EyM2Nj',
                     'bucket': {'name': self.UPLOAD_BUCKET_NAME,
                                'ownerIdentity': {'principalId': 'A29PZ5XRQWJUUM'},
-                               'arn': 'arn:aws:s3:::org-humancellatlas-upload-dev'},
+                               'arn': f'arn:aws:s3:::{self.UPLOAD_BUCKET_NAME}'},
                     'object': {'key': self.file_key, 'size': 16,
                                'eTag': 'fea79d4ad9be6cf1c76a219bb735f85a',
                                'sequencer': '0059BB193641C4EAB0'}}}]}

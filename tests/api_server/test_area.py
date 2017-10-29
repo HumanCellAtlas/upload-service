@@ -7,23 +7,11 @@ import boto3
 from botocore.exceptions import ClientError
 from moto import mock_s3, mock_iam
 
+from .. import EnvironmentSetup
+
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
     sys.path.insert(0, pkg_root)  # noqa
-
-
-class SetDeploymentStage:
-
-    def __init__(self, stage):
-        self.temporary_stage = stage
-
-    def __enter__(self):
-        self.saved_stage = os.environ['DEPLOYMENT_STAGE']
-        os.environ['DEPLOYMENT_STAGE'] = self.temporary_stage
-        return None
-
-    def __exit__(self, type, value, traceback):
-        os.environ['DEPLOYMENT_STAGE'] = self.saved_stage
 
 
 class TestApiWithoutAuthSetup(unittest.TestCase):
@@ -31,9 +19,14 @@ class TestApiWithoutAuthSetup(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Setup app
-        flask_app = connexion.FlaskApp(__name__)
-        flask_app.add_api('../config/upload-api.yml')
-        self.client = flask_app.app.test_client()
+        self.upload_bucket_prefix = "bogobucket-"
+        with EnvironmentSetup({
+            'UPLOAD_SERVICE_BUCKET_PREFIX': self.upload_bucket_prefix,
+            'DEPLOYMENT_STAGE': 'test'
+        }):
+            flask_app = connexion.FlaskApp(__name__)
+            flask_app.add_api('../../config/upload-api.yml')
+            self.client = flask_app.app.test_client()
 
     def test_create_raises_exception(self):
         response = self.client.post(f"/v1/area/{str(uuid.uuid4())}", headers={'Api-Key': 'foo'})
@@ -42,7 +35,7 @@ class TestApiWithoutAuthSetup(unittest.TestCase):
         self.assertIn("INGEST_API_KEY", response.data.decode('utf8'))
 
 
-class TestApi(unittest.TestCase):
+class TestAreaApi(unittest.TestCase):
 
     def setUp(self):
         # Setup mock AWS
@@ -51,23 +44,27 @@ class TestApi(unittest.TestCase):
         self.iam_mock = mock_iam()
         self.iam_mock.start()
         # Setup upload bucket
-        self.upload_bucket_name = os.environ['UPLOAD_SERVICE_S3_BUCKET']
+        self.deployment_stage = 'test'
+        self.upload_bucket_prefix = "bogobucket-"
+        self.upload_bucket_name = f'bogobucket-{self.deployment_stage}'
         self.upload_bucket = boto3.resource('s3').Bucket(self.upload_bucket_name)
         self.upload_bucket.create()
-        self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
         # Setup authentication
         self.api_key = "foo"
-        os.environ['INGEST_API_KEY'] = self.api_key
         self.authentication_header = {'Api-Key': self.api_key}
         # Setup app
-        flask_app = connexion.FlaskApp(__name__)
-        flask_app.add_api('../config/upload-api.yml')
-        self.client = flask_app.app.test_client()
+        with EnvironmentSetup({
+            'UPLOAD_SERVICE_BUCKET_PREFIX': self.upload_bucket_prefix,
+            'DEPLOYMENT_STAGE': self.deployment_stage,
+            'INGEST_API_KEY': self.api_key
+        }):
+            flask_app = connexion.FlaskApp(__name__)
+            flask_app.add_api('../../config/upload-api.yml')
+            self.client = flask_app.app.test_client()
 
     def tearDown(self):
         self.s3_mock.stop()
         self.iam_mock.stop()
-        del os.environ['INGEST_API_KEY']
 
     def test_create_while_unauthenticated(self):
         area_id = str(uuid.uuid4())
@@ -109,7 +106,7 @@ class TestApi(unittest.TestCase):
                       policy.policy_document)
 
     def test_create_in_production_only_returns_5_part_urn(self):
-        with SetDeploymentStage('prod'):
+        with EnvironmentSetup({'DEPLOYMENT_STAGE': 'prod'}):
 
             area_id = str(uuid.uuid4())
 
@@ -267,6 +264,7 @@ class TestApi(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.data)
         self.assertEqual([file['name'] for file in data['files']], area_2_files)
+
 
 if __name__ == '__main__':
     unittest.main()

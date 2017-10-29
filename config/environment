@@ -5,7 +5,7 @@ export SS_HOME="$(cd -P "$(dirname "$SOURCE")/.." && pwd)"
 
 set -a
 DEPLOYMENT_STAGE="${DEPLOYMENT_STAGE:-dev}"
-UPLOAD_SERVICE_S3_BUCKET=org-humancellatlas-upload-${DEPLOYMENT_STAGE}
+UPLOAD_SERVICE_BUCKET_PREFIX='org-humancellatlas-upload-'
 AWS_DEFAULT_REGION=us-east-1
 set +a
 

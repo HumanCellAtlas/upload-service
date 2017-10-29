@@ -17,7 +17,7 @@ fi
 export iam_principal_type=$1 iam_principal_name=$2
 export region_name=$(aws configure get region)
 export account_id=$(aws sts get-caller-identity | jq -r .Account)
-envsubst_vars='$UPLOAD_SERVICE_S3_BUCKET $region_name $account_id'
+envsubst_vars='$UPLOAD_SERVICE_BUCKET_PREFIX DEPLOYMENT_STAGE $region_name $account_id'
 
 for policy_json in $(dirname $0)/../iam/policy-templates/ci-cd-*.json ; do
 

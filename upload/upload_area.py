@@ -11,7 +11,7 @@ iam = boto3.resource('iam')
 
 class UploadArea:
 
-    UPLOAD_BUCKET_NAME = os.environ['UPLOAD_SERVICE_S3_BUCKET']
+    UPLOAD_BUCKET_NAME = os.environ['UPLOAD_SERVICE_BUCKET_PREFIX'] + os.environ['DEPLOYMENT_STAGE']
     UPLOAD_USER_NAME_PREFIX = f"upload-{os.environ['DEPLOYMENT_STAGE']}-user-"
     UPLOAD_ACCESS_POLICY_PREFIX = 'upload-'
 
