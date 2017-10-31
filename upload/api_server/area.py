@@ -1,4 +1,5 @@
-import connexion, requests
+import connexion
+import requests
 
 from . import UploadException, return_exceptions_as_http_errors, require_authenticated
 from .. import UploadArea

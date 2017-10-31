@@ -66,6 +66,11 @@ class UploadArea:
         self._set_access_policy()
 
     def store_file(self, filename, content, content_type):
+        media_type = upload.MediaType.from_string(content_type)
+        if 'dcp-type' not in media_type.parameters:
+            raise upload.UploadException(status=400, title="Invalid Content-Type",
+                                         detail="Content-Type is missing parameter 'dcp-type'," +
+                                         " e.g. 'application/json; dcp-type=\"metadata/sample\"'.")
         key = f"{self.uuid}/{filename}"
         s3obj = self._bucket.Object(key)
         s3obj.put(Body=content, ContentType=content_type)

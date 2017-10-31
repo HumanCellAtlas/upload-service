@@ -185,11 +185,24 @@ class TestAreaApi(unittest.TestCase):
         policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
         self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
 
-    def test_put_file(self):
+    def test_put_file_without_content_type_dcp_type_param(self):
         area_id = str(uuid.uuid4())
         self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
         headers = {'Content-Type': 'application/json'}
         headers.update(self.authentication_header)
+
+        response = self.client.put(f"/v1/area/{area_id}/some.json", data="exquisite corpse", headers=headers)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content_type, 'application/problem+json')
+        self.assertIn("missing parameter \'dcp-type\'", response.data.decode('utf8'))
+
+    def test_put_file(self):
+        area_id = str(uuid.uuid4())
+        self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
+        headers = {'Content-Type': 'application/json; dcp-type="metadata/sample"'}
+        headers.update(self.authentication_header)
+
         response = self.client.put(f"/v1/area/{area_id}/some.json", data="exquisite corpse", headers=headers)
 
         self.assertEqual(response.status_code, 201)
@@ -198,7 +211,7 @@ class TestAreaApi(unittest.TestCase):
             'upload_area_id': area_id,
             'name': 'some.json',
             'size': 16,
-            'content_type': 'application/json',
+            'content_type': 'application/json; dcp-type="metadata/sample"',
             'url': f"s3://{self.upload_bucket_name}/{area_id}/some.json",
             'checksums': {
                 "crc32c": "FE9ADA52",
