@@ -11,27 +11,36 @@ iam = boto3.resource('iam')
 
 class UploadArea:
 
-    UPLOAD_BUCKET_NAME = os.environ['UPLOAD_SERVICE_BUCKET_PREFIX'] + os.environ['DEPLOYMENT_STAGE']
-    UPLOAD_USER_NAME_PREFIX = f"upload-{os.environ['DEPLOYMENT_STAGE']}-user-"
-    UPLOAD_ACCESS_POLICY_PREFIX = 'upload-'
+    BUCKET_NAME_TEMPLATE = "{prefix}{deployment_stage}"
+    USER_NAME_TEMPLATE = "upload-{deployment_stage}-user-{uuid}"
+    ACCESS_POLICY_NAME_TEMPLATE = "upload-{uuid}"
 
     def __init__(self, uuid):
         self.uuid = uuid
         self.key_prefix = f"{self.uuid}/"
         self.key_prefix_length = len(self.key_prefix)
-        self.bucket_name = self.UPLOAD_BUCKET_NAME
-        self.user_name = self.UPLOAD_USER_NAME_PREFIX + uuid
+        self.bucket_name = self.BUCKET_NAME_TEMPLATE.format(prefix=os.environ['UPLOAD_SERVICE_BUCKET_PREFIX'],
+                                                            deployment_stage=self._deployment_stage)
+        self.user_name = self.USER_NAME_TEMPLATE.format(deployment_stage=self._deployment_stage, uuid=uuid)
         self._bucket = s3.Bucket(self.bucket_name)
         self._user = iam.User(self.user_name)
         self._credentials = None
 
     @property
+    def _deployment_stage(cls):
+        return os.environ['DEPLOYMENT_STAGE']
+
+    @property
     def urn(self):
         encoded_credentials = base64.b64encode(json.dumps(self._credentials).encode('utf8')).decode('utf8')
-        if os.environ['DEPLOYMENT_STAGE'] == 'prod':
+        if self._deployment_stage == 'prod':
             return f"dcp:upl:aws:{self.uuid}:{encoded_credentials}"
         else:
-            return f"dcp:upl:aws:{os.environ['DEPLOYMENT_STAGE']}:{self.uuid}:{encoded_credentials}"
+            return f"dcp:upl:aws:{self._deployment_stage}:{self.uuid}:{encoded_credentials}"
+
+    @property
+    def access_policy_name(self):
+        return self.ACCESS_POLICY_NAME_TEMPLATE.format(uuid=self.uuid)
 
     def create(self):
         self._user.create()
@@ -51,8 +60,7 @@ class UploadArea:
         return {'files': self._file_list()}
 
     def lock(self):
-        policy_name = self.UPLOAD_ACCESS_POLICY_PREFIX + self.uuid
-        iam.UserPolicy(self.user_name, policy_name).delete()
+        iam.UserPolicy(self.user_name, self.access_policy_name).delete()
 
     def unlock(self):
         self._set_access_policy()
@@ -93,7 +101,6 @@ class UploadArea:
         return file_list
 
     def _set_access_policy(self):
-        policy_name = self.UPLOAD_ACCESS_POLICY_PREFIX + self.uuid
         policy_document = {
             "Version": "2012-10-17",
             "Statement": [
@@ -109,7 +116,7 @@ class UploadArea:
                 }
             ]
         }
-        self._user.create_policy(PolicyName=policy_name, PolicyDocument=json.dumps(policy_document))
+        self._user.create_policy(PolicyName=self.access_policy_name, PolicyDocument=json.dumps(policy_document))
 
     def _create_credentials(self):
         credentials = self._user.create_access_key_pair()

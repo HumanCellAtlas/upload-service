@@ -14,25 +14,49 @@ if __name__ == '__main__':
     sys.path.insert(0, pkg_root)  # noqa
 
 
-class TestApiWithoutAuthSetup(unittest.TestCase):
+class TestApiAuthenticationErrors(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         # Setup app
-        self.upload_bucket_prefix = "bogobucket-"
         with EnvironmentSetup({
-            'UPLOAD_SERVICE_BUCKET_PREFIX': self.upload_bucket_prefix,
-            'DEPLOYMENT_STAGE': 'test'
+            'UPLOAD_SERVICE_BUCKET_PREFIX': "bogobucket-",
+            'DEPLOYMENT_STAGE': 'test',
+            'INGEST_API_KEY': 'unguessable'
         }):
             flask_app = connexion.FlaskApp(__name__)
             flask_app.add_api('../../config/upload-api.yml')
             self.client = flask_app.app.test_client()
 
-    def test_create_raises_exception(self):
-        response = self.client.post(f"/v1/area/{str(uuid.uuid4())}", headers={'Api-Key': 'foo'})
+    def test_call_without_auth_setup(self):
+        # Use a different app instance started without an INGEST_API_KEY
+        with EnvironmentSetup({
+            'UPLOAD_SERVICE_BUCKET_PREFIX': "bogobucket-",
+            'DEPLOYMENT_STAGE': 'test',
+            'INGEST_API_KEY': None
+        }):
+            flask_app = connexion.FlaskApp(__name__)
+            flask_app.add_api('../../config/upload-api.yml')
+            self.client = flask_app.app.test_client()
+
+            response = self.client.post(f"/v1/area/{str(uuid.uuid4())}", headers={'Api-Key': 'foo'})
 
         self.assertEqual(response.status_code, 500)
         self.assertIn("INGEST_API_KEY", response.data.decode('utf8'))
+
+    def test_call_with_unautenticated(self):
+
+        response = self.client.post(f"/v1/area/{str(uuid.uuid4())}")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertRegex(str(response.data), "Missing header.*Api-Key")
+
+    def test_call_with_bad_api_key(self):
+
+        response = self.client.post(f"/v1/area/{str(uuid.uuid4())}", headers={'Api-Key': 'I-HAXX0RED-U'})
+
+        self.assertEqual(response.status_code, 401)
 
 
 class TestAreaApi(unittest.TestCase):
@@ -45,18 +69,16 @@ class TestAreaApi(unittest.TestCase):
         self.iam_mock.start()
         # Setup upload bucket
         self.deployment_stage = 'test'
-        self.upload_bucket_prefix = "bogobucket-"
         self.upload_bucket_name = f'bogobucket-{self.deployment_stage}'
         self.upload_bucket = boto3.resource('s3').Bucket(self.upload_bucket_name)
         self.upload_bucket.create()
         # Setup authentication
         self.api_key = "foo"
+        os.environ['INGEST_API_KEY'] = self.api_key
         self.authentication_header = {'Api-Key': self.api_key}
         # Setup app
         with EnvironmentSetup({
-            'UPLOAD_SERVICE_BUCKET_PREFIX': self.upload_bucket_prefix,
-            'DEPLOYMENT_STAGE': self.deployment_stage,
-            'INGEST_API_KEY': self.api_key
+            'DEPLOYMENT_STAGE': self.deployment_stage
         }):
             flask_app = connexion.FlaskApp(__name__)
             flask_app.add_api('../../config/upload-api.yml')
@@ -65,19 +87,6 @@ class TestAreaApi(unittest.TestCase):
     def tearDown(self):
         self.s3_mock.stop()
         self.iam_mock.stop()
-
-    def test_create_while_unauthenticated(self):
-        area_id = str(uuid.uuid4())
-
-        response = self.client.post(f"/v1/area/{area_id}")
-        self.assertEqual(response.status_code, 400)
-        self.assertRegex(str(response.data), "Missing header.*Api-Key")
-
-    def test_create_with_bad_api_key(self):
-        area_id = str(uuid.uuid4())
-
-        response = self.client.post(f"/v1/area/{area_id}", headers={'Api-Key': 'I HAXX0RD U'})
-        self.assertEqual(response.status_code, 401)
 
     def test_create_with_unused_upload_area_id(self):
         area_id = str(uuid.uuid4())
@@ -89,7 +98,7 @@ class TestAreaApi(unittest.TestCase):
         self.assertEqual(list(body.keys()), ['urn'])
         urnbits = body['urn'].split(':')
         self.assertEqual(len(urnbits), 6)  # dcp:upl:aws:dev:uuid:encoded-creds
-        self.assertEqual(urnbits[0:4], ['dcp', 'upl', 'aws', 'dev'])
+        self.assertEqual(urnbits[0:4], ['dcp', 'upl', 'aws', 'test'])
         self.assertEqual(urnbits[4], area_id)
         creds = json.loads(base64.b64decode(urnbits[5].encode('utf8')))
         self.assertEqual(list(creds.keys()), ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'])
@@ -105,7 +114,7 @@ class TestAreaApi(unittest.TestCase):
         self.assertIn(f'"Resource": ["arn:aws:s3:::{self.upload_bucket_name}/{area_id}/*"]',
                       policy.policy_document)
 
-    def test_create_in_production_only_returns_5_part_urn(self):
+    def test_create_in_production_returns_5_part_urn(self):
         with EnvironmentSetup({'DEPLOYMENT_STAGE': 'prod'}):
 
             area_id = str(uuid.uuid4())
