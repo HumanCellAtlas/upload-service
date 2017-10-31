@@ -56,13 +56,14 @@ function run_curl() {
 function create() {
     echo "CREATE:"
     run_curl -X POST "${API_URL}/area/${UPLOAD_AREA_ID}"
-    urn=`jq .urn /tmp/response`
+    urn=`jq -r .urn /tmp/response`
+    hca upload select "${urn}"
 }
 
 function upload() {
     echo "STAGE A FILE:"
-    echo scripts/stage_file.py LICENSE ${urn}
-    scripts/stage_file.py LICENSE ${urn}
+    echo hca upload file LICENSE
+    hca upload file LICENSE
 }
 
 function put_file() {
@@ -71,7 +72,7 @@ function put_file() {
     curl --silent --dump-header /tmp/header --output /tmp/response  \
          -X PUT \
          -H "Api-Key: ${INGEST_API_KEY}" \
-         -H "Content-type: application/json" \
+         -H "Content-type: application/json; dcp-type=\"metadata/foo\"" \
          -d 'sdfjdsllfds' \
          "${API_URL}/area/${UPLOAD_AREA_ID}/foobar2.json"
     head -1 /tmp/header
