@@ -10,7 +10,7 @@ sys.path.insert(0, pkg_root)  # noqa
 
 from upload.checksum_daemon import ChecksumDaemon
 
-UPLOAD_SERVICE_S3_BUCKET = os.environ['UPLOAD_SERVICE_BUCKET_PREFIX'] + os.environ['DEPLOYMENT_STAGE']
+UPLOAD_SERVICE_S3_BUCKET = os.environ['BUCKET_NAME_PREFIX'] + os.environ['DEPLOYMENT_STAGE']
 
 app = domovoi.Domovoi()
 

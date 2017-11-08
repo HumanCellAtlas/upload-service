@@ -32,7 +32,7 @@ class TestChecksumDaemon(unittest.TestCase):
         # daemon
         context = Mock()
         with EnvironmentSetup({
-            'UPLOAD_SERVICE_BUCKET_PREFIX': self.UPLOAD_BUCKET_PREFIX,
+            'BUCKET_NAME_PREFIX': self.UPLOAD_BUCKET_PREFIX,
             'DEPLOYMENT_STAGE': self.DEPLOYMENT_STAGE
         }):
             self.daemon = ChecksumDaemon(context)

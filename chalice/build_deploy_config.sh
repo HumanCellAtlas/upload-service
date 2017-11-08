@@ -26,7 +26,7 @@ config_json=".chalice/config.json"
 policy_json=".chalice/policy.json"
 stage_policy_json=".chalice/policy-${stage}.json"
 export app_name=$(cat "$config_json" | jq -r .app_name)
-policy_template="${SS_HOME}/iam/policy-templates/${app_name}-lambda.json"
+policy_template="${PROJECT_ROOT}/iam/policy-templates/${app_name}-lambda.json"
 export lambda_name="${app_name}-${stage}"
 export region_name=$(aws configure get region)
 export account_id=$(aws sts get-caller-identity | jq -r .Account)
@@ -51,5 +51,5 @@ if [[ ${CI:-} == true ]]; then
     cat "$config_json" | jq .manage_iam_role=false | jq .iam_role_arn=env.iam_role_arn | sponge "$config_json"
 fi
 
-cat "$policy_template" | envsubst '$UPLOAD_SERVICE_BUCKET_PREFIX $DEPLOYMENT_STAGE $account_id $stage $region_name' > "$policy_json"
+cat "$policy_template" | envsubst '$BUCKET_NAME_PREFIX $DEPLOYMENT_STAGE $account_id $stage $region_name' > "$policy_json"
 cp "$policy_json" "$stage_policy_json"

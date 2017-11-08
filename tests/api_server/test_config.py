@@ -12,7 +12,7 @@ if __name__ == '__main__':
 class TestConfigApi(unittest.TestCase):
 
     def setUp(self):
-        with EnvironmentSetup({'UPLOAD_SERVICE_BUCKET_PREFIX': 'bogobucket-',
+        with EnvironmentSetup({'BUCKET_NAME_PREFIX': 'bogobucket-',
                                'DEPLOYMENT_STAGE': 'test'}):
             flask_app = connexion.FlaskApp(__name__)
             flask_app.add_api('../../config/upload-api.yml')
@@ -20,7 +20,7 @@ class TestConfigApi(unittest.TestCase):
 
     def test_client_config(self):
 
-        with EnvironmentSetup({'UPLOAD_SERVICE_BUCKET_PREFIX': 'bogo-prefix-',
+        with EnvironmentSetup({'BUCKET_NAME_PREFIX': 'bogo-prefix-',
                                'DEPLOYMENT_STAGE': 'test'}):
 
             response = self.client.get("/v1/config/client")

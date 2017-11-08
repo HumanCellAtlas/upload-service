@@ -1,6 +1,6 @@
 SHELL=/bin/bash
 
-ifndef SS_HOME
+ifndef PROJECT_ROOT
 $(error Please run "source config/environment" in the data-store repo root directory before running make commands)
 endif
 

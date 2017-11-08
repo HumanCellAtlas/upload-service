@@ -21,7 +21,7 @@ class TestApiAuthenticationErrors(unittest.TestCase):
 
         # Setup app
         with EnvironmentSetup({
-            'UPLOAD_SERVICE_BUCKET_PREFIX': "bogobucket-",
+            'BUCKET_NAME_PREFIX': "bogobucket-",
             'DEPLOYMENT_STAGE': 'test',
             'INGEST_API_KEY': 'unguessable'
         }):
@@ -32,7 +32,7 @@ class TestApiAuthenticationErrors(unittest.TestCase):
     def test_call_without_auth_setup(self):
         # Use a different app instance started without an INGEST_API_KEY
         with EnvironmentSetup({
-            'UPLOAD_SERVICE_BUCKET_PREFIX': "bogobucket-",
+            'BUCKET_NAME_PREFIX': "bogobucket-",
             'DEPLOYMENT_STAGE': 'test',
             'INGEST_API_KEY': None
         }):

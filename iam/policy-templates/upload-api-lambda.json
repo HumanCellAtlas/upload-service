@@ -16,7 +16,7 @@
         "s3:ListBucket"
       ],
       "Resource": [
-        "arn:aws:s3:::${UPLOAD_SERVICE_BUCKET_PREFIX}${DEPLOYMENT_STAGE}"
+        "arn:aws:s3:::${BUCKET_NAME_PREFIX}${DEPLOYMENT_STAGE}"
       ]
     },
     {
@@ -29,7 +29,7 @@
         "s3:PutObjectTagging"
       ],
       "Resource": [
-        "arn:aws:s3:::${UPLOAD_SERVICE_BUCKET_PREFIX}${DEPLOYMENT_STAGE}/*"
+        "arn:aws:s3:::${BUCKET_NAME_PREFIX}${DEPLOYMENT_STAGE}/*"
       ]
     },
     {

@@ -19,7 +19,7 @@ class UploadArea:
         self.uuid = uuid
         self.key_prefix = f"{self.uuid}/"
         self.key_prefix_length = len(self.key_prefix)
-        self.bucket_name = self.BUCKET_NAME_TEMPLATE.format(prefix=os.environ['UPLOAD_SERVICE_BUCKET_PREFIX'],
+        self.bucket_name = self.BUCKET_NAME_TEMPLATE.format(prefix=os.environ['BUCKET_NAME_PREFIX'],
                                                             deployment_stage=self._deployment_stage)
         self.user_name = self.USER_NAME_TEMPLATE.format(deployment_stage=self._deployment_stage, uuid=uuid)
         self._bucket = s3.Bucket(self.bucket_name)

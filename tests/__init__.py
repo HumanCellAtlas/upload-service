@@ -1,7 +1,7 @@
 import os
 
 os.environ['DEPLOYMENT_STAGE'] = 'test'
-os.environ['UPLOAD_SERVICE_BUCKET_PREFIX'] = 'bogobucket-'
+os.environ['BUCKET_NAME_PREFIX'] = 'bogobucket-'
 
 
 class EnvironmentSetup:
