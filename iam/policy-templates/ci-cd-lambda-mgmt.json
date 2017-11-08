@@ -29,7 +29,7 @@
         "s3:PutBucketNotification"
       ],
       "Resource": [
-        "arn:aws:s3:::org-humancellatlas-upload-*"
+        "arn:aws:s3:::${BUCKET_NAME_PREFIX}-*"
       ]
     },
     {
