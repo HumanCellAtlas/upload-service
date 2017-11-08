@@ -3,7 +3,7 @@ info:
   title: DCP Upload Service API
   description: Data Coordination Platform Upload Service API
   version: "0.0.2"
-host: upload.dev.data.humancellatlas.org
+host: ${API_HOST}
 schemes:
   - https
 basePath: /v1

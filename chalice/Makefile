@@ -12,7 +12,7 @@ build:
 	cp ../requirements.txt .
 	cp -R ../upload ../checksumming_io chalicelib
 	mkdir -p chalicelib/config
-	cp ../config/upload-api.yml chalicelib/config
+	envsubst '$$API_HOST' < ../config/upload-api.yml > chalicelib/config/upload-api.yml
 	shopt -s nullglob; for wheel in vendor.in/*/*.whl; do unzip -q -o -d vendor $$wheel; done
 
 deploy: clean build

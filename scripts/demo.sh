@@ -17,7 +17,7 @@ DEPLOYMENT=$1
 
 case ${DEPLOYMENT} in
 dev|staging)
-    API_URL=https://upload.${DEPLOYMENT}.data.humancellatlas.org/v1
+    API_URL=https://${SERVICE_NAME}.${DEPLOYMENT}.${DCP_DNS_DOMAIN}/v1
     ;;
 local)
     API_URL=http://localhost:5000/v1

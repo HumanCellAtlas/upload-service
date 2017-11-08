@@ -3,4 +3,5 @@
 #
 set -a
 INGEST_API_KEY=secret
+API_HOST=${SERVICE_NAME}.${DEPLOYMENT_STAGE}.${DCP_DNS_DOMAIN}
 set +a

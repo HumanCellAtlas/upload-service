@@ -2,11 +2,11 @@
 
 import os, sys, unittest, uuid, json, base64
 
-import connexion
 import boto3
 from botocore.exceptions import ClientError
 from moto import mock_s3, mock_iam
 
+from . import client_for_test_api_server
 from .. import EnvironmentSetup
 
 if __name__ == '__main__':
@@ -25,9 +25,7 @@ class TestApiAuthenticationErrors(unittest.TestCase):
             'DEPLOYMENT_STAGE': 'test',
             'INGEST_API_KEY': 'unguessable'
         }):
-            flask_app = connexion.FlaskApp(__name__)
-            flask_app.add_api('../../config/upload-api.yml')
-            self.client = flask_app.app.test_client()
+            self.client = client_for_test_api_server()
 
     def test_call_without_auth_setup(self):
         # Use a different app instance started without an INGEST_API_KEY
@@ -36,9 +34,7 @@ class TestApiAuthenticationErrors(unittest.TestCase):
             'DEPLOYMENT_STAGE': 'test',
             'INGEST_API_KEY': None
         }):
-            flask_app = connexion.FlaskApp(__name__)
-            flask_app.add_api('../../config/upload-api.yml')
-            self.client = flask_app.app.test_client()
+            self.client = client_for_test_api_server()
 
             response = self.client.post(f"/v1/area/{str(uuid.uuid4())}", headers={'Api-Key': 'foo'})
 
@@ -80,9 +76,7 @@ class TestAreaApi(unittest.TestCase):
         with EnvironmentSetup({
             'DEPLOYMENT_STAGE': self.deployment_stage
         }):
-            flask_app = connexion.FlaskApp(__name__)
-            flask_app.add_api('../../config/upload-api.yml')
-            self.client = flask_app.app.test_client()
+            self.client = client_for_test_api_server()
 
     def tearDown(self):
         self.s3_mock.stop()
