@@ -3,6 +3,8 @@ import json, base64, os
 import boto3
 from botocore.exceptions import ClientError
 
+from dcplib.media_types import DcpMediaType
+
 import upload
 
 s3 = boto3.resource('s3')
@@ -66,7 +68,7 @@ class UploadArea:
         self._set_access_policy()
 
     def store_file(self, filename, content, content_type):
-        media_type = upload.MediaType.from_string(content_type)
+        media_type = DcpMediaType.from_string(content_type)
         if 'dcp-type' not in media_type.parameters:
             raise upload.UploadException(status=400, title="Invalid Content-Type",
                                          detail="Content-Type is missing parameter 'dcp-type'," +

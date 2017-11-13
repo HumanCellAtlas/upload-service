@@ -1,6 +1,5 @@
 from .uploaded_file import UploadedFile
 from .upload_area import UploadArea
-from .media_type import MediaType
 
 
 class UploadException(Exception):
