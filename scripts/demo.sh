@@ -100,6 +100,11 @@ function delete() {
     run_curl -X DELETE "${API_URL}/area/${UPLOAD_AREA_ID}"
 }
 
+function forget() {
+    echo "FORGET:"
+    hca upload forget `jq -r .upload.current_area ~/.config/hca/config.json`
+}
+
 if [[ "${INGEST_API_KEY}" == "" ]] ; then
     echo "Please set INGEST_API_KEY"
     exit 1
@@ -114,4 +119,5 @@ echo "PROVE AREA IS LOCKED:"
 upload ; pause
 unlock ; waiting ; pause
 upload ; pause
-delete
+delete ; pause
+forget
