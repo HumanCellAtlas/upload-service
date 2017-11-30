@@ -6,12 +6,16 @@ api_gateway_name="upload.api_server"
 
 set_api_id() {
     # Identify the id of our API Gateway by finding a gateway with a REST API with resource with an integration that
-    # ececutes our lambda.
-    for api_id in $(aws apigateway get-rest-apis | jq -r '.items[] | select(.name=="${api_gateway_name}") | .id') ; do
+    # executes our lambda.
+    echo "Finding API ID:"
+    for api_id in $(aws apigateway get-rest-apis | jq -r ".items[] | select(.name==\"${api_gateway_name}\") | .id") ; do
+        echo "    checking api ${api_id}"
         for resource_id in $(aws apigateway get-resources --rest-api-id $api_id | jq -r .items[].id); do
+            echo "        checking resource ${resource_id}"
             aws apigateway get-integration --rest-api-id $api_id --resource-id $resource_id --http-method GET >/dev/null 2>&1 || continue
             uri=$(aws apigateway get-integration --rest-api-id $api_id --resource-id $resource_id --http-method GET | jq -r .uri)
             if [[ $uri == *"$lambda_arn"* ]]; then
+                echo "            Found id! ${api_id}"
                 export api_id
                 return
             fi
@@ -26,6 +30,7 @@ function setup_deployed_json() {
         rm -f "$deployed_json"
     else
         set_api_id
+        echo "API Gateway ID = ${api_id}"
         cat "$deployed_json" | jq .$stage.api_handler_arn=env.lambda_arn | jq .$stage.rest_api_id=env.api_id | sponge "$deployed_json"
     fi
 }
@@ -64,6 +69,9 @@ export lambda_name="${app_name}-${stage}"
 export region_name=$(aws configure get region)
 export account_id=$(aws sts get-caller-identity | jq -r .Account)
 export lambda_arn=$(aws lambda list-functions | jq -r '.Functions[] | select(.FunctionName==env.lambda_name) | .FunctionArn')
+echo "app_name=${app_name}"
+echo "lambda_name=${lambda_name}"
+echo "lambda_arn=${lambda_arn}"
 
 setup_deployed_json
 setup_config_json
