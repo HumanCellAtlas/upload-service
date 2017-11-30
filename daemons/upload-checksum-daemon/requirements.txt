@@ -2,3 +2,4 @@ boto3
 crcmod
 pika
 requests
+dcplib
