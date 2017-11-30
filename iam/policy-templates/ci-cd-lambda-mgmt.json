@@ -40,7 +40,8 @@
         "iam:DeleteRolePolicy",
         "iam:DetachRolePolicy",
         "iam:PutRolePolicy",
-        "iam:GetRole"
+        "iam:GetRole",
+        "iam:PassRole"
       ],
       "Resource": [
         "*"
