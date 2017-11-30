@@ -27,9 +27,10 @@
       "Action": [
         "s3:GetBucketNotification",
         "s3:PutBucketNotification"
+
       ],
       "Resource": [
-        "arn:aws:s3:::${BUCKET_NAME_PREFIX}-*"
+        "arn:aws:s3:::${BUCKET_NAME_PREFIX}*"
       ]
     },
     {
