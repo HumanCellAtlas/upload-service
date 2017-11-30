@@ -7,6 +7,7 @@ set -a
 SERVICE_NAME='upload'
 DCP_DNS_DOMAIN='data.humancellatlas.org'
 DEPLOYMENT_STAGE="${DEPLOYMENT_STAGE:-dev}"
+API_HOST=${SERVICE_NAME}.${DEPLOYMENT_STAGE}.${DCP_DNS_DOMAIN}
 BUCKET_NAME_PREFIX='org-humancellatlas-upload-'
 AWS_DEFAULT_REGION='us-east-1'
 set +a
