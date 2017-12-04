@@ -11,7 +11,7 @@ export daemon_name=$1 stage=$2
 export lambda_name="${daemon_name}-${stage}" iam_role_name="${daemon_name}-${stage}"
 config_json=".chalice/config.json"
 deployed_json=".chalice/deployed.json"
-policy_template="${PROJECT_ROOT}/iam/policy-templates/${daemon_name}.json"
+policy_template="${PROJECT_ROOT}/config/iam-policy-templates/${daemon_name}.json"
 policy_json=".chalice/policy.json"
 stage_policy_json=".chalice/policy-${stage}.json"
 
