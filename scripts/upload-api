@@ -9,7 +9,7 @@ import sys
 import logging
 import argparse
 
-from chalice.cli import CLIFactory, run_local_server
+from chalice.cli import CLIFactory
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
@@ -29,5 +29,10 @@ args = parser.parse_args()
 
 logging.basicConfig(level=args.log_level, stream=sys.stderr)
 
-chalice_app = CLIFactory(project_dir=args.project_dir, debug=args.debug).load_chalice_app()
-run_local_server(chalice_app, port=args.port)
+factory = CLIFactory(project_dir=args.project_dir, debug=args.debug)
+# The following code snippet is basically stolen from chalice/cli/__init__py:run_local_server
+config = factory.create_config_obj(chalice_stage_name=os.environ['DEPLOYMENT_STAGE'])
+app_obj = factory.load_chalice_app()
+logging.basicConfig(stream=sys.stdout)
+server = factory.create_local_server(app_obj, config, args.port)
+server.serve_forever()
