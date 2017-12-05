@@ -1,0 +1,52 @@
+#!/bin/bash
+#
+# dcpfs         Format and mount extra filesystem.
+#
+# Authors:	Sam Pierson <spierson@chanzuckerberg.com>
+#
+# chkconfig: 2345 05 95
+# description: Formats and mounts /dev/sdb (xvdb) as /data
+### BEGIN INIT INFO
+# Provides: $dcp_fs
+# Short-Description: Format and mount extra filesystem.
+# Description: Format and mount extra filesystem.
+### END INIT INFO
+
+. /etc/init.d/functions
+
+BLOCK_DEVICE=/dev/xvdb
+MOUNT_POINT=/data
+
+# See how we were called.
+case "$1" in
+  start)
+	echo "DCPFS: Attempting for format ${BLOCK_DEVICE} and mount it as ${MOUNT_POINT}"
+	if [ "`file -sb ${BLOCK_DEVICE}`" = data ] ; then
+		echo "DCPFS: formatting ${BLOCK_DEVICE} as ext4"
+		mkfs -t ext4 ${BLOCK_DEVICE}
+	else
+		echo "DCPFS: ${BLOCK_DEVICE} appears to be already formatted, skipping..."
+	fi
+
+	if [ -e ${MOUNT_POINT} ] ; then
+		echo "DCPFS: mount point ${MOUNT_POINT} already exists"
+	else
+		echo "DCPFS: creating mount point ${MOUNT_POINT}"
+		mkdir -p ${MOUNT_POINT}
+	fi
+
+	if mount|grep -q "^${BLOCK_DEVICE} " ; then
+		echo "DCPFS: ${BLOCK_DEVICE} is already mounted"
+	else
+		echo "DCPFS: Mounting ${BLOCK_DEVICE} as ${MOUNT_POINT}"
+		mount ${BLOCK_DEVICE} ${MOUNT_POINT}
+	fi
+	;;
+  stop)
+	;;
+  *)
+	echo $"Usage: $0 {start|stop}"
+	exit 2
+esac
+
+exit 0
