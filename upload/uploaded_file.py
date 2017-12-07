@@ -46,10 +46,10 @@ class UploadedFile:
             'checksums': self.checksums
         }
 
-    def compute_checksums(self):
+    def compute_checksums(self, progress_callback=None):
         with ChecksummingSink() as sink:
             s3client.download_fileobj(self.upload_area.bucket_name, self.s3obj.key, sink,
-                                      Config=self._transfer_config())
+                                      Callback=progress_callback, Config=self._transfer_config())
             self.checksums = sink.get_checksums()
 
     def save_tags(self):
@@ -90,7 +90,7 @@ class UploadedFile:
 
     @staticmethod
     def _s3_chunk_size(file_size: int) -> int:
-        if file_size <= 10000 * 64 * MB:
+        if file_size <= 10000 * 64 * MB:  # 640 GB
             return 64 * MB
         else:
             div = file_size // 10000

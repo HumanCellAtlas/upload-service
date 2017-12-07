@@ -1,3 +1,5 @@
+import time
+
 from upload import UploadArea
 from .ingest_notifier import IngestNotifier
 
@@ -27,9 +29,18 @@ class ChecksumDaemon:
         return UploadArea(area_uuid).uploaded_file(filename)
 
     def _checksum_file(self, uploaded_file):
-        uploaded_file.compute_checksums()
+        self.bytes_checksummed = 0
+        self.start_time = time.time()
+        self.last_diag_output_time = self.start_time
+        uploaded_file.compute_checksums(progress_callback=self._compute_checksums_progress_callback)
         tags = uploaded_file.save_tags()
         self.log(f"Checksummed and tagged with: {tags}")
+
+    def _compute_checksums_progress_callback(self, bytes_transferred):
+        self.bytes_checksummed += bytes_transferred
+        if time.time() - self.last_diag_output_time > 1:
+            self.log("elapsed=%0.1f bytes_checksummed=%d" % (time.time() - self.start_time, self.bytes_checksummed))
+            self.last_diag_output_time = time.time()
 
     def _notify_ingest(self, uploaded_file):
         payload = uploaded_file.info()
