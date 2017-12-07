@@ -9,6 +9,7 @@ clobber: clean
 build:
 	mkdir -p domovoilib
 	cp -R ../../upload ../../checksumming_io domovoilib
+	shopt -s nullglob; for wheel in vendor.in/*/*.whl; do unzip -q -o -d vendor $$wheel; done
 
 deploy: build
 	./build_deploy_config.sh upload-checksum-daemon $(DEPLOYMENT_STAGE)
