@@ -6,5 +6,7 @@
       "api_gateway_stage": "api",
       "environment_variables": {}
     }
-  }
+  },
+  "lambda_timeout": 300,
+  "lambda_memory_size": 768
 }
