@@ -246,6 +246,72 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+  /area/{upload_area_id}/{filename}/validate:
+
+    put:
+      summary: Validate a staged file
+      operationId: upload.api_server.area.validate_file
+      description: |
+        Invoke supplied validator Docker image and give it access to the file.
+        The validator must be based off the base validator Docker image.
+      tags:
+        - For Ingestion Service Use Only
+      security:
+        - api_key: []
+      parameters:
+        - name: Api-Key
+          in: header
+          description: An authentication token provided by the service provider.
+          required: true
+          type: string
+        - name: upload_area_id
+          in: path
+          description: A RFC4122-compliant ID for the upload area.
+          required: true
+          type: string
+        - name: filename
+          in: path
+          description: Name of file to be validated.  Must exist in the upload area.
+          required: true
+          type: string
+        - name: json_request_body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              validator_image:
+                description: |
+                  The name/location the validator Docker image.
+                  To use an image on Docker Hub, specify "org-name/image-name".
+                  To use an image in another online repository add a domain name e.g. "quay.io/assemblyline/ubuntu".
+                  To use an image in Amazon ECR use the full registry/repository:tag naming convention,
+                  for example, "aws_account_id.dkr.ecr.region.amazonaws.com/my_validator:latest".
+                type: string
+                # pattern: "^[A-Za-z0-9\-_:./]+$"   Does not allow escaped dashes in character classes?
+              environment:
+                description: Environment variables to pass to the validator.
+                type: object
+            required:
+              - validator_image
+      responses:
+        200:
+          description: Validation has been scheduled.
+          schema:
+            type: object
+            properties:
+              validation_id:
+                type: string
+                description: A reference ID for this validation, which will be used later during the callback.
+        401:
+          description: Unrecognized Api-Key.
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
   /config/client:
     get:
       summary: Configuration information required by upload clients to use this Upload Service deployment.
