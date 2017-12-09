@@ -8,8 +8,7 @@
 
 The DCP Upload Service provides a file staging facility for the DCP.
 It stages files into AWS S3 and computes checksums for the files.
-Upload Areas are created/deleted using a REST API, which is secured so only
-the DCP Ingestion Service may use it.
+Upload Areas are created/deleted using a REST API, which is secured so only the DCP Ingestion Service may use it.
 
 ## Components
 
@@ -21,6 +20,10 @@ The API is defined using an OpenAPI 2.0 Specification (Swagger) in `config/uploa
 ### upload-checksum-daemon
 
 Is a Lambda Domovoi app triggered by S3 ObjectCreated events that computes checksums for uploaded files.
+
+### Validation Batch Service
+
+Is an AWS Batch installation 
 
 ## Development Setup
 
@@ -57,4 +60,23 @@ To manually deploy to e.g. the staging deployment:
 ```bash
 export enc_password="<password-used-to-encrypt-deployment-secrets>"
 scripts/deploy.sh staging
+```
+
+### Validation Deployment
+
+#### Prerequisites
+
+ * Create the validation AMI before deploying creating the Batch installation.
+   See instructions in `validation/ami/README.md`.
+ * Your VPC must have security groups named `default` and `inbound-ssh-from-hca-teams`.
+ * Create IAM policy `upload-validator-<stage>` and role `upload-validator-<stage>`.
+ * Have Docker installed and running on your local machine.
+
+#### Do It
+
+```bash
+scripts/batchctl.py staging setup
+
+cd validation/docker-images/base-alpine-python36
+make release
 ```
