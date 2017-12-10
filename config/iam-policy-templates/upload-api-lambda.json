@@ -49,6 +49,17 @@
         "arn:aws:iam::$account_id:user/upload-*",
         "arn:aws:iam::$account_id:policy/upload-*"
       ]
+    },
+    {
+        "Effect": "Allow",
+        "Action": [
+            "batch:Describe*",
+            "batch:RegisterJobDefinition",
+            "batch:SubmitJob"
+        ],
+        "Resource": [
+            "arn:aws:batch:*:$account_id:*"
+        ]
     }
   ]
 }
