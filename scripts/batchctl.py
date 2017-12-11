@@ -269,6 +269,14 @@ class BatchJobPolicyAndRole:
                             "Service": "ecs-tasks.amazonaws.com"
                         },
                         "Action": "sts:AssumeRole"
+                    },
+                    {
+                        "Sid": "",
+                        "Effect": "Allow",
+                        "Principal": {
+                            "Service": "lambda.amazonaws.com"
+                        },
+                        "Action": "sts:AssumeRole"
                     }
                 ]
             }

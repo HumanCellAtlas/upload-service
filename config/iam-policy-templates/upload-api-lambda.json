@@ -43,9 +43,11 @@
         "iam:ListUserPolicies",
         "iam:CreateAccessKey",
         "iam:DeleteAccessKey",
-        "iam:ListAccessKeys"
+        "iam:ListAccessKeys",
+        "iam:PassRole"
       ],
       "Resource": [
+        "arn:aws:iam::$account_id:role/upload-*",
         "arn:aws:iam::$account_id:user/upload-*",
         "arn:aws:iam::$account_id:policy/upload-*"
       ]
