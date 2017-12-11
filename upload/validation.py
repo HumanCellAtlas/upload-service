@@ -1,6 +1,6 @@
 import json
 import os
-import uuid
+import re
 
 import boto3
 
@@ -14,15 +14,14 @@ class Validation:
 
     JOB_QUEUE_NAME_TEMPLATE = "dcp-upload-queue-{deployment_stage}"
     JOB_ROLE_ARN_TEMPLATE = 'arn:aws:iam::{account_id}:role/upload-batch-job-{stage}'
+    JOB_NAME_ALLOWABLE_CHARS = '[^\w-]'
 
     def __init__(self, uploaded_file: UploadedFile):
         self.file = uploaded_file
-        self.validation_id = str(uuid.uuid4())
 
     def schedule_validation(self, validator_docker_image: str, environment: dict) -> str:
         job_defn = self._find_or_create_job_definition_for_image(validator_docker_image)
         job_q_arn = self._find_job_queue()
-        environment['VALIDATION_ID'] = self.validation_id
         environment['DEPLOYMENT_STAGE'] = os.environ['DEPLOYMENT_STAGE']
         file_s3loc = "s3://{bucket}/{upload_area}/{filename}".format(
             bucket=self.file.upload_area.bucket_name,
@@ -30,8 +29,8 @@ class Validation:
             filename=self.file.name
         )
         command = ['/validator', file_s3loc]
-        self._enqueue_batch_job(job_q_arn, job_defn, command, environment)
-        return self.validation_id
+        validation_id = self._enqueue_batch_job(job_q_arn, job_defn, command, environment)
+        return validation_id
 
     def _find_or_create_job_definition_for_image(self, validator_docker_image):
         job_defn = JobDefinition(docker_image=validator_docker_image, deployment=os.environ['DEPLOYMENT_STAGE'])
@@ -52,8 +51,10 @@ class Validation:
         return jobqs[0]['jobQueueArn']
 
     def _enqueue_batch_job(self, job_q_arn, job_defn, command, environment):
+        job_name = "-".join(["validation", os.environ['DEPLOYMENT_STAGE'], self.file.upload_area.uuid, self.file.name])
+        job_name = re.sub(self.JOB_NAME_ALLOWABLE_CHARS, "", job_name)[0:128]
         job = batch.submit_job(
-            jobName=f"validation-{self.validation_id}",
+            jobName=job_name,
             jobQueue=job_q_arn,
             jobDefinition=job_defn.arn,
             containerOverrides={
@@ -63,4 +64,5 @@ class Validation:
         )
         print(f"Enqueued job {job['jobId']} to validate {self.file.upload_area.uuid}/{self.file.name} "
               f"using job definition {job_defn.arn}:")
-        print(json.dumps(job, indent=4))
+        print(json.dumps(job))
+        return job['jobId']

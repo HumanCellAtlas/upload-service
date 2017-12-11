@@ -20,7 +20,7 @@ class ValidatorHarness:
     AMQP_ROUTING_KEY = "ingest.file.validation.queue"
 
     def __init__(self):
-        self.validation_id = os.environ['VALIDATION_ID']
+        self.validation_id = os.environ['AWS_BATCH_JOB_ID']
         self._log("STARTED with argv: {}".format(sys.argv))
         self._parse_args()
         self._stage_file_to_be_validated()
@@ -51,10 +51,11 @@ class ValidatorHarness:
 
     def _run_validator(self):
         command = [self.validator, self.staged_file_path]
+        os.environ['VALIDATION_ID'] = self.validation_id
         start_time = time.time()
         self._log("RUNNING {}".format(command))
         results = {
-            'validation_id': os.environ['VALIDATION_ID'],
+            'validation_id': self.validation_id,
             'command': " ".join(command),
             'exit_code': None,
             'status': None,
@@ -64,7 +65,10 @@ class ValidatorHarness:
             'exception': None
         }
         try:
-            completed_process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=self.TIMEOUT)
+            completed_process = subprocess.run(command,
+                                               stdout=subprocess.PIPE,
+                                               stderr=subprocess.PIPE,
+                                               timeout=self.TIMEOUT)
             self._log("validator completed")
             results['status'] = 'completed'
             results['exit_code'] = completed_process.returncode
@@ -83,8 +87,7 @@ class ValidatorHarness:
         return results
 
     def _report_results(self, results):
-        print(results)
-        self._log("results = {}".format(json.dumps(results, indent=4)))
+        self._log("results = {}".format(results))
         if not self.args.test:
             amqp_server = "amqp.ingest.{stage}.data.humancellatlas.org".format(stage=os.environ['DEPLOYMENT_STAGE'])
             connection = pika.BlockingConnection(pika.ConnectionParameters(amqp_server))
@@ -101,7 +104,7 @@ class ValidatorHarness:
         os.remove(self.staged_file_path)
 
     def _log(self, message):
-        print("UPLOAD VALIDATOR HARNESS [{id}]: ".format(id=self.validation_id) + str(message))
+        print("UPLOAD HARNESS [{id}]: ".format(id=self.validation_id) + str(message))
 
 
 if __name__ == '__main__':
