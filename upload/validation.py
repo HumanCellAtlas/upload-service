@@ -34,7 +34,7 @@ class Validation:
         return self.validation_id
 
     def _find_or_create_job_definition_for_image(self, validator_docker_image):
-        job_defn = JobDefinition(docker_image=validator_docker_image)
+        job_defn = JobDefinition(docker_image=validator_docker_image, deployment=os.environ['DEPLOYMENT_STAGE'])
         if job_defn.load():
             return job_defn
         else:

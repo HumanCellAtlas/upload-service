@@ -304,7 +304,7 @@ class ValidationBatchSetupBuilder:
 
     def test_batch_infrastructure(self, docker_image, command):
         job_role_arn = f'arn:aws:iam::{account_id}:role/upload-batch-job-{self.deployment}'
-        job_defn = JobDefinition(docker_image).find_or_create(job_role_arn)
+        job_defn = JobDefinition(docker_image=docker_image, deployment=self.deployment).find_or_create(job_role_arn)
         jobq = JobQueue(self.job_queue_name).load()
         self._submit_test_job(job_defn.arn, jobq.arn, command)
 

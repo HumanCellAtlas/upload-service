@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 
 import boto3
 
@@ -13,7 +14,8 @@ class JobDefinition:
         for jobdef in batch.describe_job_definitions(status='ACTIVE')['jobDefinitions']:
             cls(metadata=jobdef).delete()
 
-    def __init__(self, docker_image=None, arn=None, metadata=None):
+    def __init__(self, docker_image=None, deployment=None, arn=None, metadata=None):
+        self.deployment = deployment if deployment else os.environ['DEPLOYMENT_STAGE']
         if not docker_image and not metadata:
             raise RuntimeError("you must provide docker_image or metadata")
         self.metadata = metadata
@@ -86,4 +88,4 @@ class JobDefinition:
         """
         hasher = hashlib.sha1()
         hasher.update(bytes(self.docker_image, 'utf8'))
-        return f"upload-validator-{hasher.hexdigest()}"
+        return f"upload-{self.deployment}-{hasher.hexdigest()}"
