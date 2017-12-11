@@ -13,6 +13,7 @@ batch = boto3.client('batch')
 class Validation:
 
     JOB_QUEUE_NAME_TEMPLATE = "dcp-upload-queue-{deployment_stage}"
+    JOB_ROLE_ARN_TEMPLATE = 'arn:aws:iam::{account_id}:role/upload-batch-job-{stage}'
 
     def __init__(self, uploaded_file: UploadedFile):
         self.file = uploaded_file
@@ -37,7 +38,7 @@ class Validation:
         if job_defn.load():
             return job_defn
         else:
-            job_role_arn = 'arn:aws:iam::{account_id}:role/upload-validator-{stage}'.format(
+            job_role_arn = self.JOB_ROLE_ARN_TEMPLATE.format(
                 account_id=boto3.client('sts').get_caller_identity().get('Account'),
                 stage=os.environ['DEPLOYMENT_STAGE']
             )

@@ -4,11 +4,13 @@ Manage Upload Service AWS Batch Infrastructure
 """
 
 import argparse
+import json
 import os
 import sys
 import time
 
 import boto3
+from botocore.exceptions import ClientError
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
@@ -18,6 +20,8 @@ from upload.batch import JobDefinition
 
 ec2r = boto3.resource('ec2')
 batch = boto3.client('batch')
+iam = boto3.client('iam')
+account_id = boto3.client('sts').get_caller_identity().get('Account')
 
 
 class JobQueue:
@@ -161,26 +165,137 @@ class ComputeEnvironment:
             self.load()
 
 
+class BatchJobPolicyAndRole:
+
+    def __init__(self, deployment):
+        self.deployment = deployment
+        pass
+
+    def setup(self):
+        policy = self.find_or_create_policy()
+        role = self.find_or_create_role()
+        self.attach_policy_to_role(policy, role)
+
+    def attach_policy_to_role(self, policy, role):
+        policies = iam.list_attached_role_policies(RoleName=role['RoleName'])['AttachedPolicies']
+        try:
+            next((item for item in policies if item['PolicyArn'] == policy['Arn']))
+            print(f"Policy {policy['PolicyName']} is attached to role {role['RoleName']}")
+        except StopIteration:
+            print(f"Attching policy {policy['PolicyName']} to role {role['RoleName']}")
+            iam.attach_role_policy(RoleName=role['RoleName'], PolicyArn=policy['Arn'])
+
+    def find_or_create_policy(self):
+        policy_name = f"upload-batch-job-{self.deployment}"
+        print(f"Policy {policy_name}:")
+        policy_arn = f"arn:aws:iam::{account_id}:policy/{policy_name}"
+        try:
+            policy = iam.get_policy(PolicyArn=policy_arn)['Policy']
+            print(f"\t found {policy['Arn']}")
+        except ClientError:
+            policy = iam.create_policy(PolicyName=policy_name, PolicyDocument=self.policy_document())['Policy']
+            print(f"\t created policy {policy['Arn']}")
+        return policy
+
+    def find_or_create_role(self):
+        role_name = f"upload-batch-job-{self.deployment}"
+        print(f"Role {role_name}:")
+        try:
+            role = iam.get_role(RoleName=role_name)['Role']
+            print(f"\t found {role['Arn']}")
+        except ClientError:
+            role = iam.create_role(RoleName=role_name, AssumeRolePolicyDocument=self.role_trust_document())['Role']
+            print(f"\t created role {role['Arn']}")
+        return role
+
+    def teardown(self):
+        self.delete_role()
+        self.delete_policy()
+
+    def delete_role(self):
+        role_name = f"upload-batch-job-{self.deployment}"
+        try:
+            role = iam.get_role(RoleName=role_name)['Role']
+        except ClientError:
+            return
+        for policy in iam.list_attached_role_policies(RoleName=role['RoleName'])['AttachedPolicies']:
+            print(f"Detaching policy {policy['PolicyName']} from role {role['RoleName']}")
+            iam.detach_role_policy(RoleName=role['RoleName'], PolicyArn=policy['PolicyArn'])
+        print(f"Deleting {role['Arn']}")
+        iam.delete_role(RoleName=role['RoleName'])
+
+    def delete_policy(self):
+        policy_name = f"upload-batch-job-{self.deployment}"
+        policy_arn = f"arn:aws:iam::{account_id}:policy/{policy_name}"
+        try:
+            policy = iam.get_policy(PolicyArn=policy_arn)['Policy']
+        except ClientError:
+            return
+        for version in iam.list_policy_versions(PolicyArn=policy['Arn'])['Versions']:
+            if not version['IsDefaultVersion']:
+                print(f"Deleting policy version {policy['PolicyName']} version {version['VersionId']}")
+                iam.delete_policy_version(PolicyArn=policy['Arn'], VersionId=version['VersionId'])
+        print(f"Deleting {policy['Arn']}")
+        iam.delete_policy(PolicyArn=policy['Arn'])
+
+    def policy_document(self):
+        return json.dumps(
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "s3:GetObject"
+                        ],
+                        "Resource": [
+                            f"arn:aws:s3:::org-humancellatlas-upload-{self.deployment}/*"
+                        ]
+                    }
+                ]
+            }
+        )
+
+    @staticmethod
+    def role_trust_document():
+        return json.dumps(
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Sid": "",
+                        "Effect": "Allow",
+                        "Principal": {
+                            "Service": "ecs-tasks.amazonaws.com"
+                        },
+                        "Action": "sts:AssumeRole"
+                    }
+                ]
+            }
+        )
+
+
 class ValidationBatchSetupBuilder:
 
     def __init__(self, deployment):
         self.deployment = deployment
         self.comp_env_name = f"dcp-upload-{self.deployment}"
         self.job_queue_name = f"dcp-upload-queue-{self.deployment}"
-        self.account_id = boto3.client('sts').get_caller_identity().get('Account')
 
     def setup_batch_infrastructure(self, ami_name_or_id, ec2_key_pair):
         vpc = self._find_vpc()  # needed for subnet ids and security groups
-        ami = self._find_ami(self.account_id, ami_name_or_id)
-        cenv = ComputeEnvironment(name=self.comp_env_name).find_or_create(ami, self.account_id, vpc, ec2_key_pair)
+        ami = self._find_ami(ami_name_or_id)
+        cenv = ComputeEnvironment(name=self.comp_env_name).find_or_create(ami, account_id, vpc, ec2_key_pair)
         JobQueue(self.job_queue_name).find_or_create(cenv.arn)
+        BatchJobPolicyAndRole(self.deployment).setup()
 
     def teardown_batch_infrastructure(self):
         JobQueue(self.job_queue_name).delete()
         ComputeEnvironment(self.comp_env_name).delete()
+        BatchJobPolicyAndRole(self.deployment).teardown()
 
     def test_batch_infrastructure(self, docker_image, command):
-        job_role_arn = f'arn:aws:iam::{self.account_id}:role/upload-validator-{self.deployment}'
+        job_role_arn = f'arn:aws:iam::{account_id}:role/upload-batch-job-{self.deployment}'
         job_defn = JobDefinition(docker_image).find_or_create(job_role_arn)
         jobq = JobQueue(self.job_queue_name).load()
         self._submit_test_job(job_defn.arn, jobq.arn, command)
@@ -200,7 +315,7 @@ class ValidationBatchSetupBuilder:
         print(f"Using VPC {vpc.id}")
         return vpc
 
-    def _find_ami(self, account_id, ami_name_or_id):
+    def _find_ami(self, ami_name_or_id):
         images = list(ec2r.images.filter(Owners=[account_id], ImageIds=[ami_name_or_id]))
         if len(images) == 0:
             images = list(ec2r.images.filter(Owners=[account_id],
