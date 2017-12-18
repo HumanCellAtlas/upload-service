@@ -4,7 +4,7 @@ import connexion
 import requests
 
 from . import UploadException, return_exceptions_as_http_errors, require_authenticated
-from .. import UploadArea, Validation
+from .. import UploadArea, Validation, EventNotifier
 
 
 @return_exceptions_as_http_errors
@@ -15,6 +15,7 @@ def create(upload_area_id: str):
         raise UploadException(status=requests.codes.conflict, title="Upload Area Already Exists",
                               detail=f"Upload area {upload_area_id} already exists.")
     upload_area.create()
+    EventNotifier.notify(f"{upload_area_id} created")
     return {'urn': upload_area.urn}, requests.codes.created
 
 
@@ -23,6 +24,7 @@ def create(upload_area_id: str):
 def delete(upload_area_id: str):
     upload_area = _load_upload_area(upload_area_id)
     upload_area.delete()
+    EventNotifier.notify(f"{upload_area_id} deleted")
     return None, requests.codes.no_content
 
 
@@ -31,6 +33,7 @@ def delete(upload_area_id: str):
 def lock(upload_area_id: str):
     upload_area = _load_upload_area(upload_area_id)
     upload_area.lock()
+    EventNotifier.notify(f"{upload_area_id} locked")
     return None, requests.codes.no_content
 
 
@@ -39,6 +42,7 @@ def lock(upload_area_id: str):
 def unlock(upload_area_id: str):
     upload_area = _load_upload_area(upload_area_id)
     upload_area.unlock()
+    EventNotifier.notify(f"{upload_area_id} unlocked")
     return None, requests.codes.no_content
 
 
@@ -48,6 +52,7 @@ def put_file(upload_area_id: str, filename: str, body: str):
     upload_area = _load_upload_area(upload_area_id)
     content_type = connexion.request.headers['Content-Type']
     fileinfo = upload_area.store_file(filename, content=body, content_type=content_type)
+    EventNotifier.notify(f"{upload_area_id} {filename} added")
     return fileinfo, requests.codes.created
 
 
@@ -59,12 +64,14 @@ def validate_file(upload_area_id: str, filename: str, json_request_body: str):
     body = json.loads(json_request_body)
     environment = body['environment'] if 'environment' in body else {}
     validation_id = Validation(file).schedule_validation(body['validator_image'], environment)
+    EventNotifier.notify(f"{upload_area_id} validation of {filename} scheduled")
     return {'validation_id': validation_id}, requests.codes.ok
 
 
 @return_exceptions_as_http_errors
 def list_files(upload_area_id: str):
     upload_area = _load_upload_area(upload_area_id)
+    EventNotifier.notify(f"{upload_area_id} listing files")
     return upload_area.ls(), requests.codes.ok
 
 

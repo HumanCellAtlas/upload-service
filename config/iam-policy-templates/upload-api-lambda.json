@@ -62,6 +62,15 @@
         "Resource": [
             "arn:aws:batch:*:$account_id:*"
         ]
+    },
+    {
+        "Effect": "Allow",
+        "Action": [
+            "SNS:Publish"
+        ],
+        "Resource": [
+            "arn:aws:sns:*:$account_id:*"
+        ]
     }
   ]
 }

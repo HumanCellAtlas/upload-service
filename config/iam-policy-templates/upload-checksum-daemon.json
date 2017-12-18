@@ -46,6 +46,15 @@
       "Resource": [
         "arn:aws:s3:::${BUCKET_NAME_PREFIX}${DEPLOYMENT_STAGE}/*"
       ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "SNS:Publish"
+      ],
+      "Resource": [
+        "arn:aws:sns:*:$account_id:*"
+      ]
     }
   ]
 }

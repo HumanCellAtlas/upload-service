@@ -4,7 +4,7 @@ import os, sys, unittest, uuid, json, base64
 
 import boto3
 from botocore.exceptions import ClientError
-from moto import mock_s3, mock_iam
+from moto import mock_s3, mock_iam, mock_sns, mock_sts
 
 from . import client_for_test_api_server
 from .. import EnvironmentSetup
@@ -63,6 +63,11 @@ class TestAreaApi(unittest.TestCase):
         self.s3_mock.start()
         self.iam_mock = mock_iam()
         self.iam_mock.start()
+        self.sns_mock = mock_sns()
+        self.sns_mock.start()
+        self.sts_mock = mock_sts()
+        self.sts_mock.start()
+
         # Setup upload bucket
         self.deployment_stage = 'test'
         self.upload_bucket_name = f'bogobucket-{self.deployment_stage}'
@@ -72,6 +77,8 @@ class TestAreaApi(unittest.TestCase):
         self.api_key = "foo"
         os.environ['INGEST_API_KEY'] = self.api_key
         self.authentication_header = {'Api-Key': self.api_key}
+        # Setup SNS
+        boto3.resource('sns').create_topic(Name='dcp-events')
         # Setup app
         with EnvironmentSetup({
             'DEPLOYMENT_STAGE': self.deployment_stage
@@ -81,6 +88,8 @@ class TestAreaApi(unittest.TestCase):
     def tearDown(self):
         self.s3_mock.stop()
         self.iam_mock.stop()
+        self.sns_mock.stop()
+        self.sts_mock.stop()
 
     def test_create_with_unused_upload_area_id(self):
         area_id = str(uuid.uuid4())

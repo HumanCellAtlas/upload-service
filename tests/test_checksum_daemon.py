@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 import uuid
 
 import boto3
-from moto import mock_s3
+from moto import mock_s3, mock_sns, mock_sts
 
 from . import EnvironmentSetup
 
@@ -26,9 +26,15 @@ class TestChecksumDaemon(unittest.TestCase):
         # Setup mock AWS
         self.s3_mock = mock_s3()
         self.s3_mock.start()
+        self.sns_mock = mock_sns()
+        self.sns_mock.start()
+        self.sts_mock = mock_sts()
+        self.sts_mock.start()
         # Staging bucket
         self.upload_bucket = boto3.resource('s3').Bucket(self.UPLOAD_BUCKET_NAME)
         self.upload_bucket.create()
+        # Setup SNS
+        boto3.resource('sns').create_topic(Name='dcp-events')
         # daemon
         context = Mock()
         with EnvironmentSetup({
@@ -59,6 +65,8 @@ class TestChecksumDaemon(unittest.TestCase):
 
     def tearDown(self):
         self.s3_mock.stop()
+        self.sns_mock.stop()
+        self.sts_mock.stop()
 
     @patch('upload.checksum_daemon.checksum_daemon.IngestNotifier.file_was_uploaded')
     def test_consume_event_sets_tags(self, mock_file_was_uploaded):

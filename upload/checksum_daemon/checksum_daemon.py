@@ -2,6 +2,7 @@ import time
 
 from upload import UploadArea
 from .ingest_notifier import IngestNotifier
+from .. import EventNotifier
 
 
 class ChecksumDaemon:
@@ -18,15 +19,17 @@ class ChecksumDaemon:
                 self.log(f"WARNING: Unexpected event: {record['eventName']}")
                 continue
             file_key = record['s3']['object']['key']
-            uploaded_file = self._retrieve_file(file_key)
+            upload_area, uploaded_file = self._retrieve_file(file_key)
             self._checksum_file(uploaded_file)
+            EventNotifier.notify(f"{upload_area.uuid} checksummed {uploaded_file.name}")
             self._notify_ingest(uploaded_file)
 
     def _retrieve_file(self, file_key):
         self.log(f"File: {file_key}")
         area_uuid = file_key.split('/')[0]
         filename = file_key[len(area_uuid) + 1:]
-        return UploadArea(area_uuid).uploaded_file(filename)
+        upload_area = UploadArea(area_uuid)
+        return upload_area, upload_area.uploaded_file(filename)
 
     def _checksum_file(self, uploaded_file):
         self.bytes_checksummed = 0

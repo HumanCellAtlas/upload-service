@@ -1,6 +1,7 @@
 from .uploaded_file import UploadedFile
 from .upload_area import UploadArea
 from .validation import Validation
+from .event_notifier import EventNotifier
 
 
 class UploadException(Exception):
