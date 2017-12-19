@@ -46,7 +46,8 @@ class TestChecksumDaemon(unittest.TestCase):
         self.area_id = str(uuid.uuid4())
         self.content_type = 'text/html'
         self.file_key = f"{self.area_id}/foo"
-        self.upload_bucket.put_object(Key=self.file_key, Body="exquisite corpse", ContentType=self.content_type)
+        self.object = self.upload_bucket.Object(self.file_key)
+        self.object.put(Key=self.file_key, Body="exquisite corpse", ContentType=self.content_type)
         self.event = {'Records': [
             {'eventVersion': '2.0', 'eventSource': 'aws:s3', 'awsRegion': 'us-east-1',
              'eventTime': '2017-09-15T00:05:10.378Z', 'eventName': 'ObjectCreated:Put',
@@ -92,6 +93,7 @@ class TestChecksumDaemon(unittest.TestCase):
             'upload_area_id': self.area_id,
             'name': os.path.basename(self.file_key),
             'size': 16,
+            'last_modified': self.object.last_modified,
             'content_type': self.content_type,
             'url': f"s3://{self.UPLOAD_BUCKET_NAME}/{self.area_id}/foo",
             'checksums': {

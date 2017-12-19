@@ -43,7 +43,8 @@ class UploadedFile:
             'size': self.s3obj.content_length,
             'content_type': self.content_type_tag or self.s3obj.content_type,
             'url': f"s3://{self.upload_area.bucket_name}/{self.s3obj.key}",
-            'checksums': self.checksums
+            'checksums': self.checksums,
+            'last_modified': self.s3obj.last_modified
         }
 
     def compute_checksums(self, progress_callback=None):

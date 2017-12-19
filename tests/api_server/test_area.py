@@ -208,12 +208,16 @@ class TestAreaApi(unittest.TestCase):
 
         response = self.client.put(f"/v1/area/{area_id}/some.json", data="exquisite corpse", headers=headers)
 
+        s3_key = f"{area_id}/some.json"
+        o1 = self.upload_bucket.Object(s3_key)
+        o1.load()
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.content_type, 'application/json')
         self.assertEqual(json.loads(response.data), {
             'upload_area_id': area_id,
             'name': 'some.json',
             'size': 16,
+            'last_modified': o1.last_modified.isoformat(),
             'content_type': 'application/json; dcp-type="metadata/sample"',
             'url': f"s3://{self.upload_bucket_name}/{area_id}/some.json",
             'checksums': {
@@ -230,7 +234,8 @@ class TestAreaApi(unittest.TestCase):
         area_id = str(uuid.uuid4())
         self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
         file1_key = f"{area_id}/file1.json"
-        self.upload_bucket.Object(file1_key).put(Body="foo", ContentType="application/json")
+        o1 = self.upload_bucket.Object(file1_key)
+        o1.put(Body="foo", ContentType="application/json")
         boto3.client('s3').put_object_tagging(Bucket=self.upload_bucket_name, Key=file1_key, Tagging={
             'TagSet': [
                 {'Key': 'hca-dss-content-type', 'Value': 'application/json'},
@@ -241,7 +246,8 @@ class TestAreaApi(unittest.TestCase):
             ]
         })
         file2_key = f"{area_id}/file2.json"
-        self.upload_bucket.Object(file2_key).put(Body="ba ba ba ba ba barane", ContentType="dcp/data-file")
+        o2 = self.upload_bucket.Object(file2_key)
+        o2.put(Body="ba ba ba ba ba barane", ContentType="dcp/data-file")
         boto3.client('s3').put_object_tagging(Bucket=self.upload_bucket_name, Key=file2_key, Tagging={
             'TagSet': [
                 {'Key': 'hca-dss-content-type', 'Value': 'dcp/data-file'},
@@ -262,6 +268,7 @@ class TestAreaApi(unittest.TestCase):
         self.assertEqual(data['files'][0], {
             'upload_area_id': area_id,
             'name': 'file1.json',
+            'last_modified': o1.last_modified.isoformat(),
             'content_type': 'application/json',
             'url': f"s3://{self.upload_bucket_name}/{area_id}/file1.json",
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
@@ -269,6 +276,7 @@ class TestAreaApi(unittest.TestCase):
         self.assertEqual(data['files'][1], {
             'upload_area_id': area_id,
             'name': 'file2.json',
+            'last_modified': o2.last_modified.isoformat(),
             'content_type': 'dcp/data-file',
             'url': f"s3://{self.upload_bucket_name}/{area_id}/file2.json",
             'checksums': {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'}
