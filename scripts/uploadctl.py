@@ -13,6 +13,7 @@ import re
 import sys
 
 import boto3
+import pika
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
@@ -97,11 +98,74 @@ class UploadCleaner:
                 break
 
 
+
+INGEST_AMQP_SERVER = f"amqp.ingest.{os.environ['DEPLOYMENT_STAGE']}.data.humancellatlas.org"
+FILE_UPLOAD_EXCHANGE = 'ingest.file.staged.exchange'
+
+
+class AmqpTool:
+    def __init__(self, server, exchange_name, queue_name):
+        self.server = server
+        self.exchange_name = exchange_name
+        self.queue_name = queue_name
+        self.connection = None
+        self.channel = None
+        self.connect()
+
+    def connect(self):
+        parameters = pika.connection.ConnectionParameters(host=self.server)
+        self.connection = pika.BlockingConnection(parameters)
+        print(f"Connection {self.connection}")
+        self.channel = self.connection.channel()
+        print(f"Channel {self.channel}")
+
+    def create_queue(self):
+        retval = self.channel.queue_declare(queue=self.queue_name)
+        print(f"declaring queue {self.queue_name} returned {retval}")
+        retval = self.channel.queue_bind(self.queue_name, self.exchange_name)
+        print(f"queue_bind returned {retval}")
+
+    def _on_message(self, channel, method, properties, body):
+        print(f"on_message: {body}")
+
+    def listen(self):
+        resp = self.channel.basic_consume(self._on_message, queue=self.queue_name, no_ack=True)
+        print(f"basic_consume returned {resp}")
+        self.channel.start_consuming()
+
+    def publish(self):
+        success = self.channel.basic_publish(exchange=self.exchange_name,
+                                             routing_key=self.queue_name,
+                                             body='{"this_is": "a_test"}')
+        print(f"publish returned {success}")
+
+
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('-d', '--deployment', choices=['dev', 'integration', 'staging'], default='dev')
-parser.add_argument('--dry-run', action='store_true')
-parser.add_argument('command', choices=['cleanup'])
+subparsers = parser.add_subparsers()
+
+cleanup_parser = subparsers.add_parser('cleanup')
+cleanup_parser.set_defaults(command='cleanup')
+cleanup_parser.add_argument('--dry-run', action='store_true', help="examine but don't take action")
+
+amqp_parser = subparsers.add_parser('amqp')
+amqp_parser.set_defaults(command='amqp')
+amqp_parser.add_argument('amqp_command', choices=['publish', 'listen'])
+amqp_parser.add_argument('queue_name', nargs='?', default='ingest.sam.test')
+amqp_parser.add_argument('-e', '--exchange', default=FILE_UPLOAD_EXCHANGE)
+amqp_parser.add_argument('-s', '--server', default=INGEST_AMQP_SERVER)
+
+
 args = parser.parse_args()
 
 if args.command == 'cleanup':
     UploadCleaner(args.deployment, args.dry_run)
+elif args.command == 'amqp':
+    if args.amqp_command == 'listen':
+        tool = AmqpTool(server=args.server, exchange_name=args.exchange, queue_name=args.queue_name)
+        tool.create_queue()
+        tool.listen()
+    elif args.amqp_command == 'publish':
+        tool = AmqpTool(server=args.server, exchange_name=args.exchange, queue_name=args.queue_name)
+        tool.publish()
+
