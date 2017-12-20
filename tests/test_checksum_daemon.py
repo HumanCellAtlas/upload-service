@@ -69,8 +69,9 @@ class TestChecksumDaemon(unittest.TestCase):
         self.sns_mock.stop()
         self.sts_mock.stop()
 
+    @patch('upload.checksum_daemon.checksum_daemon.IngestNotifier.connect')
     @patch('upload.checksum_daemon.checksum_daemon.IngestNotifier.file_was_uploaded')
-    def test_consume_event_sets_tags(self, mock_file_was_uploaded):
+    def test_consume_event_sets_tags(self, mock_file_was_uploaded, mock_connect):
 
         self.daemon.consume_event(self.event)
 
@@ -82,11 +83,14 @@ class TestChecksumDaemon(unittest.TestCase):
             {'Key': "hca-dss-crc32c", 'Value': "FE9ADA52"}
         ])
 
+    @patch('upload.checksum_daemon.checksum_daemon.IngestNotifier.connect')
     @patch('upload.checksum_daemon.checksum_daemon.IngestNotifier.file_was_uploaded')
-    def test_consume_event_notifies_ingest(self, mock_file_was_uploaded):
+    def test_consume_event_notifies_ingest(self, mock_file_was_uploaded, mock_connect):
 
         self.daemon.consume_event(self.event)
 
+        self.assertTrue(mock_connect.called,
+                        'IngestNotifier.connect should have been called')
         self.assertTrue(mock_file_was_uploaded.called,
                         'IngestNotifier.file_was_uploaded should have been called')
         mock_file_was_uploaded.assert_called_once_with({

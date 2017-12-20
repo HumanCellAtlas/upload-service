@@ -1,6 +1,8 @@
-import json, os
+import json
+import os
 
-import pika, requests
+import pika
+import requests
 
 from .. import UploadException
 
@@ -8,16 +10,35 @@ from .. import UploadException
 class IngestNotifier:
 
     INGEST_AMQP_SERVER = f"amqp.ingest.{os.environ['DEPLOYMENT_STAGE']}.data.humancellatlas.org"
+    FILE_UPLOAD_EXCHANGE = 'ingest.file.staged.exchange'
+    FILE_UPLOADED_QUEUE = 'ingest.file.create.staged'
+
+    def __init__(self, logfunc=None):
+        self.logfunc = logfunc
+        self.debug("starting")
+        self.connect()
+
+    def connect(self):
+        self.debug(f"connecting to {self.INGEST_AMQP_SERVER}")
+        self.connection = pika.BlockingConnection(pika.ConnectionParameters(self.INGEST_AMQP_SERVER))
+        self.debug(f"got connection {self.connection}")
+        self.channel = self.connection.channel()
+        self.debug(f"got channel {self.channel}")
+        retval = self.channel.queue_declare(queue=self.FILE_UPLOADED_QUEUE)
+        self.debug(f"declaring queue {self.FILE_UPLOADED_QUEUE} returned {retval}")
 
     def file_was_uploaded(self, file_info):
-        connection = pika.BlockingConnection(pika.ConnectionParameters(self.INGEST_AMQP_SERVER))
-        channel = connection.channel()
-        channel.queue_declare(queue='ingest.file.create.staged')
-        success = channel.basic_publish(exchange='ingest.file.staged.exchange',
-                                        routing_key='ingest.file.create.staged',
-                                        body=json.dumps(file_info))
+        body = json.dumps(file_info)
+        success = self.channel.basic_publish(exchange=self.FILE_UPLOAD_EXCHANGE,
+                                             routing_key=self.FILE_UPLOADED_QUEUE,
+                                             body=body)
+        self.debug(f"publish of {body} returned {success}")
         if not success:
             raise UploadException(status=requests.codes.server_error, title="Unexpected Error",
                                   detail=f"basic_publish to {self.INGEST_AMQP_SERVER} returned {success}")
-        connection.close()
+        self.connection.close()
         return success
+
+    def debug(self, message):
+        if self.logfunc:
+            self.logfunc("IngestNotifier " + message)

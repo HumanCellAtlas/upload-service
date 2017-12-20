@@ -34,6 +34,7 @@ def return_exceptions_as_http_errors(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
+            get_logger().info(f"Running {func} with args={args} kwargs={kwargs}")
             return func(*args, **kwargs)
 
         except UploadException as ex:

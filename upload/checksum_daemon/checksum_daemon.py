@@ -47,7 +47,7 @@ class ChecksumDaemon:
 
     def _notify_ingest(self, uploaded_file):
         payload = uploaded_file.info()
-        status = IngestNotifier().file_was_uploaded(payload)
+        status = IngestNotifier(logfunc=self.log).file_was_uploaded(payload)
         self.log(f"Notified Ingest: payload={payload}, status={status}")
 
     def log(self, message):
