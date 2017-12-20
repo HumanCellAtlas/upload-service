@@ -97,7 +97,7 @@ class TestChecksumDaemon(unittest.TestCase):
             'upload_area_id': self.area_id,
             'name': os.path.basename(self.file_key),
             'size': 16,
-            'last_modified': self.object.last_modified,
+            'last_modified': self.object.last_modified.isoformat(),
             'content_type': self.content_type,
             'url': f"s3://{self.UPLOAD_BUCKET_NAME}/{self.area_id}/foo",
             'checksums': {
