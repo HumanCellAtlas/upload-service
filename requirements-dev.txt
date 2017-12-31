@@ -4,4 +4,5 @@ domovoi >= 1.2.6
 coverage
 awscli
 moto
+python-dateutil
 -r requirements.txt
