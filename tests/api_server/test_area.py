@@ -298,6 +298,48 @@ class TestAreaApi(unittest.TestCase):
         data = json.loads(response.data)
         self.assertEqual([file['name'] for file in data['files']], area_2_files)
 
+    def test_get_file_for_existing_file(self):
+        area_id = str(uuid.uuid4())
+        self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
+        filename = 'file1.json'
+        file1_key = f"{area_id}/file1.json"
+        o1 = self.upload_bucket.Object(file1_key)
+        o1.put(Body="foo", ContentType="application/json")
+        boto3.client('s3').put_object_tagging(Bucket=self.upload_bucket_name, Key=file1_key, Tagging={
+            'TagSet': [
+                {'Key': 'hca-dss-content-type', 'Value': 'application/json'},
+                {'Key': 'hca-dss-s3_etag', 'Value': '1'},
+                {'Key': 'hca-dss-sha1', 'Value': '2'},
+                {'Key': 'hca-dss-sha256', 'Value': '3'},
+                {'Key': 'hca-dss-crc32c', 'Value': '4'}
+            ]
+        })
+
+        response = self.client.get(f"/v1/area/{area_id}/{filename}")
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data)
+        self.assertIn('size', data.keys())  # moto file sizes are not accurate
+        del data['size']
+        self.assertEqual(data, {
+            'upload_area_id': area_id,
+            'name': 'file1.json',
+            'last_modified': o1.last_modified.isoformat(),
+            'content_type': 'application/json',
+            'url': f"s3://{self.upload_bucket_name}/{area_id}/file1.json",
+            'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
+        })
+
+    def test_get_file_returns_404_for_missing_area_or_file(self):
+        response = self.client.get(f"/v1/area/bogoarea/bogofile")
+        self.assertEqual(response.status_code, 404)
+
+        area_id = str(uuid.uuid4())
+        self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
+
+        response = self.client.get(f"/v1/area/{area_id}/bogofile")
+        self.assertEqual(response.status_code, 404)
+
 
 if __name__ == '__main__':
     unittest.main()

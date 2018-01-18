@@ -79,6 +79,12 @@ function put_file() {
     cat /tmp/response
 }
 
+function get_file() {
+    echo "GET FILE INFO:"
+    echo curl "${API_URL}/area/${UPLOAD_AREA_ID}/foobar2.json"
+    curl --silent "${API_URL}/area/${UPLOAD_AREA_ID}/foobar2.json"
+}
+
 function list() {
     echo "LIST FILES:"
     echo curl "${API_URL}/area/${UPLOAD_AREA_ID}"
@@ -113,6 +119,7 @@ fi
 create ; waiting; pause
 upload ; pause
 put_file ; pause
+get_file ; pause
 list ; pause
 lock ; waiting ; pause
 echo "PROVE AREA IS LOCKED:"

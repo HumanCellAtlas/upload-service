@@ -246,6 +246,36 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+    get:
+      summary: Get information about a file
+      operationId: upload.api_server.area.file_info
+      tags:
+        - All
+      parameters:
+        - name: upload_area_id
+          in: path
+          description: A RFC4122-compliant ID for the upload area.
+          required: true
+          type: string
+        - name: filename
+          in: path
+          description: Name of file.
+          required: true
+          type: string
+      responses:
+        200:
+          description: File information returned successfully.
+          schema:
+            $ref: "#/definitions/FileInfo"
+        404:
+          description: Could not find that upload area or file.
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
   /area/{upload_area_id}/{filename}/validate:
 
     put:

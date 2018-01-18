@@ -2,8 +2,11 @@ from functools import reduce
 
 import boto3
 from boto3.s3.transfer import TransferConfig
+from botocore.exceptions import ClientError
 
 from checksumming_io.checksumming_io import ChecksummingSink
+
+import upload
 
 s3 = boto3.resource('s3')
 s3client = boto3.client('s3')
@@ -65,7 +68,14 @@ class UploadedFile:
         return tags
 
     def _dcp_tags_of_file(self):
-        tagging = s3client.get_object_tagging(Bucket=self.upload_area.bucket_name, Key=self.s3obj.key)
+        try:
+            tagging = s3client.get_object_tagging(Bucket=self.upload_area.bucket_name, Key=self.s3obj.key)
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'NoSuchKey':
+                raise upload.UploadException(status=404, title="No such file",
+                                             detail=f"No such file in that upload area")
+            else:
+                raise e
         tags = {}
         if 'TagSet' in tagging:
             tag_set = self._decode_tags(tagging['TagSet'])

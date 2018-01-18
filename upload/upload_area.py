@@ -120,6 +120,20 @@ class UploadArea:
                     "Resource": [
                         f"arn:aws:s3:::{self.bucket_name}/{self.uuid}/*",
                     ]
+                },
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "s3:ListBucket"
+                    ],
+                    "Resource": [
+                        f"arn:aws:s3:::{self.bucket_name}"
+                    ],
+                    "Condition": {
+                        "StringEquals": {
+                            "s3:prefix": f"{self.uuid}/"
+                        }
+                    }
                 }
             ]
         }
