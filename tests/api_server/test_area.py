@@ -91,6 +91,28 @@ class TestAreaApi(unittest.TestCase):
         self.sns_mock.stop()
         self.sts_mock.stop()
 
+    def _create_area(self):
+        area_id = str(uuid.uuid4())
+        self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
+        return area_id
+
+    def _mock_upload_file(self, area_id, filename, contents="foo", content_type="application/json",
+                          checksums=None):
+        checksums = {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'} if not checksums else checksums
+        file1_key = f"{area_id}/{filename}"
+        s3obj = self.upload_bucket.Object(file1_key)
+        s3obj.put(Body=contents, ContentType=content_type)
+        boto3.client('s3').put_object_tagging(Bucket=self.upload_bucket_name, Key=file1_key, Tagging={
+            'TagSet': [
+                {'Key': 'hca-dss-content-type', 'Value': content_type},
+                {'Key': 'hca-dss-s3_etag', 'Value': checksums['s3_etag']},
+                {'Key': 'hca-dss-sha1', 'Value': checksums['sha1']},
+                {'Key': 'hca-dss-sha256', 'Value': checksums['sha256']},
+                {'Key': 'hca-dss-crc32c', 'Value': checksums['crc32c']}
+            ]
+        })
+        return s3obj
+
     def test_create_with_unused_upload_area_id(self):
         area_id = str(uuid.uuid4())
 
@@ -170,8 +192,7 @@ class TestAreaApi(unittest.TestCase):
         self.assertEqual(response.content_type, 'application/problem+json')
 
     def test_locking_of_upload_area(self):
-        area_id = str(uuid.uuid4())
-        self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
+        area_id = self._create_area()
         user_name = f"upload-{self.deployment_stage}-user-" + area_id
         policy_name = 'upload-' + area_id
         policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
@@ -189,8 +210,7 @@ class TestAreaApi(unittest.TestCase):
         self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
 
     def test_put_file_without_content_type_dcp_type_param(self):
-        area_id = str(uuid.uuid4())
-        self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
+        area_id = self._create_area()
         headers = {'Content-Type': 'application/json'}
         headers.update(self.authentication_header)
 
@@ -201,8 +221,7 @@ class TestAreaApi(unittest.TestCase):
         self.assertIn("missing parameter \'dcp-type\'", response.data.decode('utf8'))
 
     def test_put_file(self):
-        area_id = str(uuid.uuid4())
-        self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
+        area_id = self._create_area()
         headers = {'Content-Type': 'application/json; dcp-type="metadata/sample"'}
         headers.update(self.authentication_header)
 
@@ -231,32 +250,10 @@ class TestAreaApi(unittest.TestCase):
         self.assertEqual(obj.get()['Body'].read(), "exquisite corpse".encode('utf8'))
 
     def test_list_files(self):
-        area_id = str(uuid.uuid4())
-        self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
-        file1_key = f"{area_id}/file1.json"
-        o1 = self.upload_bucket.Object(file1_key)
-        o1.put(Body="foo", ContentType="application/json")
-        boto3.client('s3').put_object_tagging(Bucket=self.upload_bucket_name, Key=file1_key, Tagging={
-            'TagSet': [
-                {'Key': 'hca-dss-content-type', 'Value': 'application/json'},
-                {'Key': 'hca-dss-s3_etag', 'Value': '1'},
-                {'Key': 'hca-dss-sha1', 'Value': '2'},
-                {'Key': 'hca-dss-sha256', 'Value': '3'},
-                {'Key': 'hca-dss-crc32c', 'Value': '4'}
-            ]
-        })
-        file2_key = f"{area_id}/file2.json"
-        o2 = self.upload_bucket.Object(file2_key)
-        o2.put(Body="ba ba ba ba ba barane", ContentType="dcp/data-file")
-        boto3.client('s3').put_object_tagging(Bucket=self.upload_bucket_name, Key=file2_key, Tagging={
-            'TagSet': [
-                {'Key': 'hca-dss-content-type', 'Value': 'dcp/data-file'},
-                {'Key': 'hca-dss-s3_etag', 'Value': 'a'},
-                {'Key': 'hca-dss-sha1', 'Value': 'b'},
-                {'Key': 'hca-dss-sha256', 'Value': 'c'},
-                {'Key': 'hca-dss-crc32c', 'Value': 'd'}
-            ]
-        })
+        area_id = self._create_area()
+        o1 = self._mock_upload_file(area_id, 'file1.json', content_type='application/json; dcp-type="metadata/foo"')
+        o2 = self._mock_upload_file(area_id, 'file2.fastq.gz', content_type='application/octet-stream; dcp-type=data',
+                                    checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
 
         response = self.client.get(f"/v1/area/{area_id}")
 
@@ -269,28 +266,26 @@ class TestAreaApi(unittest.TestCase):
             'upload_area_id': area_id,
             'name': 'file1.json',
             'last_modified': o1.last_modified.isoformat(),
-            'content_type': 'application/json',
+            'content_type': 'application/json; dcp-type="metadata/foo"',
             'url': f"s3://{self.upload_bucket_name}/{area_id}/file1.json",
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         })
         self.assertEqual(data['files'][1], {
             'upload_area_id': area_id,
-            'name': 'file2.json',
+            'name': 'file2.fastq.gz',
             'last_modified': o2.last_modified.isoformat(),
-            'content_type': 'dcp/data-file',
-            'url': f"s3://{self.upload_bucket_name}/{area_id}/file2.json",
+            'content_type': 'application/octet-stream; dcp-type=data',
+            'url': f"s3://{self.upload_bucket_name}/{area_id}/file2.fastq.gz",
             'checksums': {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'}
         })
 
     def test_list_files_only_lists_files_in_my_upload_area(self):
-        area1_id = str(uuid.uuid4())
-        area2_id = str(uuid.uuid4())
-        self.client.post(f"/v1/area/{area1_id}", headers=self.authentication_header)
-        self.client.post(f"/v1/area/{area2_id}", headers=self.authentication_header)
+        area1_id = self._create_area()
+        area2_id = self._create_area()
         area_1_files = ['file1', 'file2']
         area_2_files = ['file3', 'file4']
-        [self.upload_bucket.Object(f"{area1_id}/{file}").put(Body="foo") for file in area_1_files]
-        [self.upload_bucket.Object(f"{area2_id}/{file}").put(Body="foo") for file in area_2_files]
+        [self._mock_upload_file(area1_id, file) for file in area_1_files]
+        [self._mock_upload_file(area2_id, file) for file in area_2_files]
 
         response = self.client.get(f"/v1/area/{area2_id}")
 
@@ -299,21 +294,9 @@ class TestAreaApi(unittest.TestCase):
         self.assertEqual([file['name'] for file in data['files']], area_2_files)
 
     def test_get_file_for_existing_file(self):
-        area_id = str(uuid.uuid4())
-        self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
+        area_id = self._create_area()
         filename = 'file1.json'
-        file1_key = f"{area_id}/file1.json"
-        o1 = self.upload_bucket.Object(file1_key)
-        o1.put(Body="foo", ContentType="application/json")
-        boto3.client('s3').put_object_tagging(Bucket=self.upload_bucket_name, Key=file1_key, Tagging={
-            'TagSet': [
-                {'Key': 'hca-dss-content-type', 'Value': 'application/json'},
-                {'Key': 'hca-dss-s3_etag', 'Value': '1'},
-                {'Key': 'hca-dss-sha1', 'Value': '2'},
-                {'Key': 'hca-dss-sha256', 'Value': '3'},
-                {'Key': 'hca-dss-crc32c', 'Value': '4'}
-            ]
-        })
+        s3obj = self._mock_upload_file(area_id, filename)
 
         response = self.client.get(f"/v1/area/{area_id}/{filename}")
 
@@ -324,7 +307,7 @@ class TestAreaApi(unittest.TestCase):
         self.assertEqual(data, {
             'upload_area_id': area_id,
             'name': 'file1.json',
-            'last_modified': o1.last_modified.isoformat(),
+            'last_modified': s3obj.last_modified.isoformat(),
             'content_type': 'application/json',
             'url': f"s3://{self.upload_bucket_name}/{area_id}/file1.json",
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
