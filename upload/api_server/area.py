@@ -77,7 +77,6 @@ def list_files(upload_area_id: str):
 
 @return_exceptions_as_http_errors
 def file_info(upload_area_id: str, filename: str):
-    EventNotifier.notify(f"{upload_area_id} listing file {filename}")
     upload_area = _load_upload_area(upload_area_id)
     uploaded_file = upload_area.uploaded_file(filename)
     return uploaded_file.info(), requests.codes.ok
