@@ -82,6 +82,17 @@ def file_info(upload_area_id: str, filename: str):
     return uploaded_file.info(), requests.codes.ok
 
 
+@return_exceptions_as_http_errors
+def files_info(upload_area_id: str, body: str):
+    filename_list = json.loads(body)
+    upload_area = _load_upload_area(upload_area_id)
+    response_data = []
+    for filename in filename_list:
+        uploaded_file = upload_area.uploaded_file(filename)
+        response_data.append(uploaded_file.info())
+    return response_data, requests.codes.ok
+
+
 def _load_upload_area(upload_area_id: str):
     upload_area = UploadArea(upload_area_id)
 

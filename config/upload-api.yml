@@ -342,6 +342,50 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+  /area/{upload_area_id}/files_info:
+    put:
+      summary: Get information about files
+      operationId: upload.api_server.area.files_info
+      description: |
+        Get information about a set of files listed in the message body.
+        Note that altough the HTTP verb of this endpoint is PUT, it is a read-only operation and does not modify data.
+        The reason it is a PUT is that we need a payload in this request to deliver a potentially large list of files
+        and per the HTTP spec GET requests cannot contain a (meaningful) body.
+      tags:
+        - All
+      parameters:
+        - name: upload_area_id
+          in: path
+          description: A RFC4122-compliant ID for the upload area.
+          required: true
+          type: string
+        - name: body
+          in: body
+          description: A JSON array of filenames to receive information about.
+          required: true
+          schema:
+            type: array
+            items:
+              description: a filename within the upload area
+              type: string
+
+      responses:
+        200:
+          description: File information returned successfully.
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/FileInfo"
+        404:
+          description: Could not find upload area or file.
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+
   /config/client:
     get:
       summary: Configuration information required by upload clients to use this Upload Service deployment.
@@ -397,6 +441,12 @@ definitions:
       size:
         type: integer
         description: File size.
+      last_modified:
+        type: string
+        description: Last modification date in ISO 8601 format
+      upload_area_id:
+        type: string
+        description: The RFC4122-compliant ID of the upload area that contains this file.
       url:
         type: string
         description: URL of storage location of file.

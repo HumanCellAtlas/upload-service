@@ -323,6 +323,41 @@ class TestAreaApi(unittest.TestCase):
         response = self.client.get(f"/v1/area/{area_id}/bogofile")
         self.assertEqual(response.status_code, 404)
 
+    def test_put_files_info(self):
+        area_id = self._create_area()
+        o1 = self._mock_upload_file(area_id, 'file1.json', content_type='application/json; dcp-type="metadata/foo"')
+        o2 = self._mock_upload_file(area_id, 'file2.fastq.gz', content_type='application/octet-stream; dcp-type=data',
+                                    checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
+        self._mock_upload_file(area_id, 'a_file_in_the_same_area_that_we_will_not_attempt_to_list')
+
+        response = self.client.put(f"/v1/area/{area_id}/files_info", content_type='application/json',
+                                   data=(json.dumps(['file1.json', 'file2.fastq.gz'])))
+
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data)
+        self.assertEqual(len(data), 2)
+
+        self.assertIn('size', data[0].keys())  # moto file sizes are not accurate
+        for fileinfo in data:
+            del fileinfo['size']
+
+        self.assertEqual(data[0], {
+            'upload_area_id': area_id,
+            'name': 'file1.json',
+            'last_modified': o1.last_modified.isoformat(),
+            'content_type': 'application/json; dcp-type="metadata/foo"',
+            'url': f"s3://{self.upload_bucket_name}/{area_id}/file1.json",
+            'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
+        })
+        self.assertEqual(data[1], {
+            'upload_area_id': area_id,
+            'name': 'file2.fastq.gz',
+            'last_modified': o2.last_modified.isoformat(),
+            'content_type': 'application/octet-stream; dcp-type=data',
+            'url': f"s3://{self.upload_bucket_name}/{area_id}/file2.fastq.gz",
+            'checksums': {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'}
+        })
+
 
 if __name__ == '__main__':
     unittest.main()
