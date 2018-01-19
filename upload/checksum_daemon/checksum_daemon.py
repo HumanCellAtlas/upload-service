@@ -3,6 +3,7 @@ import time
 from upload import UploadArea
 from .ingest_notifier import IngestNotifier
 from .. import EventNotifier
+from six.moves import urllib
 
 
 class ChecksumDaemon:
@@ -27,7 +28,7 @@ class ChecksumDaemon:
     def _retrieve_file(self, file_key):
         self.log(f"File: {file_key}")
         area_uuid = file_key.split('/')[0]
-        filename = file_key[len(area_uuid) + 1:]
+        filename = urllib.parse.unquote(file_key[len(area_uuid) + 1:])
         upload_area = UploadArea(area_uuid)
         return upload_area, upload_area.uploaded_file(filename)
 
