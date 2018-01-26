@@ -9,7 +9,7 @@ from .. import UploadException
 
 class IngestNotifier:
 
-    INGEST_AMQP_SERVER = f"amqp.ingest.{os.environ['DEPLOYMENT_STAGE']}.data.humancellatlas.org"
+    INGEST_AMQP_SERVER = os.environ['INGEST_AMQP_SERVER']
     FILE_UPLOAD_EXCHANGE = 'ingest.file.staged.exchange'
     FILE_UPLOADED_QUEUE = 'ingest.file.create.staged'
 
