@@ -5,7 +5,7 @@ function usage() {
 
 Usage: $(basename $0) <deployment>
 
-Deployment = "local", "dev", or "staging"
+Deployment = "local", "dev", "staging" or "prod"
 
 EOF
     exit 1
@@ -16,11 +16,11 @@ EOF
 DEPLOYMENT=$1
 
 case ${DEPLOYMENT} in
-dev|staging)
-    API_URL=https://${SERVICE_NAME}.${DEPLOYMENT}.${DCP_DNS_DOMAIN}/v1
+dev|staging|prod)
+    API_URL="https://${API_HOST}/v1"
     ;;
 local)
-    API_URL=http://localhost:5000/v1
+    API_URL="http://localhost:5000/v1"
     DEPLOYMENT=dev
     ;;
 esac
