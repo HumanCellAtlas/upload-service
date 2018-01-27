@@ -6,7 +6,7 @@ import boto3
 class EventNotifier:
 
     AWS_REGION = 'us-east-1'
-    DCP_EVENTS_TOPIC = 'dcp-events'
+    DCP_EVENTS_TOPIC = os.environ['DCP_EVENTS_TOPIC']
 
     @staticmethod
     def notify(message, channel=None):
