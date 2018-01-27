@@ -9,18 +9,18 @@ from .. import UploadException
 
 class IngestNotifier:
 
-    INGEST_AMQP_SERVER = os.environ['INGEST_AMQP_SERVER']
     FILE_UPLOAD_EXCHANGE = 'ingest.file.staged.exchange'
     FILE_UPLOADED_QUEUE = 'ingest.file.create.staged'
 
     def __init__(self, logfunc=None):
+        self.ingest_amqp_server = os.environ['INGEST_AMQP_SERVER']
         self.logfunc = logfunc
         self.debug("starting")
         self.connect()
 
     def connect(self):
-        self.debug(f"connecting to {self.INGEST_AMQP_SERVER}")
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters(self.INGEST_AMQP_SERVER))
+        self.debug(f"connecting to {self.ingest_amqp_server}")
+        self.connection = pika.BlockingConnection(pika.ConnectionParameters(self.ingest_amqp_server))
         self.debug(f"got connection {self.connection}")
         self.channel = self.connection.channel()
         self.debug(f"got channel {self.channel}")
@@ -35,7 +35,7 @@ class IngestNotifier:
         self.debug(f"publish of {body} returned {success}")
         if not success:
             raise UploadException(status=requests.codes.server_error, title="Unexpected Error",
-                                  detail=f"basic_publish to {self.INGEST_AMQP_SERVER} returned {success}")
+                                  detail=f"basic_publish to {self.ingest_amqp_server} returned {success}")
         self.connection.close()
         return success
 
