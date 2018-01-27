@@ -11,13 +11,11 @@ if __name__ == '__main__':
 class TestConfigApi(unittest.TestCase):
 
     def setUp(self):
-        with EnvironmentSetup({'BUCKET_NAME_PREFIX': 'bogobucket-',
-                               'DEPLOYMENT_STAGE': 'test'}):
-            self.client = client_for_test_api_server()
+        self.client = client_for_test_api_server()
 
     def test_client_config(self):
 
-        with EnvironmentSetup({'BUCKET_NAME_PREFIX': 'bogo-prefix-',
+        with EnvironmentSetup({'BUCKET_NAME_TEMPLATE': 'bogo-prefix-{deployment_stage}',
                                'DEPLOYMENT_STAGE': 'test'}):
 
             response = self.client.get("/v1/config/client")

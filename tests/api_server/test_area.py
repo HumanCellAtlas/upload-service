@@ -21,7 +21,7 @@ class TestApiAuthenticationErrors(unittest.TestCase):
 
         # Setup app
         with EnvironmentSetup({
-            'BUCKET_NAME_PREFIX': "bogobucket-",
+            'BUCKET_NAME': "bogobucket",
             'DEPLOYMENT_STAGE': 'test',
             'INGEST_API_KEY': 'unguessable'
         }):
@@ -30,7 +30,7 @@ class TestApiAuthenticationErrors(unittest.TestCase):
     def test_call_without_auth_setup(self):
         # Use a different app instance started without an INGEST_API_KEY
         with EnvironmentSetup({
-            'BUCKET_NAME_PREFIX': "bogobucket-",
+            'BUCKET_NAME': "bogobucket",
             'DEPLOYMENT_STAGE': 'test',
             'INGEST_API_KEY': None
         }):
@@ -70,7 +70,7 @@ class TestAreaApi(unittest.TestCase):
 
         # Setup upload bucket
         self.deployment_stage = 'test'
-        self.upload_bucket_name = f'bogobucket-{self.deployment_stage}'
+        self.upload_bucket_name = f'bogobucket'
         self.upload_bucket = boto3.resource('s3').Bucket(self.upload_bucket_name)
         self.upload_bucket.create()
         # Setup authentication
@@ -80,10 +80,11 @@ class TestAreaApi(unittest.TestCase):
         # Setup SNS
         boto3.resource('sns').create_topic(Name='dcp-events')
         # Setup app
-        with EnvironmentSetup({
-            'DEPLOYMENT_STAGE': self.deployment_stage
-        }):
-            self.client = client_for_test_api_server()
+        self.client = client_for_test_api_server()
+        self.environment = {
+            'BUCKET_NAME': self.upload_bucket_name,
+            'DEPLOYMENT_STAGE': self.deployment_stage,
+        }
 
     def tearDown(self):
         self.s3_mock.stop()
@@ -116,7 +117,9 @@ class TestAreaApi(unittest.TestCase):
     def test_create_with_unused_upload_area_id(self):
         area_id = str(uuid.uuid4())
 
-        response = self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
+        with EnvironmentSetup(self.environment):
+
+            response = self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
 
         self.assertEqual(response.status_code, 201)
         body = json.loads(response.data)
@@ -175,7 +178,8 @@ class TestAreaApi(unittest.TestCase):
         obj = bucket.Object(f'{area_id}/test_file')
         obj.put(Body="foo")
 
-        response = self.client.delete(f"/v1/area/{area_id}", headers=self.authentication_header)
+        with EnvironmentSetup(self.environment):
+            response = self.client.delete(f"/v1/area/{area_id}", headers=self.authentication_header)
 
         self.assertEqual(response.status_code, 204)
         with self.assertRaises(ClientError):
@@ -225,7 +229,8 @@ class TestAreaApi(unittest.TestCase):
         headers = {'Content-Type': 'application/json; dcp-type="metadata/sample"'}
         headers.update(self.authentication_header)
 
-        response = self.client.put(f"/v1/area/{area_id}/some.json", data="exquisite corpse", headers=headers)
+        with EnvironmentSetup(self.environment):
+            response = self.client.put(f"/v1/area/{area_id}/some.json", data="exquisite corpse", headers=headers)
 
         s3_key = f"{area_id}/some.json"
         o1 = self.upload_bucket.Object(s3_key)
@@ -255,7 +260,8 @@ class TestAreaApi(unittest.TestCase):
         o2 = self._mock_upload_file(area_id, 'file2.fastq.gz', content_type='application/octet-stream; dcp-type=data',
                                     checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
 
-        response = self.client.get(f"/v1/area/{area_id}")
+        with EnvironmentSetup(self.environment):
+            response = self.client.get(f"/v1/area/{area_id}")
 
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.data)
@@ -287,7 +293,8 @@ class TestAreaApi(unittest.TestCase):
         [self._mock_upload_file(area1_id, file) for file in area_1_files]
         [self._mock_upload_file(area2_id, file) for file in area_2_files]
 
-        response = self.client.get(f"/v1/area/{area2_id}")
+        with EnvironmentSetup(self.environment):
+            response = self.client.get(f"/v1/area/{area2_id}")
 
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.data)
@@ -298,7 +305,8 @@ class TestAreaApi(unittest.TestCase):
         filename = 'file1.json'
         s3obj = self._mock_upload_file(area_id, filename)
 
-        response = self.client.get(f"/v1/area/{area_id}/{filename}")
+        with EnvironmentSetup(self.environment):
+            response = self.client.get(f"/v1/area/{area_id}/{filename}")
 
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.data)
@@ -318,10 +326,12 @@ class TestAreaApi(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
 
         area_id = str(uuid.uuid4())
-        self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
 
-        response = self.client.get(f"/v1/area/{area_id}/bogofile")
-        self.assertEqual(response.status_code, 404)
+        with EnvironmentSetup(self.environment):
+            self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
+
+            response = self.client.get(f"/v1/area/{area_id}/bogofile")
+            self.assertEqual(response.status_code, 404)
 
     def test_put_files_info(self):
         area_id = self._create_area()
@@ -330,8 +340,9 @@ class TestAreaApi(unittest.TestCase):
                                     checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
         self._mock_upload_file(area_id, 'a_file_in_the_same_area_that_we_will_not_attempt_to_list')
 
-        response = self.client.put(f"/v1/area/{area_id}/files_info", content_type='application/json',
-                                   data=(json.dumps(['file1.json', 'file2.fastq.gz'])))
+        with EnvironmentSetup(self.environment):
+            response = self.client.put(f"/v1/area/{area_id}/files_info", content_type='application/json',
+                                       data=(json.dumps(['file1.json', 'file2.fastq.gz'])))
 
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.data)

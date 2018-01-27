@@ -13,7 +13,6 @@ iam = boto3.resource('iam')
 
 class UploadArea:
 
-    BUCKET_NAME_TEMPLATE = "{prefix}{deployment_stage}"
     USER_NAME_TEMPLATE = "upload-{deployment_stage}-user-{uuid}"
     ACCESS_POLICY_NAME_TEMPLATE = "upload-{uuid}"
 
@@ -21,15 +20,14 @@ class UploadArea:
         self.uuid = uuid
         self.key_prefix = f"{self.uuid}/"
         self.key_prefix_length = len(self.key_prefix)
-        self.bucket_name = self.BUCKET_NAME_TEMPLATE.format(prefix=os.environ['BUCKET_NAME_PREFIX'],
-                                                            deployment_stage=self._deployment_stage)
+        self.bucket_name = os.environ['BUCKET_NAME']
         self.user_name = self.USER_NAME_TEMPLATE.format(deployment_stage=self._deployment_stage, uuid=uuid)
         self._bucket = s3.Bucket(self.bucket_name)
         self._user = iam.User(self.user_name)
         self._credentials = None
 
     @property
-    def _deployment_stage(cls):
+    def _deployment_stage(self):
         return os.environ['DEPLOYMENT_STAGE']
 
     @property

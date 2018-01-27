@@ -53,7 +53,7 @@ function setup_policy_json() {
     policy_json=".chalice/policy.json"
     stage_policy_json=".chalice/policy-${stage}.json"
     policy_template="${PROJECT_ROOT}/config/iam-policy-templates/${app_name}-lambda.json"
-    cat "$policy_template" | envsubst '$BUCKET_NAME_PREFIX $DEPLOYMENT_STAGE $account_id $stage $region_name' > "$policy_json"
+    cat "$policy_template" | envsubst '$BUCKET_NAME $account_id' > "$policy_json"
     cp "$policy_json" "$stage_policy_json"
 }
 

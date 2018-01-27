@@ -18,9 +18,8 @@ from upload.checksum_daemon import ChecksumDaemon  # noqa
 
 class TestChecksumDaemon(unittest.TestCase):
 
-    UPLOAD_BUCKET_PREFIX = 'bogobucket-'
     DEPLOYMENT_STAGE = 'test'
-    UPLOAD_BUCKET_NAME = f'{UPLOAD_BUCKET_PREFIX}{DEPLOYMENT_STAGE}'
+    UPLOAD_BUCKET_NAME = 'bogobucket'
 
     def setUp(self):
         # Setup mock AWS
@@ -37,11 +36,12 @@ class TestChecksumDaemon(unittest.TestCase):
         boto3.resource('sns').create_topic(Name='dcp-events')
         # daemon
         context = Mock()
-        with EnvironmentSetup({
-            'BUCKET_NAME_PREFIX': self.UPLOAD_BUCKET_PREFIX,
-            'DEPLOYMENT_STAGE': self.DEPLOYMENT_STAGE
-        }):
-            self.daemon = ChecksumDaemon(context)
+        self.daemon = ChecksumDaemon(context)
+        self.environment = {
+            'BUCKET_NAME': self.UPLOAD_BUCKET_NAME,
+            'DEPLOYMENT_STAGE': self.DEPLOYMENT_STAGE,
+            'INGEST_AMQP_SERVER': 'foo'
+        }
         # File
         self.area_id = str(uuid.uuid4())
         self.content_type = 'text/html'
@@ -73,7 +73,8 @@ class TestChecksumDaemon(unittest.TestCase):
     @patch('upload.checksum_daemon.checksum_daemon.IngestNotifier.file_was_uploaded')
     def test_consume_event_sets_tags(self, mock_file_was_uploaded, mock_connect):
 
-        self.daemon.consume_event(self.event)
+        with EnvironmentSetup(self.environment):
+            self.daemon.consume_event(self.event)
 
         tagging = boto3.client('s3').get_object_tagging(Bucket=self.UPLOAD_BUCKET_NAME, Key=self.file_key)
         self.assertEqual(tagging['TagSet'], [
@@ -87,7 +88,8 @@ class TestChecksumDaemon(unittest.TestCase):
     @patch('upload.checksum_daemon.checksum_daemon.IngestNotifier.file_was_uploaded')
     def test_consume_event_notifies_ingest(self, mock_file_was_uploaded, mock_connect):
 
-        self.daemon.consume_event(self.event)
+        with EnvironmentSetup(self.environment):
+            self.daemon.consume_event(self.event)
 
         self.assertTrue(mock_connect.called,
                         'IngestNotifier.connect should have been called')
