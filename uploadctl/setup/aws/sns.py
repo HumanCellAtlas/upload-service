@@ -12,7 +12,7 @@ class SnsTopic(Component):
         super().__init__()
         self.sns = boto3.client('sns')
         account_id = boto3.client('sts').get_caller_identity().get('Account')
-        self.arn = f"arn:aws:sns:{os.environ['AWS_REGION']}:{account_id}:{self.name}"
+        self.arn = f"arn:aws:sns:{os.environ['AWS_DEFAULT_REGION']}:{account_id}:{self.name}"
 
     def __str__(self):
         return f"SNS topic {self.name}"
