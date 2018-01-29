@@ -3,6 +3,7 @@
 """
 Upload Service Administration Tool
 
+    uploadctl setup|check|teardown   Manage cloud infrastructure
     uploadctl cleanup                Remove old upload areas
     uploadctl test                   Test Upload Service, run uploadctl test -h for more details
 """
@@ -11,6 +12,7 @@ import argparse
 import os
 
 from .amqp_tool import AmqpTool
+from .setup.conductor import SetupConductor
 from .upload_cleaner import UploadCleaner
 
 
@@ -37,7 +39,11 @@ class UploadctlCLI:
 
         deployment = self._check_deployment(args)
 
-        if args.command == 'cleanup':
+        if args.command in ['setup', 'check', 'teardown']:
+            setup = SetupConductor(component=args.component)
+            getattr(setup, args.command)()
+
+        elif args.command == 'cleanup':
             UploadCleaner(deployment,
                           clean_older_than_days=args.age_days,
                           ignore_file_age=args.ignore_file_age,
@@ -56,6 +62,18 @@ class UploadctlCLI:
         cleanup_parser.add_argument('--age-days', type=int, default=3, help="delete areas older than this")
         cleanup_parser.add_argument('--ignore-file-age', action='store_true', help="ignore age of files in bucket")
         cleanup_parser.add_argument('--dry-run', action='store_true', help="examine but don't take action")
+
+        setup_parser = subparsers.add_parser('setup')
+        setup_parser.set_defaults(command='setup')
+        setup_parser.add_argument('component', nargs='?', choices=list(SetupConductor.SUBCOMPONENTS.keys()))
+
+        check_parser = subparsers.add_parser('check')
+        check_parser.set_defaults(command='check')
+        check_parser.add_argument('component', nargs='?', choices=list(SetupConductor.SUBCOMPONENTS.keys()))
+
+        teardown_parser = subparsers.add_parser('teardown')
+        teardown_parser.set_defaults(command='teardown')
+        teardown_parser.add_argument('component', nargs='?', choices=list(SetupConductor.SUBCOMPONENTS.keys()))
 
         test_parser = subparsers.add_parser('test', formatter_class=argparse.RawTextHelpFormatter,
                                             description="""Test Upload Service components:
