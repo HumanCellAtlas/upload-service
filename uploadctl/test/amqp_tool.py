@@ -3,7 +3,6 @@ import os
 import pika
 
 
-
 class AmqpTool:
 
     FILE_UPLOAD_EXCHANGE = 'ingest.file.staged.exchange'

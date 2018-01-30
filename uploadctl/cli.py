@@ -11,8 +11,8 @@ Upload Service Administration Tool
 import argparse
 import os
 
-from .amqp_tool import AmqpTool
 from .setup import SetupCLI
+from .test import TestCLI
 from .upload_cleaner import UploadCleaner
 
 
@@ -27,20 +27,13 @@ class UploadctlCLI:
             parser.print_help()
             exit(1)
 
-        if args.command == 'amqp':
-            if args.amqp_command == 'listen':
-                tool = AmqpTool(server=args.server, exchange_name=args.exchange, queue_name=args.queue_name)
-                tool.create_queue()
-                tool.listen()
-            elif args.amqp_command == 'publish':
-                tool = AmqpTool(server=args.server, exchange_name=args.exchange, queue_name=args.queue_name)
-                tool.publish()
-                exit(0)
-
         deployment = self._check_deployment(args)
 
         if args.command in ['setup', 'check', 'teardown']:
             SetupCLI.run(args)
+
+        if args.command == 'test':
+            TestCLI.run(args)
 
         elif args.command == 'cleanup':
             UploadCleaner(deployment,
@@ -63,21 +56,7 @@ class UploadctlCLI:
         cleanup_parser.add_argument('--dry-run', action='store_true', help="examine but don't take action")
 
         SetupCLI.configure(subparsers)
-
-        test_parser = subparsers.add_parser('test', formatter_class=argparse.RawTextHelpFormatter,
-                                            description="""Test Upload Service components:
-        
-        uploadctl test amqp listen|publish
-        """)
-        test_subparsers = test_parser.add_subparsers()
-
-        amqp_parser = test_subparsers.add_parser('amqp', description="Test AMQP server")
-        amqp_parser.set_defaults(command='amqp')
-        amqp_parser.add_argument('amqp_command', choices=['publish', 'listen'])
-        amqp_parser.add_argument('queue_name', nargs='?', default='ingest.sam.test')
-        amqp_parser.add_argument('-e', '--exchange')
-        amqp_parser.add_argument('-s', '--server')
-
+        TestCLI.configure(subparsers)
         return parser
 
     @staticmethod
