@@ -12,7 +12,7 @@ import argparse
 import os
 
 from .amqp_tool import AmqpTool
-from .setup.conductor import SetupConductor
+from .setup import SetupCLI
 from .upload_cleaner import UploadCleaner
 
 
@@ -40,12 +40,7 @@ class UploadctlCLI:
         deployment = self._check_deployment(args)
 
         if args.command in ['setup', 'check', 'teardown']:
-            if args.component:
-                component = SetupConductor.SUBCOMPONENTS[args.component](**vars(args))
-                getattr(component, args.command)()
-            else:
-                setup = SetupConductor(**vars(args))
-                getattr(setup, args.command)()
+            SetupCLI.run(args)
 
         elif args.command == 'cleanup':
             UploadCleaner(deployment,
@@ -67,24 +62,7 @@ class UploadctlCLI:
         cleanup_parser.add_argument('--ignore-file-age', action='store_true', help="ignore age of files in bucket")
         cleanup_parser.add_argument('--dry-run', action='store_true', help="examine but don't take action")
 
-        setup_parser = subparsers.add_parser('setup')
-        setup_parser.set_defaults(command='setup')
-        setup_parser.add_argument('component', nargs='?', choices=list(SetupConductor.SUBCOMPONENTS.keys()))
-        setup_parser.add_argument('--ami', type=str, metavar="ID",
-                                  help="AMI to use for validation batch compute env setup")
-        setup_parser.add_argument('--ec2-key-pair', type=str, metavar="KEYNAME",
-                                  help="Key pair to use for validation batch compute env setup")
-        setup_parser.add_argument('--security-groups', type=str, metavar="GROUPS", default='default',
-                                  help="Comma-separated list of EC2 security groups to use"
-                                       " for validation batch compute env setup")
-
-        check_parser = subparsers.add_parser('check')
-        check_parser.set_defaults(command='check')
-        check_parser.add_argument('component', nargs='?', choices=list(SetupConductor.SUBCOMPONENTS.keys()))
-
-        teardown_parser = subparsers.add_parser('teardown')
-        teardown_parser.set_defaults(command='teardown')
-        teardown_parser.add_argument('component', nargs='?', choices=list(SetupConductor.SUBCOMPONENTS.keys()))
+        SetupCLI.configure(subparsers)
 
         test_parser = subparsers.add_parser('test', formatter_class=argparse.RawTextHelpFormatter,
                                             description="""Test Upload Service components:
