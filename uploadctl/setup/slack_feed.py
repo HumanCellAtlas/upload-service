@@ -12,12 +12,12 @@ from .aws.sns import SnsTopic
 
 class DcpEventsSnsTopic(SnsTopic):
 
-    def __init__(self):
-        super().__init__(name=os.environ['DCP_EVENTS_TOPIC'])
+    def __init__(self, **options):
+        super().__init__(name=os.environ['DCP_EVENTS_TOPIC'], **options)
 
 
 class DcpEventsRole(IAMRole):
-    def __init__(self):
+    def __init__(self, **options):
         super().__init__(name='dcp-events-slackbot', trust_document=json.dumps(
             {
                 "Version": "2012-10-17",
@@ -30,12 +30,13 @@ class DcpEventsRole(IAMRole):
                         "Action": "sts:AssumeRole"
                     }
                 ]
-            })
+            }),
+            **options
         )
 
 
 class DcpEventsRoleInlinePolicy(RoleInlinePolicy):
-    def __init__(self):
+    def __init__(self, **options):
         super().__init__(role_name="dcp-events-slackbot",
                          name="dcp-events-slackbot",
                          policy_document=json.dumps(
@@ -54,8 +55,8 @@ class DcpEventsRoleInlinePolicy(RoleInlinePolicy):
                                          ]
                                      }
                                  ]
-                             })
-                         )
+                             }),
+                         **options)
 
 
 class SlackFeed(CompositeComponent):

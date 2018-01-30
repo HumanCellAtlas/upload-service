@@ -5,9 +5,9 @@ from ..component import Component, ExternalControl
 
 class Lambda(Component):
 
-    def __init__(self, name):
+    def __init__(self, name, **options):
         self.name = name
-        super().__init__()
+        super().__init__(**options)
         self.lamb = boto3.client('lambda')
 
     def __str__(self):

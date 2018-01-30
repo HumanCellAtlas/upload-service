@@ -40,8 +40,12 @@ class UploadctlCLI:
         deployment = self._check_deployment(args)
 
         if args.command in ['setup', 'check', 'teardown']:
-            setup = SetupConductor(component=args.component)
-            getattr(setup, args.command)()
+            if args.component:
+                component = SetupConductor.SUBCOMPONENTS[args.component](**vars(args))
+                getattr(component, args.command)()
+            else:
+                setup = SetupConductor(**vars(args))
+                getattr(setup, args.command)()
 
         elif args.command == 'cleanup':
             UploadCleaner(deployment,

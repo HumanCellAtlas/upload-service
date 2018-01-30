@@ -21,7 +21,8 @@ class Component:
     TEARDOWN_WORD = "DELETED"
     MISSING_WORD = "MISSING"
 
-    def __init__(self, quiet=False):
+    def __init__(self, **options):
+        quiet = options.get('quiet', False)
         global indent_level
         if not quiet:
             sys.stdout.write("%s%-90s " % (indent(), str(self)))
@@ -83,9 +84,9 @@ class CompositeComponent:
 
     SUBCOMPONENTS = {}
 
-    def __init__(self, component=None):
-        self.component_name = component
-        if not component and str(self) is not '':
+    def __init__(self, **options):
+        self.options = options
+        if str(self) is not '':
             print(indent() + str(self))
 
     def setup(self):
@@ -100,21 +101,18 @@ class CompositeComponent:
     def _apply_action(self, action, reverse_order=False):
         global indent_level
         indent_level += 1
-        if self.component_name:
-            self._apply_action_to_component(self.component_name, action)
-        else:
-            components = list(self.SUBCOMPONENTS)
-            if reverse_order:
-                components.reverse()
-            try:
-                for component in components:
-                    self._apply_action_to_component(component, action)
-            except AbortComposite:
-                pass
+        components = list(self.SUBCOMPONENTS)
+        if reverse_order:
+            components.reverse()
+        try:
+            for component in components:
+                self._apply_action_to_component(component, action)
+        except AbortComposite:
+            pass
         indent_level -= 1
 
     def _apply_action_to_component(self, component_name, action):
-        manager_class = self.SUBCOMPONENTS[component_name]
-        manager = manager_class()
-        action_func = getattr(manager, action)
+        component_class = self.SUBCOMPONENTS[component_name]
+        component = component_class(**self.options)
+        action_func = getattr(component, action)
         action_func()

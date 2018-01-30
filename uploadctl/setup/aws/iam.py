@@ -6,10 +6,11 @@ from ..component import Component
 
 class IAMRole(Component):
 
-    def __init__(self, name, trust_document):
+    def __init__(self, name, trust_document, **options):
         self.name = name
         self.trust_document = trust_document
-        super().__init__()
+        self.attach_policies = options.get('attach_policies', [])
+        super().__init__(**options)
         self.iam = boto3.client('iam')
 
     def __str__(self):
@@ -34,11 +35,11 @@ class IAMRole(Component):
 
 class RoleInlinePolicy(Component):
 
-    def __init__(self, role_name, name, policy_document):
+    def __init__(self, role_name, name, policy_document, **options):
         self.role_name = role_name
         self.name = name
         self.policy_document = policy_document
-        super().__init__()
+        super().__init__(**options)
         self.iam = boto3.client('iam')
 
     def __str__(self):
@@ -55,3 +56,4 @@ class RoleInlinePolicy(Component):
 
     def tear_it_down(self):
         self.iam.delete_role_policy(RoleName=self.role_name, PolicyName=self.name)
+

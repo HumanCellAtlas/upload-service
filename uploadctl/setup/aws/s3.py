@@ -8,9 +8,9 @@ from ..component import Component, AttributeComponent
 
 class Bucket(Component):
 
-    def __init__(self, name):
+    def __init__(self, name, **options):
         self.name = name
-        super().__init__()
+        super().__init__(**options)
         self.s3 = boto3.resource('s3')
 
     def __str__(self):
@@ -42,9 +42,9 @@ class Bucket(Component):
 
 class BucketTransferAcceleration(AttributeComponent):
 
-    def __init__(self, bucket_name):
+    def __init__(self, bucket_name, **options):
         self.bucket_name = bucket_name
-        super().__init__()
+        super().__init__(**options)
         self.s3client = boto3.client('s3')
 
     def __str__(self):

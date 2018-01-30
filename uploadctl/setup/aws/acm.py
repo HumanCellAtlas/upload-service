@@ -5,10 +5,10 @@ from ..component import Component, ExternalControl
 
 class SslCertificate(Component):
 
-    def __init__(self, domain, quiet=False):
+    def __init__(self, domain, **options):
         self.domain = domain
         self.arn = None
-        super().__init__(quiet=quiet)
+        super().__init__(**options)
         self.acm = boto3.client('acm')
         self._load_arn()
 

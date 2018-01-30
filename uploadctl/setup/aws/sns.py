@@ -7,9 +7,9 @@ from ..component import Component
 
 class SnsTopic(Component):
 
-    def __init__(self, name):
+    def __init__(self, name, **options):
         self.name = name
-        super().__init__()
+        super().__init__(**options)
         self.sns = boto3.client('sns')
         account_id = boto3.client('sts').get_caller_identity().get('Account')
         self.arn = f"arn:aws:sns:{os.environ['AWS_DEFAULT_REGION']}:{account_id}:{self.name}"

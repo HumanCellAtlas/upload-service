@@ -10,13 +10,13 @@ from .acm import SslCertificate
 
 class RestApi(Component):
 
-    def __init__(self, name, stage, quiet=False):
+    def __init__(self, name, stage, **options):
         self.name = name
         self.stage_name = stage
         self.id = None
         self.apig = boto3.client('apigateway')
         self._load()
-        super().__init__(quiet=quiet)
+        super().__init__(**options)
 
     def __str__(self):
         return f"REST API {self.name}-{self.stage_name}"
@@ -41,9 +41,9 @@ class RestApi(Component):
 
 class DomainName(Component):
 
-    def __init__(self, domain):
+    def __init__(self, domain, **options):
         self.domain = domain
-        super().__init__()
+        super().__init__(**options)
         self.apig = boto3.client('apigateway')
 
     def __str__(self):
@@ -72,11 +72,11 @@ class DomainName(Component):
 
 class BasePathMapping(Component):
 
-    def __init__(self, domain_name, base_path, rest_api_id):
+    def __init__(self, domain_name, base_path, rest_api_id, **options):
         self.domain_name = domain_name
         self.base_path = base_path
         self.rest_api_id = rest_api_id
-        super().__init__()
+        super().__init__(**options)
         self.apig = boto3.client('apigateway')
 
     def __str__(self):
