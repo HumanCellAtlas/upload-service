@@ -12,6 +12,7 @@ import argparse
 import os
 
 from .cleanup import CleanupCLI
+from .diagnostics import DiagnosticsCLI
 from .setup import SetupCLI
 from .test import TestCLI
 
@@ -27,16 +28,22 @@ class UploadctlCLI:
             parser.print_help()
             exit(1)
 
+        elif args.command == 'diag':
+            DiagnosticsCLI.run(args)
+            exit(0)
+
         self._check_deployment(args)
 
         if args.command in ['setup', 'check', 'teardown']:
             SetupCLI.run(args)
 
-        if args.command == 'test':
+        elif args.command == 'test':
             TestCLI.run(args)
 
         elif args.command == 'cleanup':
             CleanupCLI.run(args)
+
+        exit(0)
 
     @staticmethod
     def _setup_argparse():
@@ -47,6 +54,7 @@ class UploadctlCLI:
         subparsers = parser.add_subparsers()
 
         CleanupCLI.configure(subparsers)
+        DiagnosticsCLI.configure(subparsers)
         SetupCLI.configure(subparsers)
         TestCLI.configure(subparsers)
         return parser
