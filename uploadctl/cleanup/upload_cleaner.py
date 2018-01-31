@@ -40,10 +40,11 @@ class UploadCleaner:
                 sys.stdout.write(f"\r{username} {self.CLEAR_TO_EOL}")
                 self.counts['users'] += 1
                 self._check_username_matches_deployment(username)
-                self._check_if_user_used_recently(user)
 
                 upload_area_uuid = '-'.join(user['UserName'].split("-")[3:])
                 self._check_special_case_upload_areas(upload_area_uuid)
+
+                self._check_if_user_used_recently(user)
 
                 area = UploadArea(upload_area_uuid)
                 self._check_if_files_modified_recently(area)
