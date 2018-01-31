@@ -37,6 +37,8 @@ class RestApi(Component):
                 for stage in self.apig.get_stages(restApiId=rest_api['id'])['item']:
                     if stage['stageName'] == self.stage_name:
                         self.id = rest_api['id']
+                        return
+        self.id = None
 
 
 class DomainName(Component):
