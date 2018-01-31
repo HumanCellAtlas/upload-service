@@ -1,8 +1,8 @@
 # Data Coordination Platform, Upload Service
 
 [![Staging Service Build Status](https://travis-ci.org/HumanCellAtlas/upload-service.svg?branch=master)](https://travis-ci.org/HumanCellAtlas/upload-service)
-[![CodeClimate Maintainability](https://api.codeclimate.com/v1/badges/4003ac7c053107137873/maintainability)](https://codeclimate.com/github/HumanCellAtlas/upload-service/maintainability)
-[![Test Coverage](https://api.codeclimate.com/v1/badges/4003ac7c053107137873/test_coverage)](https://codeclimate.com/github/HumanCellAtlas/upload-service/test_coverage)
+[![Maintainability](https://api.codeclimate.com/v1/badges/6deca9bc2ccd7516d739/maintainability)](https://codeclimate.com/github/HumanCellAtlas/upload-service/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/6deca9bc2ccd7516d739/test_coverage)](https://codeclimate.com/github/HumanCellAtlas/upload-service/test_coverage)
 
 ## Overview
 
