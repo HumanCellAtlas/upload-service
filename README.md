@@ -6,9 +6,10 @@
 
 ## Overview
 
-The DCP Upload Service provides a file staging facility for the DCP.
-It stages files into AWS S3 and computes checksums for the files.
+The DCP Upload Service provides a file staging and validation facility for the DCP.
 Upload Areas are created/deleted using a REST API, which is secured so only the DCP Ingestion Service may use it.
+It stages files into AWS S3 and computes checksums for the files.
+The validation service runs Docker images against files.
 
 ## Components
 
@@ -25,7 +26,30 @@ Is a Lambda Domovoi app triggered by S3 ObjectCreated events that computes check
 
 Is an AWS Batch installation 
 
-## Development Setup
+## Development Environment Setup
+
+### Prerequisites
+
+ - A Linux/Unix machine
+ - git
+ - Python 3.6
+
+Check out the upload service repo:
+
+```bash
+# IMPORTANT use --recursive
+git clone --recursive git@github.com:HumanCellAtlas/upload-service.git
+cd upload-service
+```
+
+Install packages.  I use `virtualenv`, but you don’t have to.  This is what it looks for me:
+
+```bash
+mkdir venv  # I have venv/ in my global .gitignore
+virtualenv --python python3.6 venv/36
+source venv/36/bin/activate
+pip install -r requirements-dev.txt
+```
 
 Do this once:
 
@@ -33,10 +57,6 @@ Do this once:
 cp config/environment.dev.example config/environment.dev
 ```
 Then edit as necessary.
-
-```bash
-pip install -r requirements-dev.txt
-```
 
 ## Running Tests
 
@@ -62,9 +82,11 @@ export enc_password="<password-used-to-encrypt-deployment-secrets>"
 scripts/deploy.sh staging
 ```
 
-### Validation Deployment
+## Validation Deployment
 
-#### Prerequisites
+*UNDER CONSTRUCTION - NOTHING TO SEE HERE*
+
+### Prerequisites
 
  * Create the validation AMI before deploying creating the Batch installation.
    See instructions in `validation/ami/README.md`.
@@ -72,7 +94,7 @@ scripts/deploy.sh staging
  * Create IAM policy `upload-validator-<stage>` and role `upload-validator-<stage>`.
  * Have Docker installed and running on your local machine.
 
-#### Do It
+### Do It
 
 ```bash
 scripts/batchctl.py staging setup
