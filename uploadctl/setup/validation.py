@@ -1,9 +1,8 @@
 import json
 import os
 
-from .component import CompositeComponent
-from .aws.batch import ComputeEnvironment, JobQueue
-from .aws.iam import Policy, IAMRole
+from preform import CompositeComponent
+from preform.aws import ComputeEnvironment, JobQueue, Policy, IAMRole
 
 
 class ValidationComputeEnvironment(ComputeEnvironment):

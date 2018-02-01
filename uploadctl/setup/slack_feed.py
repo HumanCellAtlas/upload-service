@@ -5,9 +5,8 @@ Some of the infrastructure for the #dcp-events slack channel
 import json
 import os
 
-from .component import CompositeComponent
-from .aws.iam import IAMRole, RoleInlinePolicy
-from .aws.sns import SnsTopic
+from preform import CompositeComponent
+from preform.aws import IAMRole, RoleInlinePolicy, SnsTopic
 
 
 class DcpEventsSnsTopic(SnsTopic):

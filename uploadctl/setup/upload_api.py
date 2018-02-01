@@ -1,10 +1,7 @@
 import os
 
-from .component import CompositeComponent, ExternalControl
-from .aws.llambda import Lambda
-from .aws.iam import IAMRole, RoleInlinePolicy
-from .aws.api_gateway import DomainName, BasePathMapping, RestApi
-from .aws.acm import SslCertificate
+from preform import CompositeComponent, ExternalControl
+from preform.aws import Lambda, IAMRole, RoleInlinePolicy, DomainName, BasePathMapping, RestApi, SslCertificate
 
 
 class ApiLambda(Lambda):

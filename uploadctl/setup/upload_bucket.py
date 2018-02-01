@@ -1,7 +1,7 @@
 import os
 
-from .component import CompositeComponent
-from .aws.s3 import Bucket, BucketTransferAcceleration
+from preform import CompositeComponent
+from preform.aws import Bucket, BucketTransferAcceleration
 
 
 class UploadBucket(Bucket):
