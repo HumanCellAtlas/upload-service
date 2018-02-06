@@ -6,7 +6,7 @@ info:
 host: ${API_HOST}
 schemes:
   - https
-basePath: /v1
+basePath: /
 consumes:
   - application/json
   - application/octet-stream
@@ -20,11 +20,11 @@ securityDefinitions:
     in: header
 
 paths:
-  /area/{upload_area_id}:
+  /v1/area/{upload_area_id}:
 
     post:
       summary: Create an Upload Area
-      operationId: upload.api_server.area.create
+      operationId: upload.api_server.v1.area.create
       description: Create an Upload Area
       tags:
         - For Ingestion Service Use Only
@@ -68,7 +68,7 @@ paths:
 
     delete:
       summary: Delete an Upload Area
-      operationId: upload.api_server.area.delete
+      operationId: upload.api_server.v1.area.delete
       description: Delete an Upload Area
       tags:
         - For Ingestion Service Use Only
@@ -103,7 +103,7 @@ paths:
 
     get:
       summary: List files in an upload area
-      operationId: upload.api_server.area.list_files
+      operationId: upload.api_server.v1.area.list_files
       description: |
         Provide a JSON object listing all the files in an upload area, including their checkums.
       tags:
@@ -135,11 +135,11 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /area/{upload_area_id}/lock:
+  /v1/area/{upload_area_id}/lock:
 
     post:
       summary: Lock an Upload Area
-      operationId: upload.api_server.area.lock
+      operationId: upload.api_server.v1.area.lock
       description: |
         Lock an Upload area so that submitters may not add/delete/rename files in it.
       tags:
@@ -171,7 +171,7 @@ paths:
 
     delete:
       summary: Unock an Upload Area
-      operationId: upload.api_server.area.unlock
+      operationId: upload.api_server.v1.area.unlock
       description: |
         Unlock an Upload area so that submitters may add/delete/rename files in it.
       tags:
@@ -201,11 +201,11 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /area/{upload_area_id}/{filename}:
+  /v1/area/{upload_area_id}/{filename}:
 
     put:
       summary: Store a metadata file
-      operationId: upload.api_server.area.put_file
+      operationId: upload.api_server.v1.area.put_file
       description: Store a JSON metadata file in the upload area.
       tags:
         - For Ingestion Service Use Only
@@ -248,7 +248,7 @@ paths:
 
     get:
       summary: Get information about a file
-      operationId: upload.api_server.area.file_info
+      operationId: upload.api_server.v1.area.file_info
       tags:
         - All
       parameters:
@@ -276,11 +276,11 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /area/{upload_area_id}/{filename}/validate:
+  /v1/area/{upload_area_id}/{filename}/validate:
 
     put:
       summary: Validate a staged file
-      operationId: upload.api_server.area.validate_file
+      operationId: upload.api_server.v1.area.validate_file
       description: |
         Invoke supplied validator Docker image and give it access to the file.
         The validator must be based off the base validator Docker image.
@@ -342,10 +342,10 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /area/{upload_area_id}/files_info:
+  /v1/area/{upload_area_id}/files_info:
     put:
       summary: Get information about files
-      operationId: upload.api_server.area.files_info
+      operationId: upload.api_server.v1.area.files_info
       description: |
         Get information about a set of files listed in the message body.
         Note that altough the HTTP verb of this endpoint is PUT, it is a read-only operation and does not modify data.
@@ -386,10 +386,10 @@ paths:
             $ref: '#/definitions/Error'
 
 
-  /config/client:
+  /v1/config/client:
     get:
       summary: Configuration information required by upload clients to use this Upload Service deployment.
-      operationId: upload.api_server.config.client_config
+      operationId: upload.api_server.v1.config.client_config
       description: |
         Provides information about this deployment, required for the Upload Service clients to operate.
       tags:

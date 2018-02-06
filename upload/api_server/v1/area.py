@@ -3,8 +3,8 @@ import json
 import connexion
 import requests
 
-from . import UploadException, return_exceptions_as_http_errors, require_authenticated
-from .. import UploadArea, Validation, EventNotifier
+from .. import UploadException, return_exceptions_as_http_errors, require_authenticated
+from ... import UploadArea, Validation, EventNotifier
 
 
 @return_exceptions_as_http_errors
