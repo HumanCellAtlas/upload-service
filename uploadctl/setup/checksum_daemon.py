@@ -1,7 +1,7 @@
 import os
 
-from preform import CompositeComponent, ExternalControl
-from preform.aws import Lambda, IAMRole, RoleInlinePolicy
+from proforma import CompositeComponent, ExternalControl
+from proforma.aws import Lambda, IAMRole, RoleInlinePolicy
 
 
 class ChecksumLambda(Lambda):

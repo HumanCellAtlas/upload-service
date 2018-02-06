@@ -1,4 +1,4 @@
-from preform import CompositeComponent
+from proforma import CompositeComponent
 from .upload_bucket import UploadBucketAssembly
 from .slack_feed import SlackFeed
 from .upload_api import UploadApi

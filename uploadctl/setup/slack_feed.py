@@ -5,14 +5,17 @@ Some of the infrastructure for the #dcp-events slack channel
 import json
 import os
 
-from preform import CompositeComponent
-from preform.aws import IAMRole, RoleInlinePolicy, SnsTopic
+from proforma import CompositeComponent, ExternalControl
+from proforma.aws import IAMRole, RoleInlinePolicy, SnsTopic
 
 
 class DcpEventsSnsTopic(SnsTopic):
 
     def __init__(self, **options):
         super().__init__(name=os.environ['DCP_EVENTS_TOPIC'], **options)
+
+    def tear_it_down(self):
+        raise ExternalControl("Won't delete, this is shared between deployments.")
 
 
 class DcpEventsRole(IAMRole):
@@ -32,6 +35,9 @@ class DcpEventsRole(IAMRole):
             }),
             **options
         )
+
+    def tear_it_down(self):
+        raise ExternalControl("Won't delete, this is shared between deployments.")
 
 
 class DcpEventsRoleInlinePolicy(RoleInlinePolicy):
@@ -56,6 +62,9 @@ class DcpEventsRoleInlinePolicy(RoleInlinePolicy):
                                  ]
                              }),
                          **options)
+
+    def tear_it_down(self):
+        raise ExternalControl("Won't delete, this is shared between deployments.")
 
 
 class SlackFeed(CompositeComponent):

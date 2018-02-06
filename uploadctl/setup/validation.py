@@ -1,12 +1,64 @@
 import json
 import os
 
-from preform import CompositeComponent
-from preform.aws import ComputeEnvironment, JobQueue, Policy, IAMRole
+from proforma import CompositeComponent, ExternalControl
+from proforma.aws import ComputeEnvironment, JobQueue, Policy, IAMRole, ServiceLinkedRole
+
+
+class AmazonEC2SpotFleetRole(IAMRole):
+    def __init__(self, **options):
+        options.update(
+            name="AmazonEC2SpotFleetRole",
+            trust_document=json.dumps(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "spotfleet.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                }
+            ),
+            attach_policies=['arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole']
+        )
+        super().__init__(**options)
+
+    def tear_it_down(self):
+        raise ExternalControl("Won't delete, this is shared between deployments.")
+
+
+class AWSServiceRoleForEC2Spot(ServiceLinkedRole):
+    def __init__(self, **options):
+        options.update(
+            name="AWSServiceRoleForEC2Spot",
+            aws_service_name="spot.amazonaws.com")
+        super().__init__(**options)
+
+    def tear_it_down(self):
+        raise ExternalControl("Won't delete, this is shared between deployments.")
+
+
+class AWSServiceRoleForEC2SpotFleet(ServiceLinkedRole):
+    def __init__(self, **options):
+        options.update(
+            name="AWSServiceRoleForEC2SpotFleet",
+            aws_service_name="spotfleet.amazonaws.com")
+        super().__init__(**options)
+
+    def tear_it_down(self):
+        raise ExternalControl("Won't delete, this is shared between deployments.")
 
 
 class ValidationComputeEnvironment(ComputeEnvironment):
     def __init__(self, **options):
+        options.update({
+            'compute_source': 'SPOT',
+        })
         super().__init__(name=f"dcp-upload-{os.environ['DEPLOYMENT_STAGE']}", **options)
 
 
@@ -80,6 +132,9 @@ class ValidationJobRole(IAMRole):
 class Validation(CompositeComponent):
 
     SUBCOMPONENTS = {
+        'AmazonEC2SpotFleetRole': AmazonEC2SpotFleetRole,
+        'AWSServiceRoleForEC2Spot': AWSServiceRoleForEC2Spot,
+        'AWSServiceRoleForEC2SpotFleet': AWSServiceRoleForEC2SpotFleet,
         'cenv': ValidationComputeEnvironment,
         'jobq': ValidationJobQueue,
         'policy': ValidationJobPolicy,
