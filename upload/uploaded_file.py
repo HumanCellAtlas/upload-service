@@ -4,7 +4,7 @@ import boto3
 from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError
 
-from checksumming_io.checksumming_io import ChecksummingSink
+from dcplib.checksumming_io import ChecksummingSink
 
 import upload
 
