@@ -5,6 +5,7 @@ import os, sys, unittest, uuid, json, base64
 import boto3
 from botocore.exceptions import ClientError
 from moto import mock_s3, mock_iam, mock_sns, mock_sts
+from unittest.mock import patch
 
 from . import client_for_test_api_server
 from .. import EnvironmentSetup
@@ -92,6 +93,7 @@ class TestAreaApi(unittest.TestCase):
         self.sns_mock.stop()
         self.sts_mock.stop()
 
+    @patch('upload.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def _create_area(self):
         area_id = str(uuid.uuid4())
         self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
@@ -114,6 +116,7 @@ class TestAreaApi(unittest.TestCase):
         })
         return s3obj
 
+    @patch('upload.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def test_create_with_unused_upload_area_id(self):
         area_id = str(uuid.uuid4())
 
@@ -142,6 +145,7 @@ class TestAreaApi(unittest.TestCase):
         self.assertIn(f'"Resource": ["arn:aws:s3:::{self.upload_bucket_name}/{area_id}/*"]',
                       policy.policy_document)
 
+    @patch('upload.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def test_create_in_production_returns_5_part_urn(self):
         with EnvironmentSetup({'DEPLOYMENT_STAGE': 'prod'}):
 
@@ -195,6 +199,7 @@ class TestAreaApi(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.content_type, 'application/problem+json')
 
+    @patch('upload.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def test_locking_of_upload_area(self):
         area_id = self._create_area()
         user_name = f"upload-{self.deployment_stage}-user-" + area_id
@@ -321,6 +326,7 @@ class TestAreaApi(unittest.TestCase):
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         })
 
+    @patch('upload.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def test_get_file_returns_404_for_missing_area_or_file(self):
         response = self.client.get(f"/v1/area/bogoarea/bogofile")
         self.assertEqual(response.status_code, 404)

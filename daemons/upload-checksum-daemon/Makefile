@@ -8,7 +8,7 @@ clobber: clean
 
 build:
 	mkdir -p domovoilib
-	cp -R ../../upload ../../checksumming_io domovoilib
+	cp -R ../../upload domovoilib
 	shopt -s nullglob; for wheel in vendor.in/*/*.whl; do unzip -q -o -d vendor $$wheel; done
 
 deploy: build

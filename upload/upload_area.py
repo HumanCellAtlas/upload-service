@@ -1,4 +1,7 @@
-import json, base64, os
+import base64
+import json
+import os
+import time
 
 import boto3
 from botocore.exceptions import ClientError
@@ -15,6 +18,7 @@ class UploadArea:
 
     USER_NAME_TEMPLATE = "upload-{deployment_stage}-user-{uuid}"
     ACCESS_POLICY_NAME_TEMPLATE = "upload-{uuid}"
+    IAM_SETTLE_TIME_SEC = 15
 
     def __init__(self, uuid):
         self.uuid = uuid
@@ -46,6 +50,7 @@ class UploadArea:
         self._user.create()
         self._set_access_policy()
         self._create_credentials()
+        time.sleep(self.IAM_SETTLE_TIME_SEC)
 
     def delete(self):
         # This may need to be offloaded to an async lambda if _empty_bucket() starts taking a long time.
@@ -61,9 +66,11 @@ class UploadArea:
 
     def lock(self):
         iam.UserPolicy(self.user_name, self.access_policy_name).delete()
+        time.sleep(self.IAM_SETTLE_TIME_SEC)
 
     def unlock(self):
         self._set_access_policy()
+        time.sleep(self.IAM_SETTLE_TIME_SEC)
 
     def store_file(self, filename, content, content_type):
         media_type = DcpMediaType.from_string(content_type)

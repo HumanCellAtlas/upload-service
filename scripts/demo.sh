@@ -39,12 +39,6 @@ function pause() {
     echo
 }
 
-function waiting() {
-    echo -n "Waiting 10 seconds for IAM policy to take effect..."
-    sleep 10
-    echo "done."
-}
-
 function run_curl() {
     curl_command=$*
     echo curl ${curl_command}
@@ -116,15 +110,15 @@ if [[ "${INGEST_API_KEY}" == "" ]] ; then
     exit 1
 fi
 
-create ; waiting; pause
+create ; pause
 upload ; pause
 put_file ; pause
 get_file ; pause
 list ; pause
-lock ; waiting ; pause
+lock ; pause
 echo "PROVE AREA IS LOCKED:"
 upload ; pause
-unlock ; waiting ; pause
+unlock ; pause
 upload ; pause
 delete ; pause
 forget

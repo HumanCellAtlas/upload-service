@@ -25,7 +25,9 @@ paths:
     post:
       summary: Create an Upload Area
       operationId: upload.api_server.v1.area.create
-      description: Create an Upload Area
+      description: |
+        Create an Upload Area.
+        This action takes approximately 15 seconds to complete.
       tags:
         - For Ingestion Service Use Only
       security:
@@ -142,6 +144,7 @@ paths:
       operationId: upload.api_server.v1.area.lock
       description: |
         Lock an Upload area so that submitters may not add/delete/rename files in it.
+        This action takes approximately 15 seconds to complete.
       tags:
         - For Ingestion Service Use Only
       security:
@@ -174,6 +177,7 @@ paths:
       operationId: upload.api_server.v1.area.unlock
       description: |
         Unlock an Upload area so that submitters may add/delete/rename files in it.
+        This action takes approximately 15 seconds to complete.
       tags:
         - For Ingestion Service Use Only
       security:
