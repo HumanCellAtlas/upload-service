@@ -14,7 +14,7 @@ class DiagnosticsCLI:
 
         job_parser = diag_subparsers.add_parser('job', description="Get information about validation job")
         job_parser.set_defaults(command='diag', diag_command='job')
-        job_parser.add_argument('validation_id', nargs='?', help="SHow data bout this validation job")
+        job_parser.add_argument('validation_id', nargs='?', help="Show data bout this validation job")
 
     @classmethod
     def run(cls, args):
