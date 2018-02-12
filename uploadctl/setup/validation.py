@@ -5,6 +5,58 @@ from proforma import CompositeComponent, ExternalControl
 from proforma.aws import ComputeEnvironment, JobQueue, Policy, IAMRole, ServiceLinkedRole
 
 
+class EcsInstanceRole(IAMRole):
+    def __init__(self, **options):
+        options.update(
+            name="ecsInstanceRole",
+            trust_document=json.dumps(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "ec2.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                }
+            ),
+            attach_policies=["arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"]
+        )
+        super().__init__(**options)
+
+    def tear_it_down(self):
+        raise ExternalControl("Won't delete, this is shared between deployments.")
+
+
+class AWSBatchServiceRole(IAMRole):
+    def __init__(self, **options):
+        options.update(
+            name="AWSBatchServiceRole",
+            trust_document=json.dumps(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "batch.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                }
+            ),
+            attach_policies=["arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole"]
+        )
+        super().__init__(**options)
+
+    def tear_it_down(self):
+        raise ExternalControl("Won't delete, this is shared between deployments.")
+
+
 class AmazonEC2SpotFleetRole(IAMRole):
     def __init__(self, **options):
         options.update(
@@ -132,6 +184,8 @@ class ValidationJobRole(IAMRole):
 class Validation(CompositeComponent):
 
     SUBCOMPONENTS = {
+        'ecsInstanceRole': EcsInstanceRole,
+        'AWSBatchServiceRole': AWSBatchServiceRole,
         'AmazonEC2SpotFleetRole': AmazonEC2SpotFleetRole,
         'AWSServiceRoleForEC2Spot': AWSServiceRoleForEC2Spot,
         'AWSServiceRoleForEC2SpotFleet': AWSServiceRoleForEC2SpotFleet,
