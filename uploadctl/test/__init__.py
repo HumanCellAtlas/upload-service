@@ -61,7 +61,7 @@ class TestCLI:
     def test_batch_infrastructure(cls, docker_image, command):
         batch = boto3.client('batch')
         account_id = boto3.client('sts').get_caller_identity().get('Account')
-        job_role_arn = f"arn:aws:iam::{account_id}:role/upload-batch-job-{os.environ['DEPLOYMENT_STAGE']}"
+        job_role_arn = f"arn:aws:iam::{account_id}:role/dcp-upload-validation-job-{os.environ['DEPLOYMENT_STAGE']}"
         job_defn = JobDefinition(
             docker_image=docker_image,
             deployment=os.environ['DEPLOYMENT_STAGE']

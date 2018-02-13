@@ -10,7 +10,7 @@ class BatchValidationComputeEnvironment(ComputeEnvironment):
         options.update({
             'compute_source': 'SPOT',
         })
-        super().__init__(name=f"dcp-upload-{os.environ['DEPLOYMENT_STAGE']}", **options)
+        super().__init__(name=f"dcp-upload-validation-cluster-{os.environ['DEPLOYMENT_STAGE']}", **options)
 
 
 class BatchValidationJobQueue(JobQueue):
@@ -18,7 +18,7 @@ class BatchValidationJobQueue(JobQueue):
         compute_env = BatchValidationComputeEnvironment(quiet=True)
         compute_env.is_setup()  # load arn
         super().__init__(
-            name=f"dcp-upload-queue-{os.environ['DEPLOYMENT_STAGE']}",
+            name=f"dcp-upload-validation-q-{os.environ['DEPLOYMENT_STAGE']}",
             compute_env_arn=compute_env.arn,
             **options
         )
@@ -27,7 +27,7 @@ class BatchValidationJobQueue(JobQueue):
 class BatchValidationJobPolicy(Policy):
     def __init__(self, **options):
         options.update(
-            name=f"upload-batch-job-{os.environ['DEPLOYMENT_STAGE']}",
+            name=f"dcp-upload-validation-job-{os.environ['DEPLOYMENT_STAGE']}",
             document=json.dumps(
                 {
                     "Version": "2012-10-17",
@@ -51,7 +51,7 @@ class BatchValidationJobPolicy(Policy):
 class BatchValidationJobRole(IAMRole):
     def __init__(self, **options):
         options.update(
-            name=f"upload-batch-job-{os.environ['DEPLOYMENT_STAGE']}",
+            name=f"dcp-upload-validation-job-{os.environ['DEPLOYMENT_STAGE']}",
             trust_document=json.dumps(
                 {
                     "Version": "2012-10-17",
