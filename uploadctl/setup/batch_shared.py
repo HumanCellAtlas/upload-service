@@ -1,8 +1,7 @@
 import json
-import os
 
 from proforma import CompositeComponent, ExternalControl
-from proforma.aws import ComputeEnvironment, JobQueue, Policy, IAMRole, ServiceLinkedRole
+from proforma.aws import IAMRole, ServiceLinkedRole, InstanceProfile, InstanceProfileRoleAttachment
 
 
 class EcsInstanceRole(IAMRole):
@@ -29,6 +28,21 @@ class EcsInstanceRole(IAMRole):
 
     def tear_it_down(self):
         raise ExternalControl("Won't delete, this is shared between deployments.")
+
+
+class EcsInstanceProfile(InstanceProfile):
+    def __init__(self, **options):
+        options.update(name='ecsInstanceRole')
+        super().__init__(**options)
+
+    def tear_it_down(self):
+        raise ExternalControl("Won't delete, this is shared between deployments.")
+
+
+class EcsInstanceProfileRoleAttachment(InstanceProfileRoleAttachment):
+    def __init__(self, **options):
+        options.update(instance_profile_name='ecsInstanceRole', role_name='ecsInstanceRole')
+        super().__init__(**options)
 
 
 class AWSBatchServiceRole(IAMRole):
@@ -106,94 +120,17 @@ class AWSServiceRoleForEC2SpotFleet(ServiceLinkedRole):
         raise ExternalControl("Won't delete, this is shared between deployments.")
 
 
-class ValidationComputeEnvironment(ComputeEnvironment):
-    def __init__(self, **options):
-        options.update({
-            'compute_source': 'SPOT',
-        })
-        super().__init__(name=f"dcp-upload-{os.environ['DEPLOYMENT_STAGE']}", **options)
-
-
-class ValidationJobQueue(JobQueue):
-    def __init__(self, **options):
-        compute_env = ValidationComputeEnvironment(quiet=True)
-        compute_env.is_setup()  # load arn
-        super().__init__(
-            name=f"dcp-upload-queue-{os.environ['DEPLOYMENT_STAGE']}",
-            compute_env_arn=compute_env.arn,
-            **options
-        )
-
-
-class ValidationJobPolicy(Policy):
-    def __init__(self, **options):
-        options.update(
-            name=f"upload-batch-job-{os.environ['DEPLOYMENT_STAGE']}",
-            document=json.dumps(
-                {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Action": [
-                                "s3:GetObject"
-                            ],
-                            "Resource": [
-                                f"arn:aws:s3:::{os.environ['BUCKET_NAME']}/*"
-                            ]
-                        }
-                    ]
-                }
-            )
-        )
-        super().__init__(**options)
-
-
-class ValidationJobRole(IAMRole):
-    def __init__(self, **options):
-        options.update(
-            name=f"upload-batch-job-{os.environ['DEPLOYMENT_STAGE']}",
-            trust_document=json.dumps(
-                {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Sid": "",
-                            "Effect": "Allow",
-                            "Principal": {
-                                "Service": "ecs-tasks.amazonaws.com"
-                            },
-                            "Action": "sts:AssumeRole"
-                        },
-                        {
-                            "Sid": "",
-                            "Effect": "Allow",
-                            "Principal": {
-                                "Service": "lambda.amazonaws.com"
-                            },
-                            "Action": "sts:AssumeRole"
-                        }
-                    ]
-                }
-            ),
-            attach_policies=[ValidationJobPolicy(quiet=True).arn]
-        )
-        super().__init__(**options)
-
-
-class Validation(CompositeComponent):
+class BatchSharedConfig(CompositeComponent):
 
     SUBCOMPONENTS = {
         'ecsInstanceRole': EcsInstanceRole,
+        'ecsInstanceProfile': EcsInstanceProfile,
+        'EcsInstanceProfileRoleAttachment': EcsInstanceProfileRoleAttachment,
         'AWSBatchServiceRole': AWSBatchServiceRole,
         'AmazonEC2SpotFleetRole': AmazonEC2SpotFleetRole,
         'AWSServiceRoleForEC2Spot': AWSServiceRoleForEC2Spot,
-        'AWSServiceRoleForEC2SpotFleet': AWSServiceRoleForEC2SpotFleet,
-        'cenv': ValidationComputeEnvironment,
-        'jobq': ValidationJobQueue,
-        'policy': ValidationJobPolicy,
-        'role': ValidationJobRole
+        'AWSServiceRoleForEC2SpotFleet': AWSServiceRoleForEC2SpotFleet
     }
 
     def __str__(self):
-        return "Validation:"
+        return "Batch shared config:"

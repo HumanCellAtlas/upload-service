@@ -5,7 +5,7 @@ import boto3
 
 from .amqp_tool import AmqpTool
 from upload.batch import JobDefinition
-from ..setup.validation import ValidationJobQueue
+from ..setup.batch_validation import BatchValidationJobQueue
 from .rest_api import RestApiTest
 
 
@@ -66,7 +66,7 @@ class TestCLI:
             docker_image=docker_image,
             deployment=os.environ['DEPLOYMENT_STAGE']
         ).find_or_create(job_role_arn)
-        jobq = ValidationJobQueue(quiet=True)
+        jobq = BatchValidationJobQueue(quiet=True)
         jobq.is_setup()  # load arn
         response = batch.submit_job(
             jobName='test-job',

@@ -3,7 +3,8 @@ from .upload_bucket import UploadBucketAssembly
 from .slack_feed import SlackFeed
 from .upload_api import UploadApi
 from .checksum_daemon import ChecksumDaemon
-from .validation import Validation
+from .batch_shared import BatchSharedConfig
+from .batch_validation import BatchValidation
 
 
 class SetupConductor(CompositeComponent):
@@ -13,7 +14,8 @@ class SetupConductor(CompositeComponent):
         'slack-feed': SlackFeed,
         'upload-api': UploadApi,
         'checksum-daemon': ChecksumDaemon,
-        'validation': Validation,
+        'batch-shared': BatchSharedConfig,
+        'validation': BatchValidation,
     }
 
     def __str__(self):

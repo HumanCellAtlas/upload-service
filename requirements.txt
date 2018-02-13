@@ -4,4 +4,4 @@ crcmod
 pika
 requests
 dcplib >= 1.1.0
-proforma
+proforma >= 0.2.0
