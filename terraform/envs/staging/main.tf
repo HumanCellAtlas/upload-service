@@ -27,6 +27,9 @@ module "upload-service" {
   // Validation Batch infrastructure.
   validation_cluster_ec2_key_pair = "${var.validation_cluster_ec2_key_pair}"
   validation_cluster_ami_id = "${var.validation_cluster_ami_id}"
+
+  // Checksumming Batch infrastructure.
+  csum_cluster_ec2_key_pair = "${var.csum_cluster_ec2_key_pair}"
 }
 
 output "validation_job_q_arn" {
@@ -35,4 +38,12 @@ output "validation_job_q_arn" {
 
 output "validation_job_role_arn" {
   value = "${module.upload-service.validation_job_role_arn}"
+}
+
+output "csum_job_q_arn" {
+  value = "${module.upload-service.csum_job_q_arn}"
+}
+
+output "csum_job_role_arn" {
+  value = "${module.upload-service.csum_job_role_arn}"
 }

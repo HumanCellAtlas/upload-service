@@ -7,3 +7,6 @@ bucket_name_prefix = "org-humancellatlas-upload-"
 // Validation Batch infrastructure.
 validation_cluster_ec2_key_pair = "my-ec2-keypair"
 validation_cluster_ami_id = "ami-xxxxxxxx"
+
+// Checksumming Batch infrastructure.
+validation_cluster_ec2_key_pair = "my-ec2-keypair"

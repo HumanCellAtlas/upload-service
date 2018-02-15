@@ -22,6 +22,10 @@ variable "validation_cluster_ami_id" {
   type = "string"
 }
 
+variable "csum_cluster_ec2_key_pair" {
+  type = "string"
+}
+
 data "aws_caller_identity" "current" {}
 
 data "aws_subnet_ids" "vpc" {
