@@ -69,6 +69,8 @@ export lambda_name="${app_name}-${stage}"
 export region_name=$(aws configure get region)
 export account_id=$(aws sts get-caller-identity | jq -r .Account)
 export lambda_arn=$(aws lambda list-functions | jq -r '.Functions[] | select(.FunctionName==env.lambda_name) | .FunctionArn')
+export VALIDATION_JOB_QUEUE_ARN=`( cd ${PROJECT_ROOT}/terraform/envs/${DEPLOYMENT_STAGE} ; terraform output validation_job_q_arn)`
+export VALIDATION_JOB_ROLE_ARN=`( cd ${PROJECT_ROOT}/terraform/envs/${DEPLOYMENT_STAGE} ; terraform output validation_job_role_arn)`
 echo "app_name=${app_name}"
 echo "lambda_name=${lambda_name}"
 echo "lambda_arn=${lambda_arn}"

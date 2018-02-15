@@ -29,10 +29,10 @@ module "upload-service" {
   validation_cluster_ami_id = "${var.validation_cluster_ami_id}"
 }
 
-output "validation_job_q" {
-  value = "${module.upload-service.validation_job_q}"
+output "validation_job_q_arn" {
+  value = "${module.upload-service.validation_job_q_arn}"
 }
 
-output "validation_job_role" {
-  value = "${module.upload-service.validation_job_role}"
+output "validation_job_role_arn" {
+  value = "${module.upload-service.validation_job_role_arn}"
 }
