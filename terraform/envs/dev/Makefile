@@ -5,10 +5,10 @@ endif
 default: plan
 
 init:
-	terraform init --backend-config="bucket=$(TERRAFORM_STATE_BUCKET)" --backup=-
+	terraform init --backend-config="bucket=$(TERRAFORM_STATE_BUCKET)"
 
 plan:
 	terraform plan
 
 apply:
-	terraform apply
+	terraform apply --backup=-
