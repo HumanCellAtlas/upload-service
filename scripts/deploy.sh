@@ -32,9 +32,21 @@ function tag_deploy(){
 EOF
 }
 
+function install_terraform() {
+    echo "Installing Terraform..."
+    mkdir ./external_binaries
+    curl https://releases.hashicorp.com/terraform/0.11.3/terraform_0.11.3_linux_amd64.zip -o /tmp/terraform.zip
+    unzip /tmp/terraform.zip -d ./external_binaries/
+    rm /tmp/terraform.zip
+    export PATH=$PATH:`pwd`/external_binaries
+    (cd terraform/envs/${DEPLOYMENT_STAGE} && terraform init -backend-config="bucket=${TERRAFORM_STATE_BUCKET}")
+    which terraform
+}
+
 source config/environment
 echo "Deploying to ${DEPLOYMENT_STAGE}"
 load_secrets
+install_terraform
 make deploy
 if [ ${DEPLOYMENT_STAGE} != dev ] ; then
     tag_deploy
