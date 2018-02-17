@@ -81,11 +81,13 @@ class TestAreaApi(unittest.TestCase):
         # Setup SNS
         boto3.resource('sns').create_topic(Name='dcp-events')
         # Setup app
-        self.client = client_for_test_api_server()
         self.environment = {
             'BUCKET_NAME': self.upload_bucket_name,
             'DEPLOYMENT_STAGE': self.deployment_stage,
+            'DCP_EVENTS_TOPIC': 'foo'
         }
+        with EnvironmentSetup(self.environment):
+            self.client = client_for_test_api_server()
 
     def tearDown(self):
         self.s3_mock.stop()

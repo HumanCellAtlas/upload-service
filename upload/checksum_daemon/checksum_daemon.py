@@ -3,6 +3,7 @@ import time
 from upload import UploadArea
 from .ingest_notifier import IngestNotifier
 from .. import EventNotifier
+from ..checksum import UploadedFileChecksummer
 from six.moves import urllib
 
 
@@ -20,12 +21,12 @@ class ChecksumDaemon:
                 self.log(f"WARNING: Unexpected event: {record['eventName']}")
                 continue
             file_key = record['s3']['object']['key']
-            upload_area, uploaded_file = self._retrieve_file(file_key)
+            upload_area, uploaded_file = self._find_file(file_key)
             self._checksum_file(uploaded_file)
-            EventNotifier.notify(f"{upload_area.uuid} checksummed {uploaded_file.name}")
             self._notify_ingest(uploaded_file)
+            EventNotifier.notify(f"{upload_area.uuid} checksummed {uploaded_file.name}")
 
-    def _retrieve_file(self, file_key):
+    def _find_file(self, file_key):
         self.log(f"File: {file_key}")
         area_uuid = file_key.split('/')[0]
         filename = urllib.parse.unquote(file_key[len(area_uuid) + 1:])
@@ -33,18 +34,11 @@ class ChecksumDaemon:
         return upload_area, upload_area.uploaded_file(filename)
 
     def _checksum_file(self, uploaded_file):
-        self.bytes_checksummed = 0
-        self.start_time = time.time()
-        self.last_diag_output_time = self.start_time
-        uploaded_file.compute_checksums(progress_callback=self._compute_checksums_progress_callback)
+        checksummer = UploadedFileChecksummer(uploaded_file)
+        checksums = checksummer.checksum(report_progress=True)
+        uploaded_file.checksums = checksums
         tags = uploaded_file.save_tags()
         self.log(f"Checksummed and tagged with: {tags}")
-
-    def _compute_checksums_progress_callback(self, bytes_transferred):
-        self.bytes_checksummed += bytes_transferred
-        if time.time() - self.last_diag_output_time > 1:
-            self.log("elapsed=%0.1f bytes_checksummed=%d" % (time.time() - self.start_time, self.bytes_checksummed))
-            self.last_diag_output_time = time.time()
 
     def _notify_ingest(self, uploaded_file):
         payload = uploaded_file.info()

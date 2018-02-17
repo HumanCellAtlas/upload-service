@@ -1,18 +1,12 @@
 from functools import reduce
 
 import boto3
-from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError
 
-from dcplib.checksumming_io import ChecksummingSink
-
-import upload
+from .exceptions import UploadException
 
 s3 = boto3.resource('s3')
 s3client = boto3.client('s3')
-
-KB = 1024
-MB = KB * KB
 
 
 class UploadedFile:
@@ -50,19 +44,8 @@ class UploadedFile:
             'last_modified': self.s3obj.last_modified.isoformat()
         }
 
-    def compute_checksums(self, progress_callback=None):
-        with ChecksummingSink() as sink:
-            s3client.download_fileobj(self.upload_area.bucket_name, self.s3obj.key, sink,
-                                      Callback=progress_callback, Config=self._transfer_config())
-            self.checksums = sink.get_checksums()
-
     def save_tags(self):
-        tags = {
-            'hca-dss-s3_etag': self.checksums['s3_etag'],
-            'hca-dss-sha1': self.checksums['sha1'],
-            'hca-dss-sha256': self.checksums['sha256'],
-            'hca-dss-crc32c': self.checksums['crc32c'],
-        }
+        tags = {f"hca-dss-{csum}": self.checksums[csum] for csum in self.checksums.keys()}
         tagging = dict(TagSet=self._encode_tags(tags))
         s3client.put_object_tagging(Bucket=self.upload_area.bucket_name, Key=self.s3obj.key, Tagging=tagging)
         return tags
@@ -72,8 +55,8 @@ class UploadedFile:
             tagging = s3client.get_object_tagging(Bucket=self.upload_area.bucket_name, Key=self.s3obj.key)
         except ClientError as e:
             if e.response['Error']['Code'] == 'NoSuchKey':
-                raise upload.UploadException(status=404, title="No such file",
-                                             detail=f"No such file in that upload area")
+                raise UploadException(status=404, title="No such file",
+                                      detail=f"No such file in that upload area")
             else:
                 raise e
         tags = {}
@@ -82,11 +65,6 @@ class UploadedFile:
             # k[8:] = cut off "hca-dss-" in tag name
             tags = {k[8:]: v for k, v in tag_set.items() if k in self.CHECKSUM_TAGS}
         return tags
-
-    def _transfer_config(self) -> TransferConfig:
-        etag_stride = self._s3_chunk_size(self.s3obj.content_length)
-        return TransferConfig(multipart_threshold=etag_stride,
-                              multipart_chunksize=etag_stride)
 
     @staticmethod
     def _encode_tags(tags: dict) -> list:
@@ -98,13 +76,3 @@ class UploadedFile:
             return {}
         simplified_dicts = list({tag['Key']: tag['Value']} for tag in tags)
         return reduce(lambda x, y: dict(x, **y), simplified_dicts)
-
-    @staticmethod
-    def _s3_chunk_size(file_size: int) -> int:
-        if file_size <= 10000 * 64 * MB:  # 640 GB
-            return 64 * MB
-        else:
-            div = file_size // 10000
-            if div * 10000 < file_size:
-                div += 1
-            return ((div + (MB - 1)) // MB) * MB

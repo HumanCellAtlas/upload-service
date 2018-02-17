@@ -8,7 +8,9 @@ from botocore.exceptions import ClientError
 
 from dcplib.media_types import DcpMediaType
 
-import upload
+from .checksum import UploadedFileChecksummer
+from .uploaded_file import UploadedFile
+from .exceptions import UploadException
 
 s3 = boto3.resource('s3')
 iam = boto3.resource('iam')
@@ -75,20 +77,21 @@ class UploadArea:
     def store_file(self, filename, content, content_type):
         media_type = DcpMediaType.from_string(content_type)
         if 'dcp-type' not in media_type.parameters:
-            raise upload.UploadException(status=400, title="Invalid Content-Type",
-                                         detail="Content-Type is missing parameter 'dcp-type'," +
+            raise UploadException(status=400, title="Invalid Content-Type",
+                                  detail="Content-Type is missing parameter 'dcp-type'," +
                                          " e.g. 'application/json; dcp-type=\"metadata/sample\"'.")
         key = f"{self.uuid}/{filename}"
         s3obj = self._bucket.Object(key)
         s3obj.put(Body=content, ContentType=content_type)
-        file = upload.UploadedFile(upload_area=self, s3object=s3obj)
-        file.compute_checksums()
+        file = UploadedFile(upload_area=self, s3object=s3obj)
+        checksums = UploadedFileChecksummer(uploaded_file=file).checksum(report_progress=True)
+        file.checksums = checksums
         file.save_tags()
         return file.info()
 
     def uploaded_file(self, filename):
         key = f"{self.uuid}/{filename}"
-        return upload.UploadedFile.from_s3_key(self, key)
+        return UploadedFile.from_s3_key(self, key)
 
     def is_extant(self) -> bool:
         # A upload area is a folder, however there is no concept of folder in S3.
@@ -98,8 +101,8 @@ class UploadArea:
             return True
         except ClientError as e:
             if e.response['Error']['Code'] != 'NoSuchEntity':
-                raise upload.UploadException(status=500, title="Unexpected Error",
-                                             detail=f"bucket.load() returned {e.response}")
+                raise UploadException(status=500, title="Unexpected Error",
+                                      detail=f"bucket.load() returned {e.response}")
             return False
 
     def _file_list(self):
@@ -108,7 +111,7 @@ class UploadArea:
         for page in paginator.paginate(Bucket=self.bucket_name, Prefix=self.key_prefix):
             if 'Contents' in page:
                 for o in page['Contents']:
-                    file = upload.UploadedFile.from_s3_key(self, o['Key'])
+                    file = UploadedFile.from_s3_key(self, o['Key'])
                     file_list.append(file.info())
         return file_list
 
