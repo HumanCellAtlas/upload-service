@@ -13,8 +13,6 @@ if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
     sys.path.insert(0, pkg_root)  # noqa
 
-from upload.checksum_daemon import ChecksumDaemon  # noqa
-
 
 class TestChecksumDaemon(unittest.TestCase):
 
@@ -36,12 +34,15 @@ class TestChecksumDaemon(unittest.TestCase):
         boto3.resource('sns').create_topic(Name='dcp-events')
         # daemon
         context = Mock()
-        self.daemon = ChecksumDaemon(context)
         self.environment = {
             'BUCKET_NAME': self.UPLOAD_BUCKET_NAME,
             'DEPLOYMENT_STAGE': self.DEPLOYMENT_STAGE,
-            'INGEST_AMQP_SERVER': 'foo'
+            'INGEST_AMQP_SERVER': 'foo',
+            'LOG_LEVEL': 'CRITICAL'
         }
+        with EnvironmentSetup(self.environment):
+            from upload.checksum_daemon import ChecksumDaemon
+            self.daemon = ChecksumDaemon(context)
         # File
         self.area_id = str(uuid.uuid4())
         self.content_type = 'text/html'

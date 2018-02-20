@@ -5,6 +5,9 @@ from boto3.s3.transfer import TransferConfig
 
 from dcplib.checksumming_io import ChecksummingSink
 
+from .logging import get_logger
+
+logger = get_logger(__name__)
 KB = 1024
 MB = KB * KB
 s3client = boto3.client('s3')
@@ -14,8 +17,7 @@ class UploadedFileChecksummer:
 
     CHECKSUM_NAMES = ('sha1', 'sha256', 'crc32c', 's3_etag')
 
-    def __init__(self, uploaded_file, logger=None):
-        self.logger = logger
+    def __init__(self, uploaded_file):
         self.uploaded_file = uploaded_file
         self.bytes_checksummed = 0
         self.start_time = None
@@ -46,17 +48,13 @@ class UploadedFileChecksummer:
     def _compute_checksums_progress_callback(self, bytes_transferred):
         self.bytes_checksummed += bytes_transferred
         if time.time() - self.last_diag_output_time > 1:
-            self._log("elapsed=%0.1f bytes_checksummed=%d" % (time.time() - self.start_time, self.bytes_checksummed))
+            logger.info("elapsed=%0.1f bytes_checksummed=%d" % (time.time() - self.start_time, self.bytes_checksummed))
             self.last_diag_output_time = time.time()
 
     def _transfer_config(self) -> TransferConfig:
         etag_stride = self._s3_chunk_size(self.uploaded_file.s3obj.content_length)
         return TransferConfig(multipart_threshold=etag_stride,
                               multipart_chunksize=etag_stride)
-
-    def _log(self, message):
-        if self.logger:
-            self.logger.info(message)
 
     @staticmethod
     def _s3_chunk_size(file_size: int) -> int:
