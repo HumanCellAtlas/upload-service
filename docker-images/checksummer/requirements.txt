@@ -1,0 +1,5 @@
+boto3
+urllib3
+dcplib
+pika
+requests

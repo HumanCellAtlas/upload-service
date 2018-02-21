@@ -1,6 +1,7 @@
 import os
 
 os.environ['DEPLOYMENT_STAGE'] = 'test'
+os.environ['LOG_LEVEL'] = 'CRITICAL'
 
 
 class EnvironmentSetup:

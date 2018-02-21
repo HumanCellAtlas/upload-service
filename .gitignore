@@ -12,6 +12,7 @@ __pycache__/
 /dist/
 /.eggs/
 .cache/
+.pytest_cache/
 
 # Sphinx documentation
 /docs/_build/

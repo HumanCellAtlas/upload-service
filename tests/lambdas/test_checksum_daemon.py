@@ -38,7 +38,6 @@ class TestChecksumDaemon(unittest.TestCase):
             'BUCKET_NAME': self.UPLOAD_BUCKET_NAME,
             'DEPLOYMENT_STAGE': self.DEPLOYMENT_STAGE,
             'INGEST_AMQP_SERVER': 'foo',
-            'LOG_LEVEL': 'CRITICAL',
             'DCP_EVENTS_TOPIC': 'bogotopic'
         }
         with EnvironmentSetup(self.environment):
