@@ -6,9 +6,7 @@ from moto import mock_s3
 
 from . import EnvironmentSetup, FIXTURE_DATA_CHECKSUMS
 
-with EnvironmentSetup({'DCP_EVENTS_TOPIC': 'foo'}):  # noqa
-    from upload import UploadArea
-
+from upload import UploadArea
 from upload.checksum import UploadedFileChecksummer
 
 
@@ -26,7 +24,8 @@ class TestUploadedFileChecksummer(unittest.TestCase):
         self.upload_bucket.create()
         self.environment = {
             'BUCKET_NAME': self.upload_bucket_name,
-            'DEPLOYMENT_STAGE': self.deployment_stage
+            'DEPLOYMENT_STAGE': self.deployment_stage,
+            'DCP_EVENTS_TOPIC': 'bogotopic'
         }
         self.upload_area_id = uuid.uuid4()
         with EnvironmentSetup(self.environment):

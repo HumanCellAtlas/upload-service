@@ -79,12 +79,12 @@ class TestAreaApi(unittest.TestCase):
         os.environ['INGEST_API_KEY'] = self.api_key
         self.authentication_header = {'Api-Key': self.api_key}
         # Setup SNS
-        boto3.resource('sns').create_topic(Name='dcp-events')
+        boto3.resource('sns').create_topic(Name='bogotopic')
         # Setup app
         self.environment = {
             'BUCKET_NAME': self.upload_bucket_name,
             'DEPLOYMENT_STAGE': self.deployment_stage,
-            'DCP_EVENTS_TOPIC': 'foo'
+            'DCP_EVENTS_TOPIC': 'bogotopic'
         }
         with EnvironmentSetup(self.environment):
             self.client = client_for_test_api_server()
@@ -149,7 +149,9 @@ class TestAreaApi(unittest.TestCase):
 
     @patch('upload.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def test_create_in_production_returns_5_part_urn(self):
-        with EnvironmentSetup({'DEPLOYMENT_STAGE': 'prod'}):
+        prod_env = dict(self.environment)
+        prod_env['DEPLOYMENT_STAGE'] = 'prod'
+        with EnvironmentSetup(prod_env):
 
             area_id = str(uuid.uuid4())
 
@@ -196,47 +198,54 @@ class TestAreaApi(unittest.TestCase):
     def test_delete_with_unused_used_upload_area_id(self):
         area_id = str(uuid.uuid4())
 
-        response = self.client.delete(f"/v1/area/{area_id}", headers=self.authentication_header)
+        with EnvironmentSetup(self.environment):
+            response = self.client.delete(f"/v1/area/{area_id}", headers=self.authentication_header)
 
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.content_type, 'application/problem+json')
 
     @patch('upload.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def test_locking_of_upload_area(self):
-        area_id = self._create_area()
-        user_name = f"upload-{self.deployment_stage}-user-" + area_id
-        policy_name = 'upload-' + area_id
-        policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
-        self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
+        with EnvironmentSetup(self.environment):
+            area_id = self._create_area()
+            user_name = f"upload-{self.deployment_stage}-user-" + area_id
+            policy_name = 'upload-' + area_id
+            policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
+            self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
 
-        response = self.client.post(f"/v1/area/{area_id}/lock", headers=self.authentication_header)
+        with EnvironmentSetup(self.environment):
+            response = self.client.post(f"/v1/area/{area_id}/lock", headers=self.authentication_header)
 
-        self.assertEqual(response.status_code, 204)
-        self.assertEqual(len(list(boto3.resource('iam').User(user_name).policies.all())), 0)
+            self.assertEqual(response.status_code, 204)
+            self.assertEqual(len(list(boto3.resource('iam').User(user_name).policies.all())), 0)
 
-        response = self.client.delete(f"/v1/area/{area_id}/lock", headers=self.authentication_header)
+            response = self.client.delete(f"/v1/area/{area_id}/lock", headers=self.authentication_header)
 
-        self.assertEqual(response.status_code, 204)
+            self.assertEqual(response.status_code, 204)
+
         policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
         self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
 
     def test_put_file_without_content_type_dcp_type_param(self):
-        area_id = self._create_area()
         headers = {'Content-Type': 'application/json'}
         headers.update(self.authentication_header)
 
-        response = self.client.put(f"/v1/area/{area_id}/some.json", data="exquisite corpse", headers=headers)
+        with EnvironmentSetup(self.environment):
+            area_id = self._create_area()
+
+            response = self.client.put(f"/v1/area/{area_id}/some.json", data="exquisite corpse", headers=headers)
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.content_type, 'application/problem+json')
         self.assertIn("missing parameter \'dcp-type\'", response.data.decode('utf8'))
 
     def test_put_file(self):
-        area_id = self._create_area()
         headers = {'Content-Type': 'application/json; dcp-type="metadata/sample"'}
         headers.update(self.authentication_header)
 
         with EnvironmentSetup(self.environment):
+            area_id = self._create_area()
+
             response = self.client.put(f"/v1/area/{area_id}/some.json", data="exquisite corpse", headers=headers)
 
         s3_key = f"{area_id}/some.json"
@@ -262,12 +271,13 @@ class TestAreaApi(unittest.TestCase):
         self.assertEqual(obj.get()['Body'].read(), "exquisite corpse".encode('utf8'))
 
     def test_list_files(self):
-        area_id = self._create_area()
-        o1 = self._mock_upload_file(area_id, 'file1.json', content_type='application/json; dcp-type="metadata/foo"')
-        o2 = self._mock_upload_file(area_id, 'file2.fastq.gz', content_type='application/octet-stream; dcp-type=data',
-                                    checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
-
         with EnvironmentSetup(self.environment):
+            area_id = self._create_area()
+            o1 = self._mock_upload_file(area_id, 'file1.json', content_type='application/json; dcp-type="metadata/foo"')
+            o2 = self._mock_upload_file(area_id, 'file2.fastq.gz',
+                                        content_type='application/octet-stream; dcp-type=data',
+                                        checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
+
             response = self.client.get(f"/v1/area/{area_id}")
 
         self.assertEqual(response.status_code, 200)
@@ -293,14 +303,14 @@ class TestAreaApi(unittest.TestCase):
         })
 
     def test_list_files_only_lists_files_in_my_upload_area(self):
-        area1_id = self._create_area()
-        area2_id = self._create_area()
-        area_1_files = ['file1', 'file2']
-        area_2_files = ['file3', 'file4']
-        [self._mock_upload_file(area1_id, file) for file in area_1_files]
-        [self._mock_upload_file(area2_id, file) for file in area_2_files]
-
         with EnvironmentSetup(self.environment):
+            area1_id = self._create_area()
+            area2_id = self._create_area()
+            area_1_files = ['file1', 'file2']
+            area_2_files = ['file3', 'file4']
+            [self._mock_upload_file(area1_id, file) for file in area_1_files]
+            [self._mock_upload_file(area2_id, file) for file in area_2_files]
+
             response = self.client.get(f"/v1/area/{area2_id}")
 
         self.assertEqual(response.status_code, 200)
@@ -308,11 +318,11 @@ class TestAreaApi(unittest.TestCase):
         self.assertEqual([file['name'] for file in data['files']], area_2_files)
 
     def test_get_file_for_existing_file(self):
-        area_id = self._create_area()
-        filename = 'file1.json'
-        s3obj = self._mock_upload_file(area_id, filename)
-
         with EnvironmentSetup(self.environment):
+            area_id = self._create_area()
+            filename = 'file1.json'
+            s3obj = self._mock_upload_file(area_id, filename)
+
             response = self.client.get(f"/v1/area/{area_id}/{filename}")
 
         self.assertEqual(response.status_code, 200)
@@ -330,25 +340,26 @@ class TestAreaApi(unittest.TestCase):
 
     @patch('upload.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def test_get_file_returns_404_for_missing_area_or_file(self):
-        response = self.client.get(f"/v1/area/bogoarea/bogofile")
-        self.assertEqual(response.status_code, 404)
-
-        area_id = str(uuid.uuid4())
-
         with EnvironmentSetup(self.environment):
+            response = self.client.get(f"/v1/area/bogoarea/bogofile")
+            self.assertEqual(response.status_code, 404)
+
+            area_id = str(uuid.uuid4())
+
             self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
 
             response = self.client.get(f"/v1/area/{area_id}/bogofile")
             self.assertEqual(response.status_code, 404)
 
     def test_put_files_info(self):
-        area_id = self._create_area()
-        o1 = self._mock_upload_file(area_id, 'file1.json', content_type='application/json; dcp-type="metadata/foo"')
-        o2 = self._mock_upload_file(area_id, 'file2.fastq.gz', content_type='application/octet-stream; dcp-type=data',
-                                    checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
-        self._mock_upload_file(area_id, 'a_file_in_the_same_area_that_we_will_not_attempt_to_list')
-
         with EnvironmentSetup(self.environment):
+            area_id = self._create_area()
+            o1 = self._mock_upload_file(area_id, 'file1.json', content_type='application/json; dcp-type="metadata/foo"')
+            o2 = self._mock_upload_file(area_id, 'file2.fastq.gz',
+                                        content_type='application/octet-stream; dcp-type=data',
+                                        checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
+            self._mock_upload_file(area_id, 'a_file_in_the_same_area_that_we_will_not_attempt_to_list')
+
             response = self.client.put(f"/v1/area/{area_id}/files_info", content_type='application/json',
                                        data=(json.dumps(['file1.json', 'file2.fastq.gz'])))
 
