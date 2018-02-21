@@ -7,7 +7,7 @@ import uuid
 import boto3
 from moto import mock_s3, mock_sns, mock_sts
 
-from . import EnvironmentSetup
+from . import EnvironmentSetup, FIXTURE_DATA_CHECKSUMS
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
@@ -31,14 +31,15 @@ class TestChecksumDaemon(unittest.TestCase):
         self.upload_bucket = boto3.resource('s3').Bucket(self.UPLOAD_BUCKET_NAME)
         self.upload_bucket.create()
         # Setup SNS
-        boto3.resource('sns').create_topic(Name='dcp-events')
+        boto3.resource('sns').create_topic(Name='bogotopic')
         # daemon
         context = Mock()
         self.environment = {
             'BUCKET_NAME': self.UPLOAD_BUCKET_NAME,
             'DEPLOYMENT_STAGE': self.DEPLOYMENT_STAGE,
             'INGEST_AMQP_SERVER': 'foo',
-            'LOG_LEVEL': 'CRITICAL'
+            'LOG_LEVEL': 'CRITICAL',
+            'DCP_EVENTS_TOPIC': 'bogotopic'
         }
         with EnvironmentSetup(self.environment):
             from upload.checksum_daemon import ChecksumDaemon
@@ -47,8 +48,9 @@ class TestChecksumDaemon(unittest.TestCase):
         self.area_id = str(uuid.uuid4())
         self.content_type = 'text/html'
         self.file_key = f"{self.area_id}/foo"
+        self.file_contents = "exquisite corpse"
         self.object = self.upload_bucket.Object(self.file_key)
-        self.object.put(Key=self.file_key, Body="exquisite corpse", ContentType=self.content_type)
+        self.object.put(Key=self.file_key, Body=self.file_contents, ContentType=self.content_type)
         self.event = {'Records': [
             {'eventVersion': '2.0', 'eventSource': 'aws:s3', 'awsRegion': 'us-east-1',
              'eventTime': '2017-09-15T00:05:10.378Z', 'eventName': 'ObjectCreated:Put',
@@ -80,12 +82,7 @@ class TestChecksumDaemon(unittest.TestCase):
         tagging = boto3.client('s3').get_object_tagging(Bucket=self.UPLOAD_BUCKET_NAME, Key=self.file_key)
         self.assertEqual(
             sorted(tagging['TagSet'], key=lambda x: x['Key']),
-            sorted([
-                {'Key': "hca-dss-s3_etag", 'Value': "18f17fbfdd21cf869d664731e10d4ffd"},
-                {'Key': "hca-dss-sha1", 'Value': "b1b101e21cf9cf8a4729da44d7818f935eec0ce8"},
-                {'Key': "hca-dss-sha256", 'Value': "29f5572dfbe07e1db9422a4c84e3f9e455aab9ac596f0bf3340be17841f26f70"},
-                {'Key': "hca-dss-crc32c", 'Value': "FE9ADA52"}
-            ], key=lambda x: x['Key'])
+            sorted(FIXTURE_DATA_CHECKSUMS[self.file_contents]['s3_tagset'], key=lambda x: x['Key'])
         )
 
     @patch('upload.checksum_daemon.checksum_daemon.IngestNotifier.connect')
@@ -106,10 +103,5 @@ class TestChecksumDaemon(unittest.TestCase):
             'last_modified': self.object.last_modified.isoformat(),
             'content_type': self.content_type,
             'url': f"s3://{self.UPLOAD_BUCKET_NAME}/{self.area_id}/foo",
-            'checksums': {
-                "s3_etag": "18f17fbfdd21cf869d664731e10d4ffd",
-                "sha1": "b1b101e21cf9cf8a4729da44d7818f935eec0ce8",
-                "sha256": "29f5572dfbe07e1db9422a4c84e3f9e455aab9ac596f0bf3340be17841f26f70",
-                "crc32c": "FE9ADA52"
-            }
+            'checksums': FIXTURE_DATA_CHECKSUMS[self.file_contents]['checksums']
         })

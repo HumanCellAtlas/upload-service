@@ -4,7 +4,7 @@ import uuid
 import boto3
 from moto import mock_s3
 
-from . import EnvironmentSetup
+from . import EnvironmentSetup, FIXTURE_DATA_CHECKSUMS
 
 with EnvironmentSetup({'DCP_EVENTS_TOPIC': 'foo'}):  # noqa
     from upload import UploadArea
@@ -84,12 +84,11 @@ class TestUploadedFileChecksummer(unittest.TestCase):
 
     def test_checksum(self):
         filename = 'bar'
-        self._mock_upload_file(filename=filename, contents="exquisite corpse")
+        file_contents = "exquisite corpse"
+        self._mock_upload_file(filename=filename, contents=file_contents)
         uf = self.upload_area.uploaded_file(filename)
 
-        self.assertEqual(UploadedFileChecksummer(uploaded_file=uf).checksum(), {
-            's3_etag': '18f17fbfdd21cf869d664731e10d4ffd',
-            'sha1': 'b1b101e21cf9cf8a4729da44d7818f935eec0ce8',
-            'sha256': '29f5572dfbe07e1db9422a4c84e3f9e455aab9ac596f0bf3340be17841f26f70',
-            'crc32c': 'FE9ADA52'
-        })
+        self.assertEqual(
+            UploadedFileChecksummer(uploaded_file=uf).checksum(),
+            FIXTURE_DATA_CHECKSUMS[file_contents]['checksums']
+        )
