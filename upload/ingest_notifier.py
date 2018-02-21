@@ -4,8 +4,8 @@ import os
 import pika
 import requests
 
-from .. import UploadException
-from ..logging import get_logger
+from .exceptions import UploadException
+from .logging import get_logger
 
 logger = get_logger(__name__)
 

@@ -1,7 +1,5 @@
-import logging
-
 from upload import UploadArea
-from .ingest_notifier import IngestNotifier
+from ..ingest_notifier import IngestNotifier
 from .. import EventNotifier
 from ..checksum import UploadedFileChecksummer
 from ..logging import get_logger
