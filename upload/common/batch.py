@@ -11,8 +11,11 @@ class JobDefinition:
 
     @classmethod
     def clear_all(cls):
+        deleted_count = 0
         for jobdef in batch.describe_job_definitions(status='ACTIVE')['jobDefinitions']:
             cls(metadata=jobdef).delete()
+            deleted_count += 1
+        return deleted_count
 
     def __init__(self, docker_image=None, deployment=None, arn=None, metadata=None):
         self.deployment = deployment if deployment else os.environ['DEPLOYMENT_STAGE']
