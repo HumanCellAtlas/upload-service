@@ -9,7 +9,7 @@ import requests
 from connexion.resolver import RestyResolver
 from connexion.lifecycle import ConnexionResponse
 
-from .. import UploadException
+from ...common.exceptions import UploadException
 
 logging.getLogger('boto3').setLevel(logging.WARNING)
 logging.getLogger('botocore').setLevel(logging.WARNING)
@@ -26,7 +26,8 @@ def get_logger():
 def create_app():
     app = connexion.App(__name__)
     resolver = RestyResolver("upload.api_server", collection_endpoint_name="list")
-    app.add_api('../../config/upload-api.yml', resolver=resolver, validate_responses=True)
+    swagger_spec_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'config', 'upload-api.yml')
+    app.add_api(swagger_spec_path, resolver=resolver, validate_responses=True)
     return app
 
 

@@ -4,8 +4,8 @@ import re
 
 import boto3
 
-from . import UploadedFile
-from .batch import JobDefinition
+from ...common.uploaded_file import UploadedFile
+from ...common.batch import JobDefinition
 
 batch = boto3.client('batch')
 

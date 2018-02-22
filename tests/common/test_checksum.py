@@ -4,10 +4,10 @@ import uuid
 import boto3
 from moto import mock_s3
 
-from . import EnvironmentSetup, FIXTURE_DATA_CHECKSUMS
+from .. import EnvironmentSetup, FIXTURE_DATA_CHECKSUMS
 
-from upload import UploadArea
-from upload.checksum import UploadedFileChecksummer
+from upload.common.upload_area import UploadArea
+from upload.common.checksum import UploadedFileChecksummer
 
 
 class TestUploadedFileChecksummer(unittest.TestCase):

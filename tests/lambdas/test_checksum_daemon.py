@@ -7,7 +7,7 @@ import uuid
 import boto3
 from moto import mock_s3, mock_sns, mock_sts
 
-from . import EnvironmentSetup, FIXTURE_DATA_CHECKSUMS
+from .. import EnvironmentSetup, FIXTURE_DATA_CHECKSUMS
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
@@ -42,7 +42,7 @@ class TestChecksumDaemon(unittest.TestCase):
             'DCP_EVENTS_TOPIC': 'bogotopic'
         }
         with EnvironmentSetup(self.environment):
-            from upload.checksum_daemon import ChecksumDaemon
+            from upload.lambdas.checksum_daemon import ChecksumDaemon
             self.daemon = ChecksumDaemon(context)
         # File
         self.area_id = str(uuid.uuid4())
@@ -72,8 +72,8 @@ class TestChecksumDaemon(unittest.TestCase):
         self.sns_mock.stop()
         self.sts_mock.stop()
 
-    @patch('upload.checksum_daemon.checksum_daemon.IngestNotifier.connect')
-    @patch('upload.checksum_daemon.checksum_daemon.IngestNotifier.file_was_uploaded')
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.file_was_uploaded')
     def test_consume_event_sets_tags(self, mock_file_was_uploaded, mock_connect):
 
         with EnvironmentSetup(self.environment):
@@ -85,8 +85,8 @@ class TestChecksumDaemon(unittest.TestCase):
             sorted(FIXTURE_DATA_CHECKSUMS[self.file_contents]['s3_tagset'], key=lambda x: x['Key'])
         )
 
-    @patch('upload.checksum_daemon.checksum_daemon.IngestNotifier.connect')
-    @patch('upload.checksum_daemon.checksum_daemon.IngestNotifier.file_was_uploaded')
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.file_was_uploaded')
     def test_consume_event_notifies_ingest(self, mock_file_was_uploaded, mock_connect):
 
         with EnvironmentSetup(self.environment):

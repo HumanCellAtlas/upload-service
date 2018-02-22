@@ -1,9 +1,10 @@
-from upload import UploadArea
-from ..ingest_notifier import IngestNotifier
-from .. import EventNotifier
-from ..checksum import UploadedFileChecksummer
-from ..logging import get_logger
 from six.moves import urllib
+
+from ..common.event_notifier import EventNotifier
+from ...common.upload_area import UploadArea
+from ...common.ingest_notifier import IngestNotifier
+from ...common.checksum import UploadedFileChecksummer
+from ...common.logging import get_logger
 
 logger = get_logger(__name__)
 

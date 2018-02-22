@@ -15,7 +15,14 @@ clobber: clean
 
 build:
 	cp ../requirements.txt .
-	cp -R ../upload  chalicelib
+	mkdir -p chalicelib/upload/common chalicelib/upload/lambdas
+	cp -R ../upload/__init__.py \
+		  ../upload/common \
+		chalicelib/upload
+	cp -R ../upload/lambdas/__init__.py \
+		  ../upload/lambdas/common \
+		  ../upload/lambdas/api_server \
+		chalicelib/upload/lambdas
 	mkdir -p chalicelib/config
 	envsubst '$$API_HOST' < ../config/upload-api.yml > chalicelib/config/upload-api.yml
 	shopt -s nullglob; for wheel in vendor.in/*/*.whl; do unzip -q -o -d vendor $$wheel; done

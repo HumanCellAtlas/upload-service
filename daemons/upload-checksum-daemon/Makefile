@@ -7,8 +7,14 @@ clobber: clean
 	git checkout .chalice/*.json
 
 build:
-	mkdir -p domovoilib
-	cp -R ../../upload domovoilib
+	mkdir -p domovoilib/upload/common domovoilib/upload/lambdas
+	cp -R ../../upload/__init__.py \
+		  ../../upload/common \
+		domovoilib/upload
+	cp -R ../../upload/lambdas/__init__.py \
+		  ../../upload/lambdas/common \
+		  ../../upload/lambdas/checksum_daemon \
+		domovoilib/upload/lambdas
 	shopt -s nullglob; for wheel in vendor.in/*/*.whl; do unzip -q -o -d vendor $$wheel; done
 
 deploy: build

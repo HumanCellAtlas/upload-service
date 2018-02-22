@@ -24,7 +24,7 @@ paths:
 
     post:
       summary: Create an Upload Area
-      operationId: upload.api_server.v1.area.create
+      operationId: upload.lambdas.api_server.v1.area.create
       description: |
         Create an Upload Area.
         This action takes approximately 15 seconds to complete.
@@ -70,7 +70,7 @@ paths:
 
     delete:
       summary: Delete an Upload Area
-      operationId: upload.api_server.v1.area.delete
+      operationId: upload.lambdas.api_server.v1.area.delete
       description: Delete an Upload Area
       tags:
         - For Ingestion Service Use Only
@@ -105,7 +105,7 @@ paths:
 
     get:
       summary: List files in an upload area
-      operationId: upload.api_server.v1.area.list_files
+      operationId: upload.lambdas.api_server.v1.area.list_files
       description: |
         Provide a JSON object listing all the files in an upload area, including their checkums.
       tags:
@@ -141,7 +141,7 @@ paths:
 
     post:
       summary: Lock an Upload Area
-      operationId: upload.api_server.v1.area.lock
+      operationId: upload.lambdas.api_server.v1.area.lock
       description: |
         Lock an Upload area so that submitters may not add/delete/rename files in it.
         This action takes approximately 15 seconds to complete.
@@ -174,7 +174,7 @@ paths:
 
     delete:
       summary: Unock an Upload Area
-      operationId: upload.api_server.v1.area.unlock
+      operationId: upload.lambdas.api_server.v1.area.unlock
       description: |
         Unlock an Upload area so that submitters may add/delete/rename files in it.
         This action takes approximately 15 seconds to complete.
@@ -209,7 +209,7 @@ paths:
 
     put:
       summary: Store a metadata file
-      operationId: upload.api_server.v1.area.put_file
+      operationId: upload.lambdas.api_server.v1.area.put_file
       description: Store a JSON metadata file in the upload area.
       tags:
         - For Ingestion Service Use Only
@@ -252,7 +252,7 @@ paths:
 
     get:
       summary: Get information about a file
-      operationId: upload.api_server.v1.area.file_info
+      operationId: upload.lambdas.api_server.v1.area.file_info
       tags:
         - All
       parameters:
@@ -284,7 +284,7 @@ paths:
 
     put:
       summary: Validate a staged file
-      operationId: upload.api_server.v1.area.validate_file
+      operationId: upload.lambdas.api_server.v1.area.validate_file
       description: |
         Invoke supplied validator Docker image and give it access to the file.
         The validator must be based off the base validator Docker image.
@@ -349,7 +349,7 @@ paths:
   /v1/area/{upload_area_id}/files_info:
     put:
       summary: Get information about files
-      operationId: upload.api_server.v1.area.files_info
+      operationId: upload.lambdas.api_server.v1.area.files_info
       description: |
         Get information about a set of files listed in the message body.
         Note that altough the HTTP verb of this endpoint is PUT, it is a read-only operation and does not modify data.
@@ -393,7 +393,7 @@ paths:
   /v1/config/client:
     get:
       summary: Configuration information required by upload clients to use this Upload Service deployment.
-      operationId: upload.api_server.v1.config.client_config
+      operationId: upload.lambdas.api_server.v1.config.client_config
       description: |
         Provides information about this deployment, required for the Upload Service clients to operate.
       tags:

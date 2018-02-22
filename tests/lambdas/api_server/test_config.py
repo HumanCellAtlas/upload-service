@@ -1,7 +1,7 @@
 import os, sys, unittest, json
 
 from . import client_for_test_api_server
-from .. import EnvironmentSetup
+from ... import EnvironmentSetup
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa

@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 import boto3
 
-from upload import UploadArea
+from upload.common.upload_area import UploadArea
 
 
 class UploadCleaner:

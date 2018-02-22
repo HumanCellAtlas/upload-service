@@ -4,7 +4,7 @@ import os
 import boto3
 
 from .amqp_tool import AmqpTool
-from upload.batch import JobDefinition
+from upload.common.batch import JobDefinition
 from ..setup.batch_validation import BatchValidationJobQueue
 from .rest_api import RestApiTest
 

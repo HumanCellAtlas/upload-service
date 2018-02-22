@@ -8,7 +8,7 @@ import sys
 pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), 'domovoilib'))  # noqa
 sys.path.insert(0, pkg_root)  # noqa
 
-from upload.checksum_daemon import ChecksumDaemon
+from upload.lambdas.checksum_daemon import ChecksumDaemon
 
 UPLOAD_SERVICE_S3_BUCKET = os.environ['BUCKET_NAME']
 
