@@ -43,7 +43,9 @@ resource "aws_iam_policy" "csum_job_policy" {
         {
             "Effect": "Allow",
             "Action": [
-                "s3:GetObject"
+                "s3:GetObject",
+                "s3:GetObjectTagging",
+                "s3:PutObjectTagging"
             ],
             "Resource": [
                 "arn:aws:s3:::${aws_s3_bucket.upload_areas_bucket.bucket}/*"
