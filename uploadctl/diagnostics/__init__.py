@@ -27,15 +27,18 @@ class DiagnosticsCLI:
     def describe_validation_job(self, validation_id):
         response = self.batch.describe_jobs(jobs=[validation_id])
         for job in response['jobs']:
-            print(f"Job Id             {job['jobId']}")
-            print(f"Job Name           {job['jobName']}")
-            print(f"Created at         {self._datetime(job['createdAt'])}")
-            print(f"Started at         {self._datetime(job['startedAt'])}")
-            print(f"Duration           {(job['stoppedAt'] - job['startedAt'])/1000}s")
-            print(f"Status             {job['status']}")
-            print(f"Container Image    {job['container']['image']}")
-            print(f"Container Command  {' '.join(job['container']['command'])}")
-            print("Log:")
+            try:
+                print(f"Job Id             {job['jobId']}")
+                print(f"Job Name           {job['jobName']}")
+                print(f"Status             {job['status']}")
+                print(f"Created at         {self._datetime(job['createdAt'])}")
+                print(f"Started at         {self._datetime(job['startedAt'])}")
+                print(f"Duration           {(job['stoppedAt'] - job['startedAt'])/1000}s")
+                print(f"Container Image    {job['container']['image']}")
+                print(f"Container Command  {' '.join(job['container']['command'])}")
+                print("Log:")
+            except KeyError:
+                pass
             self._display_log('/aws/batch/job', job['container']['logStreamName'])
 
     def _display_log(self, log_group_name, log_stream_name):

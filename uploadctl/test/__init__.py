@@ -1,11 +1,8 @@
 import argparse
 import os
 
-import boto3
-
 from .amqp_tool import AmqpTool
-from upload.common.batch import JobDefinition
-from ..setup.batch_validation import BatchValidationJobQueue
+from .batch import TestBatch
 from .rest_api import RestApiTest
 
 
@@ -18,7 +15,7 @@ class TestCLI:
 
         uploadctl test amqp listen|publish
         uploadctl test api
-        uploadctl test batch <docker-image>
+        uploadctl test batch <docker-image> <command>
         """)
         test_subparsers = test_parser.add_subparsers()
 
@@ -31,7 +28,13 @@ class TestCLI:
 
         test_batch_parser = test_subparsers.add_parser("batch", description="Test Batch infrastructure")
         test_batch_parser.set_defaults(command='test', test_command='batch')
-        test_batch_parser.add_argument("image", metavar="IMAGE", help="Test Batch setup with this Docker image")
+        test_batch_parser.add_argument("--queue", metavar="QUEUE_NAME", default=TestBatch.DEFAULT_QUEUE,
+                                       help=f"Batch queue name (default={TestBatch.DEFAULT_QUEUE})")
+        test_batch_parser.add_argument("--role", metavar="ROLE_NAME", default=TestBatch.DEFAULT_ROLE,
+                                       help=f"Job role name (default={TestBatch.DEFAULT_ROLE})")
+        test_batch_parser.add_argument("-e", "--env", metavar="X=Y", action="append")
+
+        test_batch_parser.add_argument("image", metavar="IMAGE", help="Run this Docker image")
         test_batch_parser.add_argument("docker_command", nargs=argparse.REMAINDER,
                                        help="Command and arguments for Docker image")
 
@@ -52,28 +55,11 @@ class TestCLI:
                 tool = AmqpTool(server=args.server, exchange_name=args.exchange, queue_name=args.queue_name)
                 tool.publish()
         elif args.test_command == 'batch':
-            cls.test_batch_infrastructure(docker_image=args.image, command=args.docker_command)
+
+            TestBatch(queue_name=args.queue,
+                      role_name=args.role).run(docker_image=args.image,
+                                               command=args.docker_command,
+                                               env=args.env)
         elif args.test_command == 'api':
             RestApiTest(verbose=args.verbose, pause=args.pause, uuid=args.uuid).run()
         exit(0)
-
-    @classmethod
-    def test_batch_infrastructure(cls, docker_image, command):
-        batch = boto3.client('batch')
-        account_id = boto3.client('sts').get_caller_identity().get('Account')
-        job_role_arn = f"arn:aws:iam::{account_id}:role/dcp-upload-validation-job-{os.environ['DEPLOYMENT_STAGE']}"
-        job_defn = JobDefinition(
-            docker_image=docker_image,
-            deployment=os.environ['DEPLOYMENT_STAGE']
-        ).find_or_create(job_role_arn)
-        jobq = BatchValidationJobQueue(quiet=True)
-        jobq.is_setup()  # load arn
-        response = batch.submit_job(
-            jobName='test-job',
-            jobQueue=jobq.arn,
-            jobDefinition=job_defn.arn,
-            containerOverrides={
-                'command': command
-            }
-        )
-        print(f"Submit job returned {response}")
