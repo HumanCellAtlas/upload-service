@@ -50,6 +50,18 @@
     {
       "Effect": "Allow",
       "Action": [
+          "batch:Describe*",
+          "batch:RegisterJobDefinition",
+          "batch:SubmitJob"
+      ],
+      "Resource": [
+          "arn:aws:batch:*:$account_id:*"
+      ]
+    },
+
+    {
+      "Effect": "Allow",
+      "Action": [
         "SNS:Publish"
       ],
       "Resource": [

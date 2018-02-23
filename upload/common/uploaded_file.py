@@ -14,10 +14,6 @@ class UploadedFile:
     CHECKSUM_TAGS = ('hca-dss-sha1', 'hca-dss-sha256', 'hca-dss-crc32c', 'hca-dss-s3_etag')
 
     @classmethod
-    def from_listobject_dict(cls, upload_area, object_dict):
-        return cls(upload_area, s3_key=object_dict['Key'], size=object_dict['Size'])
-
-    @classmethod
     def from_s3_key(cls, upload_area, s3_key):
         s3object = s3.Bucket(upload_area.bucket_name).Object(s3_key)
         return cls(upload_area, s3object)
@@ -37,12 +33,20 @@ class UploadedFile:
         return {
             'upload_area_id': self.upload_area.uuid,
             'name': self.name,
-            'size': self.s3obj.content_length,
+            'size': self.size,
             'content_type': self.content_type_tag or self.s3obj.content_type,
             'url': f"s3://{self.upload_area.bucket_name}/{self.s3obj.key}",
             'checksums': self.checksums,
             'last_modified': self.s3obj.last_modified.isoformat()
         }
+
+    @property
+    def s3url(self):
+        return f"s3://{self.upload_area.bucket_name}/{self.upload_area.uuid}/{self.name}"
+
+    @property
+    def size(self):
+        return self.s3obj.content_length
 
     def save_tags(self):
         tags = {f"hca-dss-{csum}": self.checksums[csum] for csum in self.checksums.keys()}

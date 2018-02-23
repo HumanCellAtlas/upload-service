@@ -38,7 +38,11 @@ class TestChecksumDaemon(unittest.TestCase):
             'BUCKET_NAME': self.UPLOAD_BUCKET_NAME,
             'DEPLOYMENT_STAGE': self.DEPLOYMENT_STAGE,
             'INGEST_AMQP_SERVER': 'foo',
-            'DCP_EVENTS_TOPIC': 'bogotopic'
+            'DCP_EVENTS_TOPIC': 'bogotopic',
+            'CSUM_USE_BATCH_FILE_SIZE_THRESHOLD_GB': '4',
+            'CSUM_JOB_Q_ARN': 'bogoqarn',
+            'CSUM_JOB_ROLE_ARN': 'bogorolearn',
+            'CSUM_DOCKER_IMAGE': 'bogoimage'
         }
         with EnvironmentSetup(self.environment):
             from upload.lambdas.checksum_daemon import ChecksumDaemon
@@ -46,7 +50,8 @@ class TestChecksumDaemon(unittest.TestCase):
         # File
         self.area_id = str(uuid.uuid4())
         self.content_type = 'text/html'
-        self.file_key = f"{self.area_id}/foo"
+        self.filename = 'foo'
+        self.file_key = f"{self.area_id}/{self.filename}"
         self.file_contents = "exquisite corpse"
         self.object = self.upload_bucket.Object(self.file_key)
         self.object.put(Key=self.file_key, Body=self.file_contents, ContentType=self.content_type)
@@ -101,6 +106,19 @@ class TestChecksumDaemon(unittest.TestCase):
             'size': 16,
             'last_modified': self.object.last_modified.isoformat(),
             'content_type': self.content_type,
-            'url': f"s3://{self.UPLOAD_BUCKET_NAME}/{self.area_id}/foo",
+            'url': f"s3://{self.UPLOAD_BUCKET_NAME}/{self.area_id}/{self.filename}",
             'checksums': FIXTURE_DATA_CHECKSUMS[self.file_contents]['checksums']
         })
+
+    @patch('upload.common.upload_area.UploadedFile.size', 100 * 1024 * 1024 * 1024)
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.schedule_checksumming')
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.file_was_uploaded')
+    def test_that_with_a_large_file_a_batch_job_is_scheduled(self,
+                                                             mock_file_was_uploaded,
+                                                             mock_connect,
+                                                             mock_schedule_checksumming):
+        with EnvironmentSetup(self.environment):
+            self.daemon.consume_event(self.event)
+
+        mock_schedule_checksumming.assert_called()
