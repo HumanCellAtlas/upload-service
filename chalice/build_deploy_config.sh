@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-api_gateway_name="upload.api_server"
+api_gateway_name="upload.lambdas.api_server"
 
 set_api_id() {
     # Identify the id of our API Gateway by finding a gateway with a REST API with resource with an integration that
