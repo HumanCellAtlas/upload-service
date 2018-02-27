@@ -42,7 +42,7 @@ class ApiDomain(DomainName):
 
 class UploadRestApi(RestApi):
     def __init__(self, **options):
-        super().__init__(name='upload.api_server', stage=os.environ['DEPLOYMENT_STAGE'], **options)
+        super().__init__(name='upload.lambdas.api_server', stage=os.environ['DEPLOYMENT_STAGE'], **options)
 
 
 class ApiBasePathMapping(BasePathMapping):
