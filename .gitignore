@@ -48,5 +48,6 @@ chalice/.chalice/venv/
 
 /config/environment.dev
 /config/deployment_secrets.dev
+/config/deployment_secrets.integration
 /config/deployment_secrets.staging
 /config/deployment_secrets.prod

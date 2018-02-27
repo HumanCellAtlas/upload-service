@@ -7,6 +7,10 @@
       "api_gateway_stage": "",
       "environment_variables": {}
     },
+    "integration": {
+      "api_gateway_stage": "",
+      "environment_variables": {}
+    },
     "staging": {
       "api_gateway_stage": "",
       "environment_variables": {}

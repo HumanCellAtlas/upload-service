@@ -35,6 +35,13 @@ deploy:
     on:
       branch: master
       python: 3.6
+  # deploy master branch to the integration environment
+  - provider: script
+    script: scripts/deploy.sh integration
+    skip_cleanup: true
+    on:
+      branch: master
+      python: 3.6
   # deploy staging branch to staging environment
   - provider: script
     script: scripts/deploy.sh staging
