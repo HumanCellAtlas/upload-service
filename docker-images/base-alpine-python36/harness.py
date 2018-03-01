@@ -15,7 +15,7 @@ from urllib3.util import parse_url
 
 class ValidatorHarness:
 
-    TIMEOUT = 300
+    TIMEOUT = None
     AMQP_EXCHANGE = "ingest.validation.exchange"
     AMQP_ROUTING_KEY = "ingest.file.validation.queue"
 
