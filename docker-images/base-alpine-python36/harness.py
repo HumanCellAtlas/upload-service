@@ -20,13 +20,21 @@ class ValidatorHarness:
     AMQP_ROUTING_KEY = "ingest.file.validation.queue"
 
     def __init__(self):
+        self.version = self._find_version()
         self.validation_id = os.environ['AWS_BATCH_JOB_ID']
-        self._log("STARTED with argv: {}".format(sys.argv))
+        self._log("VERSION {version}, STARTED with argv: {argv}".format(version=self.version, argv=sys.argv))
         self._parse_args()
         self._stage_file_to_be_validated()
         results = self._run_validator()
         self._report_results(results)
         self._unstage_file()
+
+    def _find_version(self):
+        try:
+            with open('/HARNESS_VERSION', 'r') as fp:
+                return fp.read().strip()
+        except FileNotFoundError:
+            return None
 
     def _parse_args(self):
         parser = argparse.ArgumentParser()
