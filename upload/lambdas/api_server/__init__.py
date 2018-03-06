@@ -48,7 +48,9 @@ def return_exceptions_as_http_errors(func):
             title = str(ex)
             detail = traceback.format_exc()
 
-        return rfc7807error_response(title, status, detail)
+        error_response = rfc7807error_response(title, status, detail)
+        get_logger().error(f"Returning rfc7807 error response: status={status}, title={title}, detail={detail}")
+        return error_response
 
     return wrapper
 
@@ -62,7 +64,9 @@ def require_authenticated(func):
                                   detail="INGEST_API_KEY is not set.")
         api_key = connexion.request.headers.get('Api-Key', None)
         if not api_key == os.environ['INGEST_API_KEY']:
-            raise UploadException(status=requests.codes.unauthorized, title="Access Denied.")
+            raise UploadException(status=requests.codes.unauthorized,
+                                  title="Access Denied.",
+                                  detail=f"Unrecognized Api-Key: {api_key[:3]}...")
         return func(*args, **kwargs)
 
     return wrapper
