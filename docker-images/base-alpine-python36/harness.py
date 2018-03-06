@@ -7,6 +7,7 @@ import pathlib
 import sys
 import subprocess
 import time
+import urllib.parse
 
 import boto3
 import pika
@@ -46,7 +47,7 @@ class ValidatorHarness:
         self.validator = self.args.validator
         url_bits = parse_url(self.args.s3_url)
         self.bucket_name = url_bits.netloc
-        self.s3_object_key = url_bits.path.lstrip('/')
+        self.s3_object_key = urllib.parse.unquote(url_bits.path.lstrip('/'))
 
     def _stage_file_to_be_validated(self):
         s3 = boto3.resource('s3')

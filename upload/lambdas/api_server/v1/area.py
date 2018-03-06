@@ -1,4 +1,5 @@
 import json
+import urllib.parse
 
 import connexion
 import requests
@@ -63,7 +64,7 @@ def put_file(upload_area_id: str, filename: str, body: str):
 @require_authenticated
 def validate_file(upload_area_id: str, filename: str, json_request_body: str):
     upload_area = _load_upload_area(upload_area_id)
-    file = upload_area.uploaded_file(filename)
+    file = upload_area.uploaded_file(urllib.parse.unquote(filename))
     body = json.loads(json_request_body)
     environment = body['environment'] if 'environment' in body else {}
     validation_id = Validation(file).schedule_validation(body['validator_image'], environment)

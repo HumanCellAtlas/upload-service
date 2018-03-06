@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import urllib.parse
 
 import boto3
 
@@ -23,7 +24,7 @@ class Validation:
         file_s3loc = "s3://{bucket}/{upload_area}/{filename}".format(
             bucket=self.file.upload_area.bucket_name,
             upload_area=self.file.upload_area.uuid,
-            filename=self.file.name
+            filename=urllib.parse.quote(self.file.name)
         )
         command = ['/validator', file_s3loc]
         validation_id = self._enqueue_batch_job(job_defn, command, environment)
