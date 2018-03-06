@@ -63,7 +63,9 @@ def require_authenticated(func):
                                   title="Authentication is not configured",
                                   detail="INGEST_API_KEY is not set.")
         api_key = connexion.request.headers.get('Api-Key', None)
-        if not api_key == os.environ['INGEST_API_KEY']:
+        if api_key == os.environ['INGEST_API_KEY']:
+            get_logger().info(f"Authenticated with Api-Key: {api_key[:3]}")
+        else:
             raise UploadException(status=requests.codes.unauthorized,
                                   title="Access Denied.",
                                   detail=f"Unrecognized Api-Key: {api_key[:3]}...")
