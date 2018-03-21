@@ -12,6 +12,7 @@ def get_logger(name):
                                   datefmt="%Y-%m-%dT%H:%M:%S%z")
     ch.setFormatter(formatter)
     logger = logging.getLogger(name)
+    logger.handlers = []
     logger.addHandler(ch)
     logger.setLevel(logging.DEBUG)
     return logger
