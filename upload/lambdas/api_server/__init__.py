@@ -10,17 +10,13 @@ from connexion.resolver import RestyResolver
 from connexion.lifecycle import ConnexionResponse
 
 from ...common.exceptions import UploadException
+from ...common.logging import get_logger
 
-logging.getLogger('boto3').setLevel(logging.WARNING)
-logging.getLogger('botocore').setLevel(logging.WARNING)
-logging.getLogger('nose').setLevel(logging.WARNING)
+get_logger('boto3').setLevel(logging.WARNING)
+get_logger('botocore').setLevel(logging.WARNING)
+get_logger('nose').setLevel(logging.WARNING)
 
-
-def get_logger():
-    try:
-        return flask.current_app.logger
-    except RuntimeError:
-        return logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def create_app():
@@ -35,7 +31,7 @@ def return_exceptions_as_http_errors(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
-            get_logger().info(f"Running {func} with args={args} kwargs={kwargs}")
+            logger.info(f"Running {func} with args={args} kwargs={kwargs}")
             return func(*args, **kwargs)
 
         except UploadException as ex:
@@ -49,7 +45,7 @@ def return_exceptions_as_http_errors(func):
             detail = traceback.format_exc()
 
         error_response = rfc7807error_response(title, status, detail)
-        get_logger().error(f"Returning rfc7807 error response: status={status}, title={title}, detail={detail}")
+        logger.error(f"Returning rfc7807 error response: status={status}, title={title}, detail={detail}")
         return error_response
 
     return wrapper
@@ -64,7 +60,7 @@ def require_authenticated(func):
                                   detail="INGEST_API_KEY is not set.")
         api_key = connexion.request.headers.get('Api-Key', None)
         if api_key == os.environ['INGEST_API_KEY']:
-            get_logger().info(f"Authenticated with Api-Key: {api_key[:3]}")
+            logger.info(f"Authenticated with Api-Key: {api_key[:3]}")
         else:
             raise UploadException(status=requests.codes.unauthorized,
                                   title="Access Denied.",
