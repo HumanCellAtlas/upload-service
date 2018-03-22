@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import logging
 import os
 import pathlib
 import sys
@@ -14,6 +15,20 @@ import pika
 from urllib3.util import parse_url
 
 
+def get_logger(name):
+    ch = logging.StreamHandler(sys.stdout)
+    log_level_name = os.environ['LOG_LEVEL'] if 'LOG_LEVEL' in os.environ else 'DEBUG'
+    log_level = getattr(logging, log_level_name.upper())
+    ch.setLevel(log_level)
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s',
+                                  datefmt="%Y-%m-%dT%H:%M:%S%z")
+    ch.setFormatter(formatter)
+    logger = logging.getLogger(name)
+    logger.addHandler(ch)
+    logger.setLevel(logging.DEBUG)
+    return logger
+
+
 class ValidatorHarness:
 
     TIMEOUT = None
@@ -23,12 +38,14 @@ class ValidatorHarness:
     def __init__(self):
         self.version = self._find_version()
         self.validation_id = os.environ['AWS_BATCH_JOB_ID']
-        self._log("VERSION {version}, STARTED with argv: {argv}".format(version=self.version, argv=sys.argv))
+        self.logger = get_logger('HARNESS')
+        self._log("VERSION {version}, attempt {attempt} with argv: {argv}".format(
+            version=self.version, attempt=os.environ['AWS_BATCH_JOB_ATTEMPT'], argv=sys.argv))
         self._parse_args()
         self._stage_file_to_be_validated()
         results = self._run_validator()
-        self._report_results(results)
         self._unstage_file()
+        self._report_results(results)
 
     def _find_version(self):
         try:
@@ -113,7 +130,7 @@ class ValidatorHarness:
         os.remove(self.staged_file_path)
 
     def _log(self, message):
-        print("UPLOAD HARNESS [{id}]: ".format(id=self.validation_id) + str(message))
+        self.logger.info("[{id}]: ".format(id=self.validation_id) + str(message))
 
 
 if __name__ == '__main__':
