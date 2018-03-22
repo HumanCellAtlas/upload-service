@@ -53,7 +53,7 @@ class JobDefinition:
             containerProperties={
                 'image': self.docker_image,
                 'vcpus': 1,
-                'memory': 1000,
+                'memory': 4096,
                 'command': [],
                 'jobRoleArn': job_role_arn,
                 'volumes': [
@@ -71,7 +71,7 @@ class JobDefinition:
                 ]
             },
             retryStrategy={
-                'attempts': 1
+                'attempts': 3
             }
         )
         self.arn = self.metadata['jobDefinitionArn']
