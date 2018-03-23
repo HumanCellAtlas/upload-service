@@ -6,7 +6,7 @@ resource "aws_batch_compute_environment" "validation_compute_env" {
     type = "SPOT"
     bid_percentage = 100
     spot_iam_fleet_role = "${aws_iam_role.AmazonEC2SpotFleetRole.arn}"
-    max_vcpus = 64
+    max_vcpus = 256
     min_vcpus = 0
     desired_vcpus = 0
     instance_type = [
