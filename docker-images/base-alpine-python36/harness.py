@@ -116,7 +116,7 @@ class ValidatorHarness:
     def _report_results(self, results):
         self._log("results = {}".format(results))
         if not self.args.test:
-            amqp_server = "amqp.ingest.{stage}.data.humancellatlas.org".format(stage=os.environ['DEPLOYMENT_STAGE'])
+            amqp_server = os.environ['INGEST_AMQP_SERVER']
             connection = pika.BlockingConnection(pika.ConnectionParameters(amqp_server))
             channel = connection.channel()
             channel.queue_declare(queue='ingest.file.create.staged')

@@ -72,6 +72,11 @@ resource "aws_iam_role" "AmazonEC2SpotFleetRole" {
 POLICY
 }
 
+resource "aws_iam_role_policy_attachment" "AmazonEC2SpotFleetRole" {
+  role = "${aws_iam_role.AmazonEC2SpotFleetRole.name}"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole"
+}
+
 # I don't think we can let Terraform create these two roles, as it doesn't support Service Linked Roles.
 # See https://github.com/terraform-providers/terraform-provider-aws/issues/921
 # We should create them beforehand in the console.  Terraform sees then as regular IAM roles.
