@@ -6,6 +6,7 @@ import requests
 
 from .exceptions import UploadException
 from .logging import get_logger
+from .logging import format_logger_with_id
 
 logger = get_logger(__name__)
 
@@ -31,6 +32,9 @@ class IngestNotifier:
 
     def file_was_uploaded(self, file_info):
         body = json.dumps(file_info)
+        upload_area_id = body["upload_area_id"]
+        file_name = body["name"]
+        format_logger_with_id(logger, "file_key", upload_area_id + "/" + file_name)
         success = self.channel.basic_publish(exchange=self.FILE_UPLOAD_EXCHANGE,
                                              routing_key=self.FILE_UPLOADED_QUEUE,
                                              body=body)

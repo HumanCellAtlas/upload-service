@@ -6,6 +6,7 @@ from boto3.s3.transfer import TransferConfig
 from dcplib.checksumming_io import ChecksummingSink
 
 from .logging import get_logger
+from .logging import format_logger_with_id
 
 logger = get_logger(__name__)
 KB = 1024
@@ -22,6 +23,7 @@ class UploadedFileChecksummer:
         self.bytes_checksummed = 0
         self.start_time = None
         self.last_diag_output_time = None
+        format_logger_with_id(logger, "file_key", self.uploaded_file.s3obj.key)
 
     def has_checksums(self):
         return sorted(tuple(self.uploaded_file.checksums.keys())) == sorted(self.CHECKSUM_NAMES)

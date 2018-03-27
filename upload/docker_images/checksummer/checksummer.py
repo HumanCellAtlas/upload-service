@@ -8,6 +8,7 @@ from urllib3.util import parse_url
 
 from upload.common.upload_area import UploadArea
 from upload.common.logging import get_logger
+from upload.common.logging import format_logger_with_id
 from upload.common.checksum import UploadedFileChecksummer
 from upload.common.ingest_notifier import IngestNotifier
 
@@ -35,6 +36,7 @@ class Checksummer:
         url_bits = parse_url(self.args.s3_url)
         self.bucket_name = url_bits.netloc
         self.s3_object_key = url_bits.path.lstrip('/')
+        format_logger_with_id(logger, "file_key", self.s3_object_key)
         logger.debug(f"bucket_name {self.bucket_name}")
         logger.debug(f"s3_object_key {self.s3_object_key}")
 
