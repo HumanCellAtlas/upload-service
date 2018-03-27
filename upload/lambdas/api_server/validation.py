@@ -21,6 +21,7 @@ class Validation:
     def schedule_validation(self, validator_docker_image: str, environment: dict) -> str:
         job_defn = self._find_or_create_job_definition_for_image(validator_docker_image)
         environment['DEPLOYMENT_STAGE'] = os.environ['DEPLOYMENT_STAGE']
+        environment['INGEST_AMQP_SERVER'] = os.environ['INGEST_AMQP_SERVER']
         file_s3loc = "s3://{bucket}/{upload_area}/{filename}".format(
             bucket=self.file.upload_area.bucket_name,
             upload_area=self.file.upload_area.uuid,
