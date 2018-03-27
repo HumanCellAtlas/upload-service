@@ -116,6 +116,7 @@ class ValidatorHarness:
         self._log("results = {}".format(results))
         if not self.args.test:
             amqp_server = os.environ['INGEST_AMQP_SERVER']
+            self._log("connecting to {amqp_server}...".format(amqp_server=amqp_server))
             connection = pika.BlockingConnection(pika.ConnectionParameters(amqp_server))
             channel = connection.channel()
             channel.queue_declare(queue='ingest.file.create.staged')
