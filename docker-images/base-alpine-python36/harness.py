@@ -15,13 +15,13 @@ import pika
 from urllib3.util import parse_url
 
 
-def get_logger(name, id_name, id_val):
+def get_logger(name, corr_id_name, corr_id_val):
     ch = logging.StreamHandler(sys.stdout)
     log_level_name = os.environ['LOG_LEVEL'] if 'LOG_LEVEL' in os.environ else 'DEBUG'
     log_level = getattr(logging, log_level_name.upper())
     ch.setLevel(log_level)
-    formatter = logging.Formatter(f'cor_id:{id_name}:{id_val} timestamp:%(asctime)s level:%(levelname)s' +
-                                  ' name:%(name)s message:%(message)s', datefmt="%Y-%m-%dT%H:%M:%S%z")
+    formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s' +
+                                  f' corr_id:{corr_id_name}:{corr_id_val} %(message)s', datefmt="%Y-%m-%dT%H:%M:%S%z")
     ch.setFormatter(formatter)
     logger = logging.getLogger(name)
     logger.handlers = []

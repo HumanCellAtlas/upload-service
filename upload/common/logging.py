@@ -18,8 +18,8 @@ def get_logger(name):
     return logger
 
 
-def format_logger_with_id(logger, id_name, id_val):
-    formatter = logging.Formatter(f'corr_id:{id_name}:{id_val} timestamp:%(asctime)s level:%(levelname)s' +
-                                  ' name:%(name)s message:%(message)s', datefmt="%Y-%m-%dT%H:%M:%S%z")
+def format_logger_with_id(logger, corr_id_name, corr_id_val):
+    formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s' +
+                                  f' corr_id:{corr_id_name}:{corr_id_val} %(message)s', datefmt="%Y-%m-%dT%H:%M:%S%z")
     logger.handlers[0].setFormatter(formatter)
     return logger
