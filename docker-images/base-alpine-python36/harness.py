@@ -15,15 +15,16 @@ import pika
 from urllib3.util import parse_url
 
 
-def get_logger(name):
+def get_logger(name, corr_id_name, corr_id_val):
     ch = logging.StreamHandler(sys.stdout)
     log_level_name = os.environ['LOG_LEVEL'] if 'LOG_LEVEL' in os.environ else 'DEBUG'
     log_level = getattr(logging, log_level_name.upper())
     ch.setLevel(log_level)
-    formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s',
-                                  datefmt="%Y-%m-%dT%H:%M:%S%z")
+    formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s' +
+                                  f' corr_id:{corr_id_name}:{corr_id_val} %(message)s', datefmt="%Y-%m-%dT%H:%M:%S%z")
     ch.setFormatter(formatter)
     logger = logging.getLogger(name)
+    logger.handlers = []
     logger.addHandler(ch)
     logger.setLevel(logging.DEBUG)
     return logger
@@ -38,10 +39,10 @@ class ValidatorHarness:
     def __init__(self):
         self.version = self._find_version()
         self.validation_id = os.environ['AWS_BATCH_JOB_ID']
-        self.logger = get_logger('HARNESS')
+        self._parse_args()
+        self.logger = get_logger('HARNESS', "file_key", self.s3_object_key)
         self._log("VERSION {version}, attempt {attempt} with argv: {argv}".format(
             version=self.version, attempt=os.environ['AWS_BATCH_JOB_ATTEMPT'], argv=sys.argv))
-        self._parse_args()
         self._stage_file_to_be_validated()
         results = self._run_validator()
         self._unstage_file()

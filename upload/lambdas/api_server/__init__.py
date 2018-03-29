@@ -11,6 +11,7 @@ from connexion.lifecycle import ConnexionResponse
 
 from ...common.exceptions import UploadException
 from ...common.logging import get_logger
+from ...common.logging import format_logger_with_id
 
 get_logger('boto3').setLevel(logging.WARNING)
 get_logger('botocore').setLevel(logging.WARNING)
@@ -31,6 +32,7 @@ def return_exceptions_as_http_errors(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
+            _format_logger(kwargs)
             logger.info(f"Running {func} with args={args} kwargs={kwargs}")
             return func(*args, **kwargs)
 
@@ -87,3 +89,14 @@ def rfc7807error_response(title, status, detail=None):
         content_type=RFC7807_MIMETYPE,
         body=body
     )
+
+
+def _format_logger(kwargs):
+    upload_area_id = kwargs.get("upload_area_id")
+    filename = kwargs.get("filename")
+    if upload_area_id:
+        if filename:
+            file_key = upload_area_id + "/" + filename
+            format_logger_with_id(logger, "file_key", file_key)
+        else:
+            format_logger_with_id(logger, "upload_area_id", upload_area_id)

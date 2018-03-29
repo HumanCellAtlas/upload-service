@@ -10,6 +10,7 @@ from ...common.upload_area import UploadArea
 from ...common.ingest_notifier import IngestNotifier
 from ...common.checksum import UploadedFileChecksummer
 from ...common.logging import get_logger
+from ...common.logging import format_logger_with_id
 from ...common.batch import JobDefinition
 
 logger = get_logger(__name__)
@@ -26,6 +27,8 @@ class ChecksumDaemon:
     RECOGNIZED_S3_EVENTS = ('ObjectCreated:Put', 'ObjectCreated:CompleteMultipartUpload')
 
     def __init__(self, context):
+        self.request_id = context.aws_request_id
+        format_logger_with_id(logger, "request_id", self.request_id)
         logger.debug("Ahm ahliiivvve!")
         self._read_environment()
         self.upload_area = None
@@ -50,15 +53,19 @@ class ChecksumDaemon:
             self._checksum_file()
 
     def _find_file(self, file_key):
+        format_logger_with_id(logger, "file_key", file_key)
         logger.debug(f"File: {file_key}")
         area_uuid = file_key.split('/')[0]
         filename = urllib.parse.unquote(file_key[len(area_uuid) + 1:])
+        logger.debug(f"File: {file_key}")
+        logger.info({"request_id": self.request_id, "area_uuid": area_uuid,
+                    "file_name": filename, "file_key": file_key, "type": "correlation"})
         self.upload_area = UploadArea(area_uuid)
         self.uploaded_file = self.upload_area.uploaded_file(filename)
 
     def _checksum_file(self):
         if self.uploaded_file.size > self.use_batch_if_larger_than:
-            logger.debug("Scheduling checksimming batch job")
+            logger.debug("Scheduling checksumming batch job")
             self.schedule_checksumming(self.uploaded_file)
         else:
             checksummer = UploadedFileChecksummer(self.uploaded_file)
@@ -106,6 +113,6 @@ class ChecksumDaemon:
                 'environment': [dict(name=k, value=v) for k, v in environment.items()]
             }
         )
-        print(f"Enqueued job {job_name} [{job['jobId']}] using job definition {job_defn.arn}:")
-        print(json.dumps(job))
+        logger.info(f"Enqueued job {job_name} [{job['jobId']}] using job definition {job_defn.arn}:")
+        logger.info(json.dumps(job))
         return job['jobId']

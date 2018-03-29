@@ -9,6 +9,7 @@ from ..validation import Validation
 from ...common.event_notifier import EventNotifier
 from ....common.upload_area import UploadArea
 from ....common.exceptions import UploadException
+from ....common.logging import get_logger
 
 
 @return_exceptions_as_http_errors

@@ -16,3 +16,10 @@ def get_logger(name):
     logger.addHandler(ch)
     logger.setLevel(logging.DEBUG)
     return logger
+
+
+def format_logger_with_id(logger, corr_id_name, corr_id_val):
+    formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s' +
+                                  f' corr_id:{corr_id_name}:{corr_id_val} %(message)s', datefmt="%Y-%m-%dT%H:%M:%S%z")
+    logger.handlers[0].setFormatter(formatter)
+    return logger
