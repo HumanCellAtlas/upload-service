@@ -1,4 +1,4 @@
-FROM humancellatlas/upload-validator-base-alpine:12
+FROM humancellatlas/upload-validator-base-alpine:latest
 
 ADD myvalidator.py /validator
 RUN chmod +x /validator
