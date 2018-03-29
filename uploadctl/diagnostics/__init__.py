@@ -32,14 +32,17 @@ class DiagnosticsCLI:
                 print(f"Job Name           {job['jobName']}")
                 print(f"Status             {job['status']}")
                 print(f"Created at         {self._datetime(job['createdAt'])}")
-                print(f"Started at         {self._datetime(job['startedAt'])}")
-                print(f"Duration           {(job['stoppedAt'] - job['startedAt'])/1000}s")
                 print(f"Container Image    {job['container']['image']}")
                 print(f"Container Command  {' '.join(job['container']['command'])}")
+                print(f"Started at         {self._datetime(job['startedAt'])}")
+                print(f"Duration           {(job['stoppedAt'] - job['startedAt'])/1000}s")
                 print("Log:")
             except KeyError:
                 pass
-            self._display_log('/aws/batch/job', job['container']['logStreamName'])
+            if 'logStreamName' in job['container']:
+                self._display_log('/aws/batch/job', job['container']['logStreamName'])
+            else:
+                print("No log yet.")
 
     def _display_log(self, log_group_name, log_stream_name):
         for event in self.logs.get_log_events(logGroupName=log_group_name, logStreamName=log_stream_name)['events']:
