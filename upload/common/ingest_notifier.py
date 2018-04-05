@@ -31,10 +31,10 @@ class IngestNotifier:
         logger.debug(f"declaring queue {self.FILE_UPLOADED_QUEUE} returned {retval}")
 
     def file_was_uploaded(self, file_info):
-        body = json.dumps(file_info)
-        upload_area_id = body["upload_area_id"]
-        file_name = body["name"]
+        upload_area_id = file_info["upload_area_id"]
+        file_name = file_info["name"]
         format_logger_with_id(logger, "file_key", upload_area_id + "/" + file_name)
+        body = json.dumps(file_info)
         success = self.channel.basic_publish(exchange=self.FILE_UPLOAD_EXCHANGE,
                                              routing_key=self.FILE_UPLOADED_QUEUE,
                                              body=body)
