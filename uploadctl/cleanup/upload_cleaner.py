@@ -110,7 +110,6 @@ class UploadCleaner:
         files = upload_area.ls()['files']
         sys.stdout.write(f"{len(files)} files, ")
         for file in files:
-            print(file)
             file_last_modified = dateutil.parser.parse(file['last_modified'])
             if file_last_modified > last_file_modified_at:
                 last_file_modified_at = file_last_modified
