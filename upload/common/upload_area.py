@@ -56,12 +56,12 @@ class UploadArea:
 
     def delete(self):
         # This may need to be offloaded to an async lambda if _empty_bucket() starts taking a long time.
+        self._empty_upload_area()
         for access_key in self._user.access_keys.all():
             access_key.delete()
         for policy in self._user.policies.all():
             policy.delete()
         self._user.delete()
-        self._empty_upload_area()
 
     def ls(self):
         return {'files': self._file_list()}
