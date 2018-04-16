@@ -3,6 +3,7 @@
 [![Staging Service Build Status](https://travis-ci.org/HumanCellAtlas/upload-service.svg?branch=master)](https://travis-ci.org/HumanCellAtlas/upload-service)
 [![Maintainability](https://api.codeclimate.com/v1/badges/6deca9bc2ccd7516d739/maintainability)](https://codeclimate.com/github/HumanCellAtlas/upload-service/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/6deca9bc2ccd7516d739/test_coverage)](https://codeclimate.com/github/HumanCellAtlas/upload-service/test_coverage)
+[![Organized by ZenHub](https://img.shields.io/badge/Organized_by-ZenHub-5e60ba.svg?style=flat-square)](https://app.zenhub.com/workspace/o/humancellatlas/upload-service/boards?repos=96461745)
 
 ## Overview
 
@@ -24,7 +25,7 @@ Is a Lambda Domovoi app triggered by S3 ObjectCreated events that computes check
 
 ### Validation Batch Service
 
-Is an AWS Batch installation 
+Is an AWS Batch installation
 
 ## Development Environment Setup
 
