@@ -5,7 +5,7 @@ endif
 default: plan
 
 init:
-	terraform init --backend-config="bucket=$(TERRAFORM_STATE_BUCKET)"
+	terraform init
 
 plan:
 	terraform plan
