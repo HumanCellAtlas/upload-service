@@ -1,19 +1,19 @@
 terraform {
-  required_version = "=0.11.3"
+  required_version = "=0.11.7"
 
   backend "s3" {
-    // bucket = "" - Provided on command line with:
-    //     tf init -backend-config="bucket=my-tf-bucket"
-    key = "terraform/upload-service/envs/staging/state.tfstate"
-    region = "us-east-1"
-    profile = "default"
+    bucket  = "org-humancellatlas-dcp-infra"
+    key     = "terraform/upload-service/envs/staging/state.tfstate"
+    encrypt = true
+    region  = "us-east-1"
+    profile = "hca-id"
   }
 }
 
 provider "aws" {
   version = ">= 1.8"
   region = "us-east-1"
-  profile = "default"
+  profile = "hca"
 }
 
 module "upload-service" {
