@@ -21,7 +21,8 @@ class EnvironmentSetup:
             if v:
                 os.environ[k] = v
             else:
-                del os.environ[k]
+                if k in os.environ:
+                    del os.environ[k]
 
     def __exit__(self, type, value, traceback):
         for k, v in self.saved_vars.items():
