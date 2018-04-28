@@ -35,7 +35,7 @@ EOF
 function install_terraform() {
     echo "Installing Terraform..."
     mkdir -p ./external_binaries
-    curl https://releases.hashicorp.com/terraform/0.11.3/terraform_0.11.3_linux_amd64.zip -o /tmp/terraform.zip
+    curl https://releases.hashicorp.com/terraform/0.11.7/terraform_0.11.7_linux_amd64.zip -o /tmp/terraform.zip
     unzip -o /tmp/terraform.zip -d ./external_binaries/
     rm /tmp/terraform.zip
     export PATH=$PATH:`pwd`/external_binaries
