@@ -11,6 +11,9 @@ variable "vpc_id" {
 variable "vpc_default_security_group_id" {
   type = "string"
 }
+variable "vpc_rds_security_group_id" {
+  type = "string"
+}
 variable "validation_cluster_ec2_key_pair" {
   type = "string"
 }
