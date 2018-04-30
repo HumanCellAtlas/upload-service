@@ -1,12 +1,13 @@
 import json
 import os
-
+import uuid
 import pika
 import requests
 
 from .exceptions import UploadException
 from .logging import get_logger
 from .logging import format_logger_with_id
+from .database import create_pg_record, update_pg_record
 
 logger = get_logger(__name__)
 
@@ -17,6 +18,7 @@ class IngestNotifier:
     FILE_UPLOADED_QUEUE = 'ingest.file.create.staged'
 
     def __init__(self):
+        self.notification_id = str(uuid.uuid4())
         self.ingest_amqp_server = os.environ['INGEST_AMQP_SERVER']
         logger.debug("starting")
         self.connect()
@@ -33,7 +35,11 @@ class IngestNotifier:
     def file_was_uploaded(self, file_info):
         upload_area_id = file_info["upload_area_id"]
         file_name = file_info["name"]
-        format_logger_with_id(logger, "file_key", upload_area_id + "/" + file_name)
+        self.file_key = upload_area_id + "/" + file_name
+        format_logger_with_id(logger, "file_key", self.file_key)
+        self.payload = file_info
+        self.status = "DELIVERING"
+        self._create_record()
         body = json.dumps(file_info)
         success = self.channel.basic_publish(exchange=self.FILE_UPLOAD_EXCHANGE,
                                              routing_key=self.FILE_UPLOADED_QUEUE,
@@ -43,4 +49,23 @@ class IngestNotifier:
             raise UploadException(status=requests.codes.server_error, title="Unexpected Error",
                                   detail=f"basic_publish to {self.ingest_amqp_server} returned {success}")
         self.connection.close()
+        self.status = "DELIVERED"
+        self._update_record()
         return success
+
+    def _format_prop_vals_dict(self):
+        vals_dict = {
+            "id": self.notification_id,
+            "payload": self.payload,
+            "file_id": self.file_key,
+            "status": self.status
+        }
+        return vals_dict
+
+    def _create_record(self):
+        prop_vals_dict = self._format_prop_vals_dict()
+        create_pg_record("notification", prop_vals_dict)
+
+    def _update_record(self):
+        prop_vals_dict = self._format_prop_vals_dict()
+        update_pg_record("notification", prop_vals_dict)

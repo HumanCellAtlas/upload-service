@@ -4,6 +4,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 from .exceptions import UploadException
+from .database import create_pg_record, update_pg_record, get_pg_record
 
 s3 = boto3.resource('s3')
 s3client = boto3.client('s3')
@@ -80,3 +81,20 @@ class UploadedFile:
             return {}
         simplified_dicts = list({tag['Key']: tag['Value']} for tag in tags)
         return reduce(lambda x, y: dict(x, **y), simplified_dicts)
+
+    def _format_prop_vals_dict(self):
+        return {
+            "id": self.s3obj.key,
+            "upload_area_id": self.upload_area.uuid,
+            "name": self.name,
+            "size": self.size
+        }
+
+    def create_record(self):
+        prop_vals_dict = self._format_prop_vals_dict()
+        create_pg_record("file", prop_vals_dict)
+
+    def fetch_or_create_db_record(self):
+        existing_file = get_pg_record("file", self.s3obj.key)
+        if not existing_file:
+            self.create_record()

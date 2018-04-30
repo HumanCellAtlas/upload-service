@@ -2,8 +2,9 @@ import base64
 import json
 import os
 import time
-
 import boto3
+import uuid
+import pdb
 from botocore.exceptions import ClientError
 
 from dcplib.media_types import DcpMediaType
@@ -11,6 +12,8 @@ from dcplib.media_types import DcpMediaType
 from .checksum import UploadedFileChecksummer
 from .uploaded_file import UploadedFile
 from .exceptions import UploadException
+from .database import create_pg_record, update_pg_record
+from .checksum_event import UploadedFileChecksumEvent
 
 s3 = boto3.resource('s3')
 iam = boto3.resource('iam')
@@ -49,30 +52,46 @@ class UploadArea:
         return self.ACCESS_POLICY_NAME_TEMPLATE.format(uuid=self.uuid)
 
     def create(self):
+        self.status = "CREATING"
+        self._create_record()
         self._user.create()
         self._set_access_policy()
         self._create_credentials()
         time.sleep(self.IAM_SETTLE_TIME_SEC)
+        self.status = "UNLOCKED"
+        self._update_record()
 
     def delete(self):
         # This may need to be offloaded to an async lambda if _empty_bucket() starts taking a long time.
+        self.status = "DELETING"
+        self._update_record()
         self._empty_upload_area()
         for access_key in self._user.access_keys.all():
             access_key.delete()
         for policy in self._user.policies.all():
             policy.delete()
         self._user.delete()
+        self.status = "DELETED"
+        self._update_record()
 
     def ls(self):
         return {'files': self._file_list()}
 
     def lock(self):
+        self.status = "LOCKING"
+        self._update_record()
         iam.UserPolicy(self.user_name, self.access_policy_name).delete()
         time.sleep(self.IAM_SETTLE_TIME_SEC)
+        self.status = "LOCKED"
+        self._update_record()
 
     def unlock(self):
+        self.status = "UNLOCKING"
+        self._update_record()
         self._set_access_policy()
         time.sleep(self.IAM_SETTLE_TIME_SEC)
+        self.status = "UNLOCKED"
+        self._update_record()
 
     def store_file(self, filename, content, content_type):
         media_type = DcpMediaType.from_string(content_type)
@@ -84,9 +103,19 @@ class UploadArea:
         s3obj = self._bucket.Object(key)
         s3obj.put(Body=content, ContentType=content_type)
         file = UploadedFile(upload_area=self, s3object=s3obj)
-        checksums = UploadedFileChecksummer(uploaded_file=file).checksum(report_progress=True)
+        file.fetch_or_create_db_record()
+        checksummer = UploadedFileChecksummer(uploaded_file=file)
+        checksum_id = str(uuid.uuid4())
+        checksum_event = UploadedFileChecksumEvent(file_id=key,
+                                                   checksum_id=checksum_id,
+                                                   status="CHECKSUMMING")
+        checksum_event.create_record()
+        checksums = checksummer.checksum(report_progress=True)
         file.checksums = checksums
         file.save_tags()
+        checksum_event.status = "CHECKSUMMED"
+        checksum_event.checksums = checksums
+        checksum_event.update_record()
         return file.info()
 
     def uploaded_file(self, filename):
@@ -158,3 +187,18 @@ class UploadArea:
             if 'Contents' in page:
                 for o in page['Contents']:
                     s3.meta.client.delete_object(Bucket=self.bucket_name, Key=o['Key'])
+
+    def _format_prop_vals_dict(self):
+        return {
+            "id": self.uuid,
+            "bucket_name": self.bucket_name,
+            "status": self.status
+        }
+
+    def _create_record(self):
+        prop_vals_dict = self._format_prop_vals_dict()
+        create_pg_record("upload_area", prop_vals_dict)
+
+    def _update_record(self):
+        prop_vals_dict = self._format_prop_vals_dict()
+        update_pg_record("upload_area", prop_vals_dict)
