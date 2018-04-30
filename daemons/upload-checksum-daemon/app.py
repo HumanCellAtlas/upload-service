@@ -2,7 +2,6 @@ import os, json
 
 # import boto3
 import domovoi
-
 import sys
 
 pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), 'domovoilib'))  # noqa
