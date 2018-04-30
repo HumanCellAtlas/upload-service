@@ -11,7 +11,7 @@ terraform {
 }
 
 provider "aws" {
-  version = ">= 1.8"
+  version = ">= 1.16"
   region = "us-east-1"
   profile = "hca-prod"
 }
@@ -30,6 +30,12 @@ module "upload-service" {
 
   // Checksumming Batch infrastructure.
   csum_cluster_ec2_key_pair = "${var.csum_cluster_ec2_key_pair}"
+}
+
+module "upload-service-database" {
+  source = "../../modules/database"
+  deployment_stage = "${var.deployment_stage}"
+  vpc_rds_security_group_id = "${var.vpc_rds_security_group_id}"
 }
 
 output "validation_job_q_arn" {
