@@ -47,6 +47,7 @@ source config/environment
 echo "Deploying to ${DEPLOYMENT_STAGE}"
 load_secrets
 install_terraform
+alembic -x db=${DEPLOYMENT_STAGE} -c=./config/database.ini upgrade head
 make deploy
 if [ ${DEPLOYMENT_STAGE} != dev ] ; then
     tag_deploy
