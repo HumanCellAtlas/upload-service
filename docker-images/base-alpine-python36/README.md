@@ -6,7 +6,7 @@ It contains a Docker `ENTRYPOINT` that runs a harness script that:
 
  * stages the file to be validated under /data
  * runs the validator
- * collects results and communicates them to the Ingest component
+ * collects results and communicates them to the Upload API
 
 ## Building a Validator on this Base
 
@@ -26,13 +26,13 @@ RUN chmod +x /validator
 
 The Docker container will be invoked by the Upload Service:
  * with the command: `/validator s3://location/of/file-to-be-validated`
- * and with an environment variable `VALIDATION_ID` and `DEPLOYMENT_STAGE`
+ * and with environment variables `INGEST_API_KEY`, `DEPLOYMENT_STAGE`, `VALIDATION_ID`, and `API_HOST`
 
 The harness script intercepts execution then:
  * Stages the file to be validated under `/data`.
  * Invokes the validation script with `/validator /data/location/of/file-to-be-validated`.
  * Captures STDOUT, STDERR and the validator return code.
- * Sends this captured into to the Ingestion Component.
+ * Sends this captured into to the Upload API.
  * Removes this copy of the file to be validated.
 
 ## Testing Your Validator Locally
@@ -51,7 +51,7 @@ to attempt to contact Ingest.
 ```bash
 docker build -t myvalidator .
 
-docker run --rm -e VALIDATION_ID=1 -e DEPLOYMENT_STAGE=dev \
+docker run --rm -e VALIDATION_ID=1 -e DEPLOYMENT_STAGE=dev -e INGEST_API_KEY=mykey \
                 -e AWS_ACCESS_KEY_ID=mykey -e AWS_SECRET_ACCESS_KEY=mysecret \
            myvalidator -t /validator s3://mybucket/myfile
 ```
