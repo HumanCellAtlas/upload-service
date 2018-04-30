@@ -284,7 +284,7 @@ paths:
 
     put:
       summary: Validate a staged file
-      operationId: upload.lambdas.api_server.v1.area.validate_file
+      operationId: upload.lambdas.api_server.v1.area.schedule_file_validation
       description: |
         Invoke supplied validator Docker image and give it access to the file.
         The validator must be based off the base validator Docker image.
@@ -413,6 +413,113 @@ paths:
           description: Unexpected error
           schema:
             $ref: '#/definitions/Error'
+
+
+  /v1/area/{upload_area_id}/update_checksum/{checksum_id}:
+    post:
+      summary: Notify upload of checksummed file
+      operationId: upload.lambdas.api_server.v1.area.update_checksum_event
+      description: |
+        Notify upload of checksummed file. DB checksum record is updated and ingest is notified.
+      tags:
+        - For Checksum Docker Image use only
+      security:
+        - api_key: []
+      parameters:
+        - name: upload_area_id
+          in: path
+          description: A RFC4122-compliant ID for the upload area.
+          required: true
+          type: string
+        - name: checksum_id
+          in: path
+          description: A RFC4122-compliant ID for the checksum id.
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              status:
+                description: Status of checksumming on file.
+                type: string
+              payload:
+                description: Payload of file being checksummed.
+                type: object
+              job_id:
+                description: aws batch job id.
+                type: string
+            required:
+              - status
+              - job_id
+              - payload
+      responses:
+        204:
+          description: Checksum db record updated and ingest notified.
+        404:
+          description: Could not find that upload area or checksum record.
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+
+  /v1/area/{upload_area_id}/update_validation/{validation_id}:
+    post:
+      summary: Notify upload of validated file
+      operationId: upload.lambdas.api_server.v1.area.update_validation_event
+      description: |
+        Notify upload of validated file. DB validation record is updated and ingest is notified.
+      tags:
+        - For Validation Docker Image use only
+      security:
+        - api_key: []
+      parameters:
+        - name: upload_area_id
+          in: path
+          description: A RFC4122-compliant ID for the upload area.
+          required: true
+          type: string
+        - name: validation_id
+          in: path
+          description: A RFC4122-compliant ID for the validation id.
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              status:
+                description: Status of validation on file.
+                type: string
+              payload:
+                description: Payload of file being validated.
+                type: object
+              job_id:
+                description: aws batch job id.
+                type: string
+            required:
+              - status
+              - job_id
+              - payload
+      responses:
+        204:
+          description: Checksum db record updated and ingest notified.
+        404:
+          description: Could not find that upload area or checksum record.
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
 
 definitions:
 
