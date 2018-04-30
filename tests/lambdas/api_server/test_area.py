@@ -1,14 +1,19 @@
 #!/usr/bin/env python3.6
 
 import os, sys, unittest, uuid, json, base64
-
 import boto3
 from botocore.exceptions import ClientError
 from moto import mock_s3, mock_iam, mock_sns, mock_sts
-from unittest.mock import patch
-
+from unittest.mock import patch, Mock
 from . import client_for_test_api_server
 from ... import EnvironmentSetup
+
+from upload.common.checksum_event import UploadedFileChecksumEvent
+from upload.common.validation_event import UploadedFileValidationEvent
+from upload.common.uploaded_file import UploadedFile
+from upload.common.upload_area import UploadArea
+from upload.lambdas.checksum_daemon import ChecksumDaemon
+from upload.common.database import get_pg_record
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
@@ -84,8 +89,13 @@ class TestAreaApi(unittest.TestCase):
         self.environment = {
             'BUCKET_NAME': self.upload_bucket_name,
             'DEPLOYMENT_STAGE': self.deployment_stage,
-            'DCP_EVENTS_TOPIC': 'bogotopic'
+            'DCP_EVENTS_TOPIC': 'bogotopic',
+            'INGEST_AMQP_SERVER': 'foo',
+            'CSUM_JOB_Q_ARN': 'bogoqarn',
+            'CSUM_JOB_ROLE_ARN': 'bogorolearn',
+            'CSUM_DOCKER_IMAGE': 'bogoimage'
         }
+
         with EnvironmentSetup(self.environment):
             self.client = client_for_test_api_server()
 
@@ -119,6 +129,116 @@ class TestAreaApi(unittest.TestCase):
         return s3obj
 
     @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
+    def test_update_file_checksum(self, mock_format_and_send_notification, mock_connect):
+        with EnvironmentSetup(self.environment):
+            checksum_id = str(uuid.uuid4())
+            area_id = self._create_area()
+            s3obj = self._mock_upload_file(area_id, 'foo.json')
+            upload_area = UploadArea(area_id)
+            uploaded_file = UploadedFile(upload_area, s3obj)
+            uploaded_file.create_record()
+            checksum_event = UploadedFileChecksumEvent(file_id=s3obj.key,
+                                                       checksum_id=checksum_id,
+                                                       job_id='12345',
+                                                       status="SCHEDULED")
+            checksum_event.create_record()
+
+            data = {
+                "status": "CHECKSUMMING",
+                "job_id": checksum_event.job_id,
+                "payload": uploaded_file.info()
+            }
+            response = self.client.post(f"/v1/area/{area_id}/update_checksum/{checksum_id}",
+                                        headers=self.authentication_header,
+                                        data=json.dumps(data))
+            self.assertEqual(response.status_code, 204)
+            record = get_pg_record("checksum", checksum_id)
+            self.assertEqual(record["status"], "CHECKSUMMING")
+            self.assertEqual(str(type(record.get("checksum_started_at"))), "<class 'datetime.datetime'>")
+            self.assertEqual(record["checksum_ended_at"], None)
+            mock_format_and_send_notification.assert_not_called()
+
+            data = {
+                "status": "CHECKSUMMED",
+                "job_id": checksum_event.job_id,
+                "payload": uploaded_file.info()
+            }
+            response = self.client.post(f"/v1/area/{area_id}/update_checksum/{checksum_id}",
+                                        headers=self.authentication_header,
+                                        data=json.dumps(data))
+            self.assertEqual(response.status_code, 204)
+            mock_format_and_send_notification.assert_called_once_with({
+                'upload_area_id': area_id,
+                'name': 'foo.json',
+                'size': 3,
+                'last_modified': s3obj.last_modified.isoformat(),
+                'content_type': "application/json",
+                'url': f"s3://{self.upload_bucket_name}/{area_id}/foo.json",
+                'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
+            })
+            record = get_pg_record("checksum", checksum_id)
+            self.assertEqual(record["status"], "CHECKSUMMED")
+            self.assertEqual(str(type(record.get("checksum_started_at"))), "<class 'datetime.datetime'>")
+            self.assertEqual(str(type(record.get("checksum_ended_at"))), "<class 'datetime.datetime'>")
+
+    @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
+    def test_update_file_validation(self, mock_format_and_send_notification, mock_connect):
+        with EnvironmentSetup(self.environment):
+            validation_id = str(uuid.uuid4())
+            area_id = self._create_area()
+            s3obj = self._mock_upload_file(area_id, 'foo.json')
+            upload_area = UploadArea(area_id)
+            uploaded_file = UploadedFile(upload_area, s3obj)
+            uploaded_file.create_record()
+            validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
+                                                           validation_id=validation_id,
+                                                           job_id='12345',
+                                                           status="SCHEDULED")
+            validation_event.create_record()
+            data = {
+                "status": "VALIDATING",
+                "job_id": validation_event.job_id,
+                "payload": uploaded_file.info()
+            }
+
+            response = self.client.post(f"/v1/area/{area_id}/update_validation/{validation_id}",
+                                        headers=self.authentication_header,
+                                        data=json.dumps(data))
+            self.assertEqual(response.status_code, 204)
+            record = get_pg_record("validation", validation_id)
+            self.assertEqual(record["status"], "VALIDATING")
+            self.assertEqual(str(type(record.get("validation_started_at"))), "<class 'datetime.datetime'>")
+            self.assertEqual(record["validation_ended_at"], None)
+            mock_format_and_send_notification.assert_not_called()
+
+            data = {
+                "status": "VALIDATED",
+                "job_id": validation_event.job_id,
+                "payload": uploaded_file.info()
+            }
+            response = self.client.post(f"/v1/area/{area_id}/update_validation/{validation_id}",
+                                        headers=self.authentication_header,
+                                        data=json.dumps(data))
+            self.assertEqual(response.status_code, 204)
+            mock_format_and_send_notification.assert_called_once_with({
+                'upload_area_id': area_id,
+                'name': 'foo.json',
+                'size': 3,
+                'last_modified': s3obj.last_modified.isoformat(),
+                'content_type': "application/json",
+                'url': f"s3://{self.upload_bucket_name}/{area_id}/foo.json",
+                'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
+            })
+            record = get_pg_record("validation", validation_id)
+            self.assertEqual(record["status"], "VALIDATED")
+            self.assertEqual(str(type(record.get("validation_started_at"))), "<class 'datetime.datetime'>")
+            self.assertEqual(str(type(record.get("validation_ended_at"))), "<class 'datetime.datetime'>")
+
+    @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def test_create_with_unused_upload_area_id(self):
         area_id = str(uuid.uuid4())
 
@@ -146,6 +266,8 @@ class TestAreaApi(unittest.TestCase):
         self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
         self.assertIn(f'"Resource": ["arn:aws:s3:::{self.upload_bucket_name}/{area_id}/*"]',
                       policy.policy_document)
+        record = get_pg_record("upload_area", area_id)
+        self.assertEqual(record["status"], "UNLOCKED")
 
     @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def test_create_in_production_returns_5_part_urn(self):
@@ -212,16 +334,20 @@ class TestAreaApi(unittest.TestCase):
             policy_name = 'upload-' + area_id
             policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
             self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
+            record = get_pg_record("upload_area", area_id)
+            self.assertEqual(record["status"], "UNLOCKED")
 
         with EnvironmentSetup(self.environment):
             response = self.client.post(f"/v1/area/{area_id}/lock", headers=self.authentication_header)
-
             self.assertEqual(response.status_code, 204)
             self.assertEqual(len(list(boto3.resource('iam').User(user_name).policies.all())), 0)
+            record = get_pg_record("upload_area", area_id)
+            self.assertEqual(record["status"], "LOCKED")
 
             response = self.client.delete(f"/v1/area/{area_id}/lock", headers=self.authentication_header)
-
             self.assertEqual(response.status_code, 204)
+            record = get_pg_record("upload_area", area_id)
+            self.assertEqual(record["status"], "UNLOCKED")
 
         policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
         self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
@@ -269,6 +395,11 @@ class TestAreaApi(unittest.TestCase):
         })
         obj = self.upload_bucket.Object(f"{area_id}/some.json")
         self.assertEqual(obj.get()['Body'].read(), "exquisite corpse".encode('utf8'))
+
+        record = get_pg_record("file", s3_key)
+        self.assertEqual(record["size"], 16)
+        self.assertEqual(record["upload_area_id"], area_id)
+        self.assertEqual(record["name"], "some.json")
 
     def test_list_files(self):
         with EnvironmentSetup(self.environment):
@@ -387,7 +518,6 @@ class TestAreaApi(unittest.TestCase):
             'url': f"s3://{self.upload_bucket_name}/{area_id}/file2.fastq.gz",
             'checksums': {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'}
         })
-
 
 if __name__ == '__main__':
     unittest.main()
