@@ -1,14 +1,13 @@
 import json
 import os
 import re
-
+import uuid
 import boto3
 from six.moves import urllib
-
 from ..common.event_notifier import EventNotifier
 from ...common.upload_area import UploadArea
 from ...common.ingest_notifier import IngestNotifier
-from ...common.checksum import UploadedFileChecksummer
+from ...common.checksum_event import UploadedFileChecksumEvent
 from ...common.logging import get_logger
 from ...common.logging import format_logger_with_id
 from ...common.batch import JobDefinition
@@ -35,13 +34,13 @@ class ChecksumDaemon:
         self.uploaded_file = None
 
     def _read_environment(self):
-        self.use_batch_if_larger_than = int(os.environ['CSUM_USE_BATCH_FILE_SIZE_THRESHOLD_GB']) * GB
         self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
         self.bucket_name = os.environ['BUCKET_NAME']
         self.job_q_arn = os.environ['CSUM_JOB_Q_ARN']
         self.job_role_arn = os.environ['CSUM_JOB_ROLE_ARN']
         self.docker_image = os.environ['CSUM_DOCKER_IMAGE']
         self.ingest_amqp_server = os.environ['INGEST_AMQP_SERVER']
+        self.api_host = os.environ["API_HOST"]
 
     def consume_event(self, event):
         for record in event['Records']:
@@ -50,7 +49,8 @@ class ChecksumDaemon:
                 continue
             file_key = record['s3']['object']['key']
             self._find_file(file_key)
-            self._checksum_file()
+            logger.debug("Scheduling checksumming batch job")
+            self.schedule_checksumming(self.uploaded_file)
 
     def _find_file(self, file_key):
         format_logger_with_id(logger, "file_key", file_key)
@@ -62,40 +62,30 @@ class ChecksumDaemon:
                     "file_name": filename, "file_key": file_key, "type": "correlation"})
         self.upload_area = UploadArea(area_uuid)
         self.uploaded_file = self.upload_area.uploaded_file(filename)
-
-    def _checksum_file(self):
-        if self.uploaded_file.size > self.use_batch_if_larger_than:
-            logger.debug("Scheduling checksumming batch job")
-            self.schedule_checksumming(self.uploaded_file)
-        else:
-            checksummer = UploadedFileChecksummer(self.uploaded_file)
-            checksums = checksummer.checksum(report_progress=True)
-            self.uploaded_file.checksums = checksums
-            tags = self.uploaded_file.save_tags()
-            logger.info(f"Checksummed and tagged with: {tags}")
-            self._notify_ingest()
-            EventNotifier.notify(f"{self.upload_area.uuid} checksummed {self.uploaded_file.name}")
-
-    def _notify_ingest(self):
-        payload = self.uploaded_file.info()
-        status = IngestNotifier().file_was_uploaded(payload)
-        logger.info(f"Notified Ingest: payload={payload}, status={status}")
+        self.uploaded_file.fetch_or_create_db_record()
 
     JOB_NAME_ALLOWABLE_CHARS = '[^\w-]'
 
     def schedule_checksumming(self, uploaded_file):
+        checksum_id = str(uuid.uuid4())
         command = ['python', '/checksummer.py', uploaded_file.s3url]
         environment = {
             'BUCKET_NAME': self.bucket_name,
             'DEPLOYMENT_STAGE': self.deployment_stage,
-            'INGEST_AMQP_SERVER': self.ingest_amqp_server
+            'INGEST_AMQP_SERVER': self.ingest_amqp_server,
+            'API_HOST': self.api_host
         }
         job_name = "-".join(["csum", self.deployment_stage, uploaded_file.upload_area.uuid, uploaded_file.name])
-        self._enqueue_batch_job(queue_arn=self.job_q_arn,
-                                job_name=job_name,
-                                job_defn=self._find_or_create_job_definition(),
-                                command=command,
-                                environment=environment)
+        job_id = self._enqueue_batch_job(queue_arn=self.job_q_arn,
+                                         job_name=job_name,
+                                         job_defn=self._find_or_create_job_definition(),
+                                         command=command,
+                                         environment=environment)
+        checksum_event = UploadedFileChecksumEvent(file_id=uploaded_file.s3obj.key,
+                                                   checksum_id=checksum_id,
+                                                   job_id=job_id,
+                                                   status="SCHEDULED")
+        checksum_event.create_record()
 
     def _find_or_create_job_definition(self):
         job_defn = JobDefinition(docker_image=self.docker_image, deployment=self.deployment_stage)

@@ -3,3 +3,6 @@ crcmod
 pika
 requests
 dcplib
+sqlalchemy
+alembic
+psycopg2-binary

@@ -3,11 +3,13 @@ import unittest
 import os
 from unittest.mock import Mock, patch
 import uuid
+from tests.lambdas.api_server import client_for_test_api_server
 
 import boto3
-from moto import mock_s3, mock_sns, mock_sts
+from moto import mock_s3, mock_sns, mock_sts, mock_iam
 
 from .. import EnvironmentSetup, FIXTURE_DATA_CHECKSUMS
+from upload.common.upload_area import UploadArea
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
@@ -19,6 +21,7 @@ class TestChecksumDaemon(unittest.TestCase):
     DEPLOYMENT_STAGE = 'test'
     UPLOAD_BUCKET_NAME = 'bogobucket'
 
+    @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def setUp(self):
         # Setup mock AWS
         self.s3_mock = mock_s3()
@@ -27,6 +30,8 @@ class TestChecksumDaemon(unittest.TestCase):
         self.sns_mock.start()
         self.sts_mock = mock_sts()
         self.sts_mock.start()
+        self.iam_mock = mock_iam()
+        self.iam_mock.start()
         # Staging bucket
         self.upload_bucket = boto3.resource('s3').Bucket(self.UPLOAD_BUCKET_NAME)
         self.upload_bucket.create()
@@ -39,16 +44,19 @@ class TestChecksumDaemon(unittest.TestCase):
             'DEPLOYMENT_STAGE': self.DEPLOYMENT_STAGE,
             'INGEST_AMQP_SERVER': 'foo',
             'DCP_EVENTS_TOPIC': 'bogotopic',
-            'CSUM_USE_BATCH_FILE_SIZE_THRESHOLD_GB': '4',
             'CSUM_JOB_Q_ARN': 'bogoqarn',
             'CSUM_JOB_ROLE_ARN': 'bogorolearn',
             'CSUM_DOCKER_IMAGE': 'bogoimage'
         }
+
+        self.area_id = str(uuid.uuid4())
         with EnvironmentSetup(self.environment):
             from upload.lambdas.checksum_daemon import ChecksumDaemon
             self.daemon = ChecksumDaemon(context)
+            self.upload_area = UploadArea(self.area_id)
+            self.upload_area.create()
+
         # File
-        self.area_id = str(uuid.uuid4())
         self.content_type = 'text/html'
         self.filename = 'foo'
         self.file_key = f"{self.area_id}/{self.filename}"
@@ -76,46 +84,12 @@ class TestChecksumDaemon(unittest.TestCase):
         self.sns_mock.stop()
         self.sts_mock.stop()
 
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.file_was_uploaded')
-    def test_consume_event_sets_tags(self, mock_file_was_uploaded, mock_connect):
-
-        with EnvironmentSetup(self.environment):
-            self.daemon.consume_event(self.event)
-
-        tagging = boto3.client('s3').get_object_tagging(Bucket=self.UPLOAD_BUCKET_NAME, Key=self.file_key)
-        self.assertEqual(
-            sorted(tagging['TagSet'], key=lambda x: x['Key']),
-            sorted(FIXTURE_DATA_CHECKSUMS[self.file_contents]['s3_tagset'], key=lambda x: x['Key'])
-        )
-
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.file_was_uploaded')
-    def test_consume_event_notifies_ingest(self, mock_file_was_uploaded, mock_connect):
-
-        with EnvironmentSetup(self.environment):
-            self.daemon.consume_event(self.event)
-
-        self.assertTrue(mock_connect.called,
-                        'IngestNotifier.connect should have been called')
-        self.assertTrue(mock_file_was_uploaded.called,
-                        'IngestNotifier.file_was_uploaded should have been called')
-        mock_file_was_uploaded.assert_called_once_with({
-            'upload_area_id': self.area_id,
-            'name': os.path.basename(self.file_key),
-            'size': 16,
-            'last_modified': self.object.last_modified.isoformat(),
-            'content_type': self.content_type,
-            'url': f"s3://{self.UPLOAD_BUCKET_NAME}/{self.area_id}/{self.filename}",
-            'checksums': FIXTURE_DATA_CHECKSUMS[self.file_contents]['checksums']
-        })
-
     @patch('upload.common.upload_area.UploadedFile.size', 100 * 1024 * 1024 * 1024)
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.schedule_checksumming')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.file_was_uploaded')
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     def test_that_with_a_large_file_a_batch_job_is_scheduled(self,
-                                                             mock_file_was_uploaded,
+                                                             mock_format_and_send_notification,
                                                              mock_connect,
                                                              mock_schedule_checksumming):
         with EnvironmentSetup(self.environment):

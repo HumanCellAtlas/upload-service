@@ -1,8 +1,8 @@
 import time
-
+import uuid
+from datetime import datetime
 import boto3
 from boto3.s3.transfer import TransferConfig
-
 from dcplib.checksumming_io import ChecksummingSink
 
 from .logging import get_logger
@@ -37,7 +37,8 @@ class UploadedFileChecksummer:
         else:
             progress_callback = None
 
-        return self._compute_checksums(progress_callback=progress_callback)
+        self.checksums = self._compute_checksums(progress_callback=progress_callback)
+        return self.checksums
 
     def _compute_checksums(self, progress_callback=None):
         with ChecksummingSink() as sink:
