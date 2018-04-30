@@ -5,3 +5,5 @@ pika
 requests
 dcplib >= 1.1.0
 proforma >= 0.2.0
+alembic
+psycopg2-binary

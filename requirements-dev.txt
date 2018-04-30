@@ -5,4 +5,6 @@ coverage
 awscli
 moto
 python-dateutil
+alembic
+psycopg2-binary
 -r requirements.txt
