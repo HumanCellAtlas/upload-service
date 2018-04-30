@@ -2,34 +2,45 @@ import json
 import os
 import re
 import urllib.parse
-
+import uuid
 import boto3
 
 from ...common.uploaded_file import UploadedFile
 from ...common.batch import JobDefinition
+from ...common.database import create_pg_record, update_pg_record
+from ...common.validation_event import UploadedFileValidationEvent
 
 batch = boto3.client('batch')
 
 
-class Validation:
+class ValidationScheduler:
 
     JOB_NAME_ALLOWABLE_CHARS = '[^\w-]'
 
     def __init__(self, uploaded_file: UploadedFile):
         self.file = uploaded_file
+        self.file_key = self.file.upload_area.uuid + '/' + urllib.parse.quote(self.file.name)
 
     def schedule_validation(self, validator_docker_image: str, environment: dict) -> str:
+        validation_id = str(uuid.uuid4())
         job_defn = self._find_or_create_job_definition_for_image(validator_docker_image)
         environment['DEPLOYMENT_STAGE'] = os.environ['DEPLOYMENT_STAGE']
         environment['INGEST_AMQP_SERVER'] = os.environ['INGEST_AMQP_SERVER']
-        file_s3loc = "s3://{bucket}/{upload_area}/{filename}".format(
+        environment['INGEST_API_KEY'] = os.environ['INGEST_API_KEY']
+        environment['API_HOST'] = os.environ['API_HOST']
+        environment['VALIDATION_ID'] = validation_id
+        file_s3loc = "s3://{bucket}/{file_key}".format(
             bucket=self.file.upload_area.bucket_name,
-            upload_area=self.file.upload_area.uuid,
-            filename=urllib.parse.quote(self.file.name)
+            file_key=self.file_key
         )
         command = ['/validator', file_s3loc]
-        validation_id = self._enqueue_batch_job(job_defn, command, environment)
-        return validation_id
+        self.validation_id = self._enqueue_batch_job(job_defn, command, environment)
+        validation_event = UploadedFileValidationEvent(file_id=self.file_key,
+                                                       validation_id=validation_id,
+                                                       job_id=self.validation_id,
+                                                       status="SCHEDULED")
+        validation_event.create_record()
+        return self.validation_id
 
     def _find_or_create_job_definition_for_image(self, validator_docker_image):
         job_defn = JobDefinition(docker_image=validator_docker_image, deployment=os.environ['DEPLOYMENT_STAGE'])

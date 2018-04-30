@@ -1,3 +1,4 @@
 boto3
 pika
 urllib3
+requests

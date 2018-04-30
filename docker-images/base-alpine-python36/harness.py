@@ -9,7 +9,7 @@ import sys
 import subprocess
 import time
 import urllib.parse
-
+import requests
 import boto3
 import pika
 from urllib3.util import parse_url
@@ -30,23 +30,51 @@ def get_logger(name, corr_id_name, corr_id_val):
     return logger
 
 
+def update_event(event, file_payload={}, client=requests):
+    url = os.environ["API_HOST"]
+    api_version = "v1"
+    header = {'Content-type': 'application/json'}
+    event_type = type(event).__name__
+    if event_type == "UploadedFileValidationEvent":
+        action = 'update_validation'
+    elif event_type == "UploadedFileChecksumEvent":
+        action = 'update_checksum'
+
+    data = {"status": event.status,
+            "job_id": event.job_id,
+            "payload": file_payload
+            }
+    upload_area_id = file_payload["upload_area_id"]
+    event_id = event.id
+    api_url = f"http://{url}/{api_version}/area/{upload_area_id}/{event_id}/{action}"
+    response = client.post(api_url, headers=header, data=json.dumps(data))
+    return response
+
+
 class ValidatorHarness:
 
     TIMEOUT = None
-    AMQP_EXCHANGE = "ingest.validation.exchange"
-    AMQP_ROUTING_KEY = "ingest.file.validation.queue"
 
     def __init__(self):
         self.version = self._find_version()
         self.validation_id = os.environ['AWS_BATCH_JOB_ID']
+        self.id = os.environ['VALIDATION_ID']
         self._parse_args()
         self.logger = get_logger('HARNESS', "file_key", self.s3_object_key)
         self._log("VERSION {version}, attempt {attempt} with argv: {argv}".format(
             version=self.version, attempt=os.environ['AWS_BATCH_JOB_ATTEMPT'], argv=sys.argv))
         self._stage_file_to_be_validated()
+        validation_event = UploadedFileValidationEvent(file_id=self.s3_object_key,
+                                                       validation_id=self.id,
+                                                       job_id=self.validation_id,
+                                                       status="VALIDATING")
+        if not args.test:
+            update_event(validation_event)
         results = self._run_validator()
         self._unstage_file()
-        self._report_results(results)
+        validation_event.status = "VALIDATED"
+        if not args.test:
+            update_event(validation_event)
 
     def _find_version(self):
         try:
@@ -112,20 +140,6 @@ class ValidatorHarness:
             results['exception'] = e
         results['duration_s'] = time.time() - start_time
         return results
-
-    def _report_results(self, results):
-        self._log("results = {}".format(results))
-        if not self.args.test:
-            amqp_server = os.environ['INGEST_AMQP_SERVER']
-            self._log("connecting to {amqp_server}...".format(amqp_server=amqp_server))
-            connection = pika.BlockingConnection(pika.ConnectionParameters(amqp_server))
-            channel = connection.channel()
-            channel.queue_declare(queue='ingest.file.create.staged')
-            result = channel.basic_publish(exchange=self.AMQP_EXCHANGE,
-                                           routing_key=self.AMQP_ROUTING_KEY,
-                                           body=json.dumps(results))
-            self._log("publishing results to {server} returned {result}".format(server=amqp_server, result=result))
-            connection.close()
 
     def _unstage_file(self):
         self._log("removing file {}".format(self.staged_file_path))
