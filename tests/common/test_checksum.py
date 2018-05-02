@@ -14,22 +14,28 @@ class TestUploadedFileChecksummer(UploadTestCaseUsingMockAWS):
     @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def setUp(self):
         super().setUp()
-        # Setup upload bucket
-        self.deployment_stage = 'test'
-        self.upload_bucket_name = f'bogobucket'
-        self.upload_bucket = boto3.resource('s3').Bucket(self.upload_bucket_name)
-        self.upload_bucket.create()
+
         self.environment = {
-            'BUCKET_NAME': self.upload_bucket_name,
-            'DEPLOYMENT_STAGE': self.deployment_stage,
+            'BUCKET_NAME': 'bogobucket',
+            'DEPLOYMENT_STAGE': 'test',
             'DCP_EVENTS_TOPIC': 'bogotopic'
         }
+        self.environmentor = EnvironmentSetup(self.environment)
+        self.environmentor.enter()
+
+        self.upload_bucket = boto3.resource('s3').Bucket(self.environment['BUCKET_NAME'])
+        self.upload_bucket.create()
+
         self.upload_area_id = str(uuid.uuid4())
+        self.upload_area = UploadArea(self.upload_area_id)
+        self.upload_area.create()
+
         self.checksum_id = str(uuid.uuid4())
         self.job_id = str(uuid.uuid4())
-        with EnvironmentSetup(self.environment):
-            self.upload_area = UploadArea(self.upload_area_id)
-            self.upload_area.create()
+
+    def tearDown(self):
+        super().tearDown()
+        self.environmentor.exit()
 
     def _mock_upload_file(self, filename, contents="foo",
                           content_type='application/json; dcp_type=metadata', checksums=None):
@@ -43,17 +49,16 @@ class TestUploadedFileChecksummer(UploadTestCaseUsingMockAWS):
         file_key = f"{self.upload_area_id}/{filename}"
         s3obj = self.upload_bucket.Object(file_key)
         s3obj.put(Body=contents, ContentType=content_type)
-        boto3.client('s3').put_object_tagging(Bucket=self.upload_bucket_name, Key=file_key,
+        boto3.client('s3').put_object_tagging(Bucket=self.environment['BUCKET_NAME'], Key=file_key,
                                               Tagging={'TagSet': tag_set})
         return s3obj
 
     def test_has_checksums_returns_false_for_file_with_no_checksums(self):
         filename = 'bar'
         self._mock_upload_file(filename=filename, checksums=None)
-        with EnvironmentSetup(self.environment):
-            uf = self.upload_area.uploaded_file(filename)
+        uf = self.upload_area.uploaded_file(filename)
 
-            self.assertFalse(UploadedFileChecksummer(uploaded_file=uf).has_checksums())
+        self.assertFalse(UploadedFileChecksummer(uploaded_file=uf).has_checksums())
 
     def test_has_checksums_returns_false_for_file_with_some_checksums(self):
         filename = 'bar'
@@ -61,10 +66,9 @@ class TestUploadedFileChecksummer(UploadTestCaseUsingMockAWS):
             'sha1': '1',
             'sha256': '2'
         })
-        with EnvironmentSetup(self.environment):
-            uf = self.upload_area.uploaded_file(filename)
+        uf = self.upload_area.uploaded_file(filename)
 
-            self.assertFalse(UploadedFileChecksummer(uploaded_file=uf).has_checksums())
+        self.assertFalse(UploadedFileChecksummer(uploaded_file=uf).has_checksums())
 
     def test_has_checksums_returns_true_for_file_with_all_checksums(self):
         filename = 'bar'

@@ -12,6 +12,8 @@ if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
     sys.path.insert(0, pkg_root)  # noqa
 
+from upload.lambdas.checksum_daemon import ChecksumDaemon  # noqa
+
 
 class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
 
@@ -21,13 +23,7 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
     @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def setUp(self):
         super().setUp()
-        # Staging bucket
-        self.upload_bucket = boto3.resource('s3').Bucket(self.UPLOAD_BUCKET_NAME)
-        self.upload_bucket.create()
-        # Setup SNS
-        boto3.resource('sns').create_topic(Name='bogotopic')
-        # daemon
-        context = Mock()
+        # Environment
         self.environment = {
             'BUCKET_NAME': self.UPLOAD_BUCKET_NAME,
             'DEPLOYMENT_STAGE': self.DEPLOYMENT_STAGE,
@@ -37,14 +33,18 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
             'CSUM_JOB_ROLE_ARN': 'bogorolearn',
             'CSUM_DOCKER_IMAGE': 'bogoimage'
         }
-
+        self.environmentor = EnvironmentSetup(self.environment)
+        self.environmentor.enter()
+        # Staging bucket
+        self.upload_bucket = boto3.resource('s3').Bucket(self.UPLOAD_BUCKET_NAME)
+        self.upload_bucket.create()
+        # Upload area
         self.area_id = str(uuid.uuid4())
-        with EnvironmentSetup(self.environment):
-            from upload.lambdas.checksum_daemon import ChecksumDaemon
-            self.daemon = ChecksumDaemon(context)
-            self.upload_area = UploadArea(self.area_id)
-            self.upload_area.create()
-
+        self.upload_area = UploadArea(self.area_id)
+        self.upload_area.create()
+        # daemon
+        context = Mock()
+        self.daemon = ChecksumDaemon(context)
         # File
         self.content_type = 'text/html'
         self.filename = 'foo'
@@ -76,7 +76,6 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
                                                              mock_format_and_send_notification,
                                                              mock_connect,
                                                              mock_schedule_checksumming):
-        with EnvironmentSetup(self.environment):
-            self.daemon.consume_event(self.event)
+        self.daemon.consume_event(self.event)
 
         mock_schedule_checksumming.assert_called()

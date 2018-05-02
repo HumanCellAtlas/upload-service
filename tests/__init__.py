@@ -17,7 +17,7 @@ class EnvironmentSetup:
         self.env_vars = env_vars_dict
         self.saved_vars = {}
 
-    def __enter__(self):
+    def enter(self):
         for k, v in self.env_vars.items():
             if k in os.environ:
                 self.saved_vars[k] = os.environ[k]
@@ -27,9 +27,15 @@ class EnvironmentSetup:
                 if k in os.environ:
                     del os.environ[k]
 
-    def __exit__(self, type, value, traceback):
+    def exit(self):
         for k, v in self.saved_vars.items():
             os.environ[k] = v
+
+    def __enter__(self):
+        self.enter()
+
+    def __exit__(self, type, value, traceback):
+        self.exit()
 
 
 FIXTURE_DATA_CHECKSUMS = {
