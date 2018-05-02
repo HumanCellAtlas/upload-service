@@ -46,9 +46,14 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
             'CSUM_JOB_ROLE_ARN': 'bogorolearn',
             'CSUM_DOCKER_IMAGE': 'bogoimage'
         }
+        self.environmentor = EnvironmentSetup(self.environment)
+        self.environmentor.enter()
 
-        with EnvironmentSetup(self.environment):
-            self.client = client_for_test_api_server()
+        self.client = client_for_test_api_server()
+
+    def tearDown(self):
+        super().tearDown()
+        self.environmentor.exit()
 
     @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def _create_area(self):
@@ -76,62 +81,60 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     def test_update_event_with_validation_event(self, mock_format_and_send_notification, mock_connect):
-        with EnvironmentSetup(self.environment):
-            validation_id = str(uuid.uuid4())
-            area_id = self._create_area()
-            s3obj = self._mock_upload_file(area_id, 'foo.json')
-            upload_area = UploadArea(area_id)
-            uploaded_file = UploadedFile(upload_area, s3obj)
-            uploaded_file.create_record()
-            validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
-                                                           validation_id=validation_id,
-                                                           job_id='12345',
-                                                           status="SCHEDULED")
-            validation_event.create_record()
-            validation_event.status = "VALIDATING"
-            response = update_event(validation_event, uploaded_file.info(), self.client)
-            self.assertEqual(response.status_code, 204)
-            record = get_pg_record("validation", validation_id)
-            self.assertEqual(record["status"], "VALIDATING")
-            self.assertEqual(str(type(record.get("validation_started_at"))), "<class 'datetime.datetime'>")
-            self.assertEqual(record["validation_ended_at"], None)
+        validation_id = str(uuid.uuid4())
+        area_id = self._create_area()
+        s3obj = self._mock_upload_file(area_id, 'foo.json')
+        upload_area = UploadArea(area_id)
+        uploaded_file = UploadedFile(upload_area, s3obj)
+        uploaded_file.create_record()
+        validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
+                                                       validation_id=validation_id,
+                                                       job_id='12345',
+                                                       status="SCHEDULED")
+        validation_event.create_record()
+        validation_event.status = "VALIDATING"
+        response = update_event(validation_event, uploaded_file.info(), self.client)
+        self.assertEqual(response.status_code, 204)
+        record = get_pg_record("validation", validation_id)
+        self.assertEqual(record["status"], "VALIDATING")
+        self.assertEqual(str(type(record.get("validation_started_at"))), "<class 'datetime.datetime'>")
+        self.assertEqual(record["validation_ended_at"], None)
 
-            validation_event.status = "VALIDATED"
-            response = update_event(validation_event, uploaded_file.info(), self.client)
-            self.assertEqual(response.status_code, 204)
-            record = get_pg_record("validation", validation_id)
-            self.assertEqual(record["status"], "VALIDATED")
-            self.assertEqual(str(type(record.get("validation_started_at"))), "<class 'datetime.datetime'>")
-            self.assertEqual(str(type(record.get("validation_ended_at"))), "<class 'datetime.datetime'>")
+        validation_event.status = "VALIDATED"
+        response = update_event(validation_event, uploaded_file.info(), self.client)
+        self.assertEqual(response.status_code, 204)
+        record = get_pg_record("validation", validation_id)
+        self.assertEqual(record["status"], "VALIDATED")
+        self.assertEqual(str(type(record.get("validation_started_at"))), "<class 'datetime.datetime'>")
+        self.assertEqual(str(type(record.get("validation_ended_at"))), "<class 'datetime.datetime'>")
 
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     def test_update_event_with_checksum_event(self, mock_format_and_send_notification, mock_connect):
-        with EnvironmentSetup(self.environment):
-            checksum_id = str(uuid.uuid4())
-            area_id = self._create_area()
-            s3obj = self._mock_upload_file(area_id, 'foo.json')
-            upload_area = UploadArea(area_id)
-            uploaded_file = UploadedFile(upload_area, s3obj)
-            uploaded_file.create_record()
-            checksum_event = UploadedFileChecksumEvent(file_id=s3obj.key,
-                                                       checksum_id=checksum_id,
-                                                       job_id='12345',
-                                                       status="SCHEDULED")
-            checksum_event.create_record()
+        checksum_id = str(uuid.uuid4())
+        area_id = self._create_area()
+        s3obj = self._mock_upload_file(area_id, 'foo.json')
+        upload_area = UploadArea(area_id)
+        uploaded_file = UploadedFile(upload_area, s3obj)
+        uploaded_file.create_record()
+        checksum_event = UploadedFileChecksumEvent(file_id=s3obj.key,
+                                                   checksum_id=checksum_id,
+                                                   job_id='12345',
+                                                   status="SCHEDULED")
+        checksum_event.create_record()
 
-            checksum_event.status = "CHECKSUMMING"
-            response = update_event(checksum_event, uploaded_file.info(), self.client)
-            self.assertEqual(response.status_code, 204)
-            record = get_pg_record("checksum", checksum_id)
-            self.assertEqual(record["status"], "CHECKSUMMING")
-            self.assertEqual(str(type(record.get("checksum_started_at"))), "<class 'datetime.datetime'>")
-            self.assertEqual(record["checksum_ended_at"], None)
+        checksum_event.status = "CHECKSUMMING"
+        response = update_event(checksum_event, uploaded_file.info(), self.client)
+        self.assertEqual(response.status_code, 204)
+        record = get_pg_record("checksum", checksum_id)
+        self.assertEqual(record["status"], "CHECKSUMMING")
+        self.assertEqual(str(type(record.get("checksum_started_at"))), "<class 'datetime.datetime'>")
+        self.assertEqual(record["checksum_ended_at"], None)
 
-            checksum_event.status = "CHECKSUMMED"
-            response = update_event(checksum_event, uploaded_file.info(), self.client)
-            self.assertEqual(response.status_code, 204)
-            record = get_pg_record("checksum", checksum_id)
-            self.assertEqual(record["status"], "CHECKSUMMED")
-            self.assertEqual(str(type(record.get("checksum_started_at"))), "<class 'datetime.datetime'>")
-            self.assertEqual(str(type(record.get("checksum_ended_at"))), "<class 'datetime.datetime'>")
+        checksum_event.status = "CHECKSUMMED"
+        response = update_event(checksum_event, uploaded_file.info(), self.client)
+        self.assertEqual(response.status_code, 204)
+        record = get_pg_record("checksum", checksum_id)
+        self.assertEqual(record["status"], "CHECKSUMMED")
+        self.assertEqual(str(type(record.get("checksum_started_at"))), "<class 'datetime.datetime'>")
+        self.assertEqual(str(type(record.get("checksum_ended_at"))), "<class 'datetime.datetime'>")

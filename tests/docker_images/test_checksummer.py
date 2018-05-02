@@ -18,11 +18,9 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
     @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def setUp(self):
         super().setUp()
-        # Setup upload bucket
+        # Setup environment
         self.deployment_stage = 'test'
-        self.upload_bucket_name = f'bogobucket'
-        self.upload_bucket = boto3.resource('s3').Bucket(self.upload_bucket_name)
-        self.upload_bucket.create()
+        self.upload_bucket_name = 'bogobucket'
         self.environment = {
             'BUCKET_NAME': self.upload_bucket_name,
             'DEPLOYMENT_STAGE': self.deployment_stage,
@@ -30,10 +28,19 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
             'AWS_BATCH_JOB_ID': '1',
             'INGEST_AMQP_SERVER': 'bogoamqp'
         }
+        self.environmentor = EnvironmentSetup(self.environment)
+        self.environmentor.enter()
+        # Setup upload bucket
+        self.upload_bucket = boto3.resource('s3').Bucket(self.upload_bucket_name)
+        self.upload_bucket.create()
         self.upload_area_id = str(uuid.uuid4())
         self.upload_area = UploadArea(self.upload_area_id)
         self.upload_area.create()
         self.checksum_id = str(uuid.uuid4())
+
+    def tearDown(self):
+        super().tearDown()
+        self.environmentor.exit()
 
     def _mock_upload_file(self, filename, contents="foo",
                           content_type='application/json; dcp_type=metadata', checksums=None):
@@ -59,9 +66,7 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
         self._mock_upload_file(filename, contents=file_contents)
         s3_url = f"s3://{self.upload_bucket_name}/{file_s3_key}"
 
-        with EnvironmentSetup(self.environment):
-            # from checksummer import Checksummer
-            Checksummer([s3_url, self.checksum_id])
+        Checksummer([s3_url, self.checksum_id])
 
         tagging = boto3.client('s3').get_object_tagging(Bucket=self.upload_bucket_name, Key=file_s3_key)
         self.assertEqual(
