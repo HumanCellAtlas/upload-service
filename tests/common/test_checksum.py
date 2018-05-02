@@ -1,29 +1,19 @@
-import unittest
 import uuid
 from unittest.mock import patch
-import boto3
-from moto import mock_s3, mock_iam, mock_sns, mock_sts
 
-from .. import EnvironmentSetup, FIXTURE_DATA_CHECKSUMS
+import boto3
+
+from .. import UploadTestCaseUsingMockAWS, EnvironmentSetup, FIXTURE_DATA_CHECKSUMS
 
 from upload.common.upload_area import UploadArea
 from upload.common.checksum import UploadedFileChecksummer
 
 
-class TestUploadedFileChecksummer(unittest.TestCase):
+class TestUploadedFileChecksummer(UploadTestCaseUsingMockAWS):
 
     @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def setUp(self):
-        # Setup mock AWS
-        self.s3_mock = mock_s3()
-        self.s3_mock.start()
-        self.sns_mock = mock_sns()
-        self.sns_mock.start()
-        self.sts_mock = mock_sts()
-        self.sts_mock.start()
-        self.iam_mock = mock_iam()
-        self.iam_mock.start()
-
+        super().setUp()
         # Setup upload bucket
         self.deployment_stage = 'test'
         self.upload_bucket_name = f'bogobucket'
@@ -40,12 +30,6 @@ class TestUploadedFileChecksummer(unittest.TestCase):
         with EnvironmentSetup(self.environment):
             self.upload_area = UploadArea(self.upload_area_id)
             self.upload_area.create()
-
-    def tearDown(self):
-        self.s3_mock.stop()
-        self.sns_mock.stop()
-        self.sts_mock.stop()
-        self.iam_mock.stop()
 
     def _mock_upload_file(self, filename, contents="foo",
                           content_type='application/json; dcp_type=metadata', checksums=None):

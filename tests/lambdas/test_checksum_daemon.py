@@ -1,14 +1,11 @@
 import sys
-import unittest
 import os
 from unittest.mock import Mock, patch
 import uuid
-from tests.lambdas.api_server import client_for_test_api_server
 
 import boto3
-from moto import mock_s3, mock_sns, mock_sts, mock_iam
 
-from .. import EnvironmentSetup, FIXTURE_DATA_CHECKSUMS
+from .. import UploadTestCaseUsingMockAWS, EnvironmentSetup
 from upload.common.upload_area import UploadArea
 
 if __name__ == '__main__':
@@ -16,22 +13,14 @@ if __name__ == '__main__':
     sys.path.insert(0, pkg_root)  # noqa
 
 
-class TestChecksumDaemon(unittest.TestCase):
+class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
 
     DEPLOYMENT_STAGE = 'test'
     UPLOAD_BUCKET_NAME = 'bogobucket'
 
     @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def setUp(self):
-        # Setup mock AWS
-        self.s3_mock = mock_s3()
-        self.s3_mock.start()
-        self.sns_mock = mock_sns()
-        self.sns_mock.start()
-        self.sts_mock = mock_sts()
-        self.sts_mock.start()
-        self.iam_mock = mock_iam()
-        self.iam_mock.start()
+        super().setUp()
         # Staging bucket
         self.upload_bucket = boto3.resource('s3').Bucket(self.UPLOAD_BUCKET_NAME)
         self.upload_bucket.create()
@@ -78,11 +67,6 @@ class TestChecksumDaemon(unittest.TestCase):
                     'object': {'key': self.file_key, 'size': 16,
                                'eTag': 'fea79d4ad9be6cf1c76a219bb735f85a',
                                'sequencer': '0059BB193641C4EAB0'}}}]}
-
-    def tearDown(self):
-        self.s3_mock.stop()
-        self.sns_mock.stop()
-        self.sts_mock.stop()
 
     @patch('upload.common.upload_area.UploadedFile.size', 100 * 1024 * 1024 * 1024)
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.schedule_checksumming')

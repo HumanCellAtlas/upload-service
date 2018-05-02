@@ -1,16 +1,17 @@
-import os, sys, unittest, json
+import os, sys, json
 
 from . import client_for_test_api_server
-from ... import EnvironmentSetup
+from ... import UploadTestCaseUsingMockAWS, EnvironmentSetup
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
     sys.path.insert(0, pkg_root)  # noqa
 
 
-class TestConfigApi(unittest.TestCase):
+class TestConfigApi(UploadTestCaseUsingMockAWS):
 
     def setUp(self):
+        super().setUp()
         self.client = client_for_test_api_server()
 
     def test_client_config(self):
