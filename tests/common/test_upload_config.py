@@ -1,14 +1,13 @@
-import unittest
-
-from .. import EnvironmentSetup, fixture_file_path
+from .. import UploadTestCaseUsingLiveAWS, EnvironmentSetup, fixture_file_path
 
 from upload.common.aws_secret import AwsSecret
 from upload.common.upload_config import UploadConfig
 
 
-class TestConfig(unittest.TestCase):
+class TestConfig(UploadTestCaseUsingLiveAWS):
 
     def setUp(self):
+        super().setUp()
         self.config = AwsSecret(name="dcp/upload/test/secrets")
         self.config.update('{"a_secret":"value_from_cloud"}')
         UploadConfig.reset()

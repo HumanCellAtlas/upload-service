@@ -1,12 +1,15 @@
-import unittest
 import uuid
+
+from .. import UploadTestCaseUsingLiveAWS
 
 from upload.common.database import create_pg_record, update_pg_record, get_pg_record
 from upload.common.upload_area import UploadArea
 
 
-class TestDatabase(unittest.TestCase):
+class TestDatabase(UploadTestCaseUsingLiveAWS):
+
     def setUp(self):
+        super().setUp()
         self.area_id = str(uuid.uuid4())
         self.upload_area = UploadArea(self.area_id)
         self.bucket_name = "test_bucket_name"

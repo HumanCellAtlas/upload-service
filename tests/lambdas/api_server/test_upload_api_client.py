@@ -1,13 +1,14 @@
 #!/usr/bin/env python3.6
 
-import unittest
+import os, sys
 import uuid
+from unittest.mock import patch
+
 import boto3
-import os
-from ... import EnvironmentSetup
-from unittest.mock import patch, Mock
-from moto import mock_s3, mock_iam, mock_sns, mock_sts
+
+from ... import UploadTestCaseUsingMockAWS, EnvironmentSetup
 from . import client_for_test_api_server
+
 from upload.common.upload_api_client import update_event
 from upload.common.uploaded_file import UploadedFile
 from upload.common.upload_area import UploadArea
@@ -20,19 +21,10 @@ if __name__ == '__main__':
     sys.path.insert(0, pkg_root)  # noqa
 
 
-class TestDatabase(unittest.TestCase):
+class TestDatabase(UploadTestCaseUsingMockAWS):
 
     def setUp(self):
-        # Setup mock AWS
-        self.s3_mock = mock_s3()
-        self.s3_mock.start()
-        self.iam_mock = mock_iam()
-        self.iam_mock.start()
-        self.sns_mock = mock_sns()
-        self.sns_mock.start()
-        self.sts_mock = mock_sts()
-        self.sts_mock.start()
-
+        super().setUp()
         # Setup upload bucket
         self.deployment_stage = 'test'
         self.upload_bucket_name = f'bogobucket'
@@ -57,12 +49,6 @@ class TestDatabase(unittest.TestCase):
 
         with EnvironmentSetup(self.environment):
             self.client = client_for_test_api_server()
-
-    def tearDown(self):
-        self.s3_mock.stop()
-        self.iam_mock.stop()
-        self.sns_mock.stop()
-        self.sts_mock.stop()
 
     @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def _create_area(self):

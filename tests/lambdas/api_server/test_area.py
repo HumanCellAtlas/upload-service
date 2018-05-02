@@ -1,18 +1,18 @@
 #!/usr/bin/env python3.6
 
 import os, sys, unittest, uuid, json, base64
+from unittest.mock import patch
+
 import boto3
 from botocore.exceptions import ClientError
-from moto import mock_s3, mock_iam, mock_sns, mock_sts
-from unittest.mock import patch, Mock
+
 from . import client_for_test_api_server
-from ... import EnvironmentSetup
+from ... import UploadTestCaseUsingMockAWS, EnvironmentSetup
 
 from upload.common.checksum_event import UploadedFileChecksumEvent
 from upload.common.validation_event import UploadedFileValidationEvent
 from upload.common.uploaded_file import UploadedFile
 from upload.common.upload_area import UploadArea
-from upload.lambdas.checksum_daemon import ChecksumDaemon
 from upload.common.database import get_pg_record
 
 if __name__ == '__main__':
@@ -20,7 +20,7 @@ if __name__ == '__main__':
     sys.path.insert(0, pkg_root)  # noqa
 
 
-class TestApiAuthenticationErrors(unittest.TestCase):
+class TestApiAuthenticationErrors(UploadTestCaseUsingMockAWS):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -61,19 +61,10 @@ class TestApiAuthenticationErrors(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
 
-class TestAreaApi(unittest.TestCase):
+class TestAreaApi(UploadTestCaseUsingMockAWS):
 
     def setUp(self):
-        # Setup mock AWS
-        self.s3_mock = mock_s3()
-        self.s3_mock.start()
-        self.iam_mock = mock_iam()
-        self.iam_mock.start()
-        self.sns_mock = mock_sns()
-        self.sns_mock.start()
-        self.sts_mock = mock_sts()
-        self.sts_mock.start()
-
+        super().setUp()
         # Setup upload bucket
         self.deployment_stage = 'test'
         self.upload_bucket_name = f'bogobucket'
@@ -98,12 +89,6 @@ class TestAreaApi(unittest.TestCase):
 
         with EnvironmentSetup(self.environment):
             self.client = client_for_test_api_server()
-
-    def tearDown(self):
-        self.s3_mock.stop()
-        self.iam_mock.stop()
-        self.sns_mock.stop()
-        self.sts_mock.stop()
 
     @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def _create_area(self):
