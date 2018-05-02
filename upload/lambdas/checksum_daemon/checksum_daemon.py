@@ -11,6 +11,7 @@ from ...common.checksum_event import UploadedFileChecksumEvent
 from ...common.logging import get_logger
 from ...common.logging import format_logger_with_id
 from ...common.batch import JobDefinition
+from ...common.upload_config import UploadConfig
 
 logger = get_logger(__name__)
 
@@ -29,13 +30,13 @@ class ChecksumDaemon:
         self.request_id = context.aws_request_id
         format_logger_with_id(logger, "request_id", self.request_id)
         logger.debug("Ahm ahliiivvve!")
+        self.config = UploadConfig()
         self._read_environment()
         self.upload_area = None
         self.uploaded_file = None
 
     def _read_environment(self):
         self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
-        self.bucket_name = os.environ['BUCKET_NAME']
         self.job_q_arn = os.environ['CSUM_JOB_Q_ARN']
         self.job_role_arn = os.environ['CSUM_JOB_ROLE_ARN']
         self.docker_image = os.environ['CSUM_DOCKER_IMAGE']
@@ -70,7 +71,7 @@ class ChecksumDaemon:
         checksum_id = str(uuid.uuid4())
         command = ['python', '/checksummer.py', uploaded_file.s3url]
         environment = {
-            'BUCKET_NAME': self.bucket_name,
+            'BUCKET_NAME': self.config.bucket_name,
             'DEPLOYMENT_STAGE': self.deployment_stage,
             'INGEST_AMQP_SERVER': self.ingest_amqp_server,
             'API_HOST': self.api_host
