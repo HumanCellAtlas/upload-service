@@ -4,7 +4,6 @@ import os
 import time
 import boto3
 import uuid
-import pdb
 from botocore.exceptions import ClientError
 
 from dcplib.media_types import DcpMediaType
@@ -14,6 +13,7 @@ from .uploaded_file import UploadedFile
 from .exceptions import UploadException
 from .database import create_pg_record, update_pg_record
 from .checksum_event import UploadedFileChecksumEvent
+from .upload_config import UploadConfig
 
 s3 = boto3.resource('s3')
 iam = boto3.resource('iam')
@@ -27,13 +27,18 @@ class UploadArea:
 
     def __init__(self, uuid):
         self.uuid = uuid
+        self.config = UploadConfig()
         self.key_prefix = f"{self.uuid}/"
         self.key_prefix_length = len(self.key_prefix)
-        self.bucket_name = os.environ['BUCKET_NAME']
         self.user_name = self.USER_NAME_TEMPLATE.format(deployment_stage=self._deployment_stage, uuid=uuid)
         self._bucket = s3.Bucket(self.bucket_name)
         self._user = iam.User(self.user_name)
         self._credentials = None
+
+    @property
+    def bucket_name(self):
+        # print(f"SAM: returning bucket_name = {self.config.bucket_name}")
+        return self.config.bucket_name
 
     @property
     def _deployment_stage(self):
