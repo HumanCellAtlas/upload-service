@@ -53,24 +53,34 @@
       ]
     },
     {
-        "Effect": "Allow",
-        "Action": [
-            "batch:Describe*",
-            "batch:RegisterJobDefinition",
-            "batch:SubmitJob"
-        ],
-        "Resource": [
-            "arn:aws:batch:*:$account_id:*"
-        ]
+      "Effect": "Allow",
+      "Action": [
+        "batch:Describe*",
+        "batch:RegisterJobDefinition",
+        "batch:SubmitJob"
+      ],
+      "Resource": [
+        "arn:aws:batch:*:$account_id:*"
+      ]
     },
     {
-        "Effect": "Allow",
-        "Action": [
-            "SNS:Publish"
-        ],
-        "Resource": [
-            "arn:aws:sns:*:$account_id:*"
-        ]
+      "Effect": "Allow",
+      "Action": [
+        "SNS:Publish"
+      ],
+      "Resource": [
+        "arn:aws:sns:*:$account_id:*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:GetSecretValue"
+      ],
+      "Resource": [
+        "arn:aws:secretsmanager:us-east-1:$account_id:secret:dcp/upload/${DEPLOYMENT}/*"
+      ]
     }
   ]
 }

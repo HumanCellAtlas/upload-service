@@ -42,7 +42,7 @@ function detect_existing_deployment() {
 }
 
 function create_policy_document() {
-    cat "$policy_template" | envsubst '$BUCKET_NAME $account_id' > "$policy_json"
+    cat "$policy_template" | envsubst '$DEPLOYMENT $BUCKET_NAME $account_id' > "$policy_json"
     cp "$policy_json" "$stage_policy_json"
 }
 
