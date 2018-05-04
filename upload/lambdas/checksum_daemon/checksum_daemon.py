@@ -4,9 +4,7 @@ import re
 import uuid
 import boto3
 from six.moves import urllib
-from ..common.event_notifier import EventNotifier
 from ...common.upload_area import UploadArea
-from ...common.ingest_notifier import IngestNotifier
 from ...common.checksum_event import UploadedFileChecksumEvent
 from ...common.logging import get_logger
 from ...common.logging import format_logger_with_id
