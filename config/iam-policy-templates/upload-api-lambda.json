@@ -79,7 +79,7 @@
         "secretsmanager:GetSecretValue"
       ],
       "Resource": [
-        "arn:aws:secretsmanager:us-east-1:$account_id:secret:dcp/upload/${DEPLOYMENT}/*"
+        "arn:aws:secretsmanager:us-east-1:$account_id:secret:dcp/upload/${DEPLOYMENT_STAGE}/*"
       ]
     }
   ]
