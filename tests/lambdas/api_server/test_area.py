@@ -119,8 +119,8 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         return s3obj
 
     @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_update_file_checksum(self, mock_format_and_send_notification, mock_connect):
         checksum_id = str(uuid.uuid4())
         area_id = self._create_area()
@@ -173,8 +173,8 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(str(type(record.get("checksum_ended_at"))), "<class 'datetime.datetime'>")
 
     @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_update_file_validation(self, mock_format_and_send_notification, mock_connect):
         validation_id = str(uuid.uuid4())
         area_id = self._create_area()

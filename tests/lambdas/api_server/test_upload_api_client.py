@@ -78,8 +78,8 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
         })
         return s3obj
 
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_update_event_with_validation_event(self, mock_format_and_send_notification, mock_connect):
         validation_id = str(uuid.uuid4())
         area_id = self._create_area()
@@ -108,8 +108,8 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
         self.assertEqual(str(type(record.get("validation_started_at"))), "<class 'datetime.datetime'>")
         self.assertEqual(str(type(record.get("validation_ended_at"))), "<class 'datetime.datetime'>")
 
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_update_event_with_checksum_event(self, mock_format_and_send_notification, mock_connect):
         checksum_id = str(uuid.uuid4())
         area_id = self._create_area()

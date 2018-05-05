@@ -70,11 +70,7 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
 
     @patch('upload.common.upload_area.UploadedFile.size', 100 * 1024 * 1024 * 1024)
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.schedule_checksumming')
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     def test_that_with_a_large_file_a_batch_job_is_scheduled(self,
-                                                             mock_format_and_send_notification,
-                                                             mock_connect,
                                                              mock_schedule_checksumming):
         self.daemon.consume_event(self.event)
 

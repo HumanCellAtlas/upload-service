@@ -37,7 +37,6 @@ class UploadArea:
 
     @property
     def bucket_name(self):
-        # print(f"SAM: returning bucket_name = {self.config.bucket_name}")
         return self.config.bucket_name
 
     @property
