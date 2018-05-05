@@ -1,3 +1,3 @@
 {
-    "a_secret": "value_from_file"
+    "secret1": "value_from_file"
 }

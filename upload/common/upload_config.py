@@ -10,21 +10,6 @@ logger = get_logger(__name__)
 class Config:
 
     """
-    Implement singleton-like behavior using techniques from
-    http://python-3-patterns-idioms-test.readthedocs.io/en/latest/Singleton.html.
-    All instances of this class will share the same config data.
-    If you subclass this class, the subclass gets its own data, but all
-    instances of the subclass share that data.
-    """
-    def __new__(cls, *args, **kwargs):
-        cls.reset()
-        return super().__new__(cls)
-
-    @classmethod
-    def reset(cls):
-        cls._shared_config = None
-
-    """
     If source is specified, it must be the path to a JSON file
     """
 
@@ -34,17 +19,14 @@ class Config:
         self._deployment = deployment or os.environ['DEPLOYMENT_STAGE']
         self._secret = secret
         self._source = self._determine_source(source)
-
-    @property
-    def config(self):
-        return self.__class__._config
+        self.config = None
 
     def __getattr__(self, name):
         if name.upper() in os.environ:
             logger.debug(f"{name} is in env")
             return os.environ[name.upper()]
         else:
-            if not self._shared_config:
+            if not self.config:
                 self.load()
             logger.debug(f"returning {name} from config")
             return self.config[name]
@@ -67,7 +49,7 @@ class Config:
             self.from_json(config_fp.read())
 
     def from_json(self, config_json):
-        self.__class__._config = json.loads(config_json)
+        self.config = json.loads(config_json)
 
     def _determine_source(self, source):
         if source:
