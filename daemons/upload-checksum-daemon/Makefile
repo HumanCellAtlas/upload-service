@@ -1,3 +1,5 @@
+include ../../common.mk
+
 export EXPORT_ENV_VARS_TO_LAMBDA=DEPLOYMENT_STAGE \
 			INGEST_AMQP_SERVER \
 			DCP_EVENTS_TOPIC \
