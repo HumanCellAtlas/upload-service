@@ -21,14 +21,17 @@ class Checksummer:
         self._parse_args(argv)
         upload_area, uploaded_file = self._find_file()
         checksummer = UploadedFileChecksummer(uploaded_file)
+        checksum_event = UploadedFileChecksumEvent(file_id=uploaded_file.s3obj.key,
+                                                   checksum_id=os.environ['CHECKSUM_ID'],
+                                                   job_id=os.environ['AWS_BATCH_JOB_ID'],
+                                                   status="CHECKSUMMING")
         if checksummer.has_checksums():
             logger.info(f"File {uploaded_file.name} is already checksummed.")
+            checksum_event.status = "CHECKSUMMED"
+            if not self.args.test:
+                update_event(checksum_event, uploaded_file.info())
         else:
             logger.info(f"Checksumming {uploaded_file.name}...")
-            checksum_event = UploadedFileChecksumEvent(file_id=uploaded_file.s3obj.key,
-                                                       checksum_id=os.environ['CHECKSUM_ID'],
-                                                       job_id=os.environ['AWS_BATCH_JOB_ID'],
-                                                       status="CHECKSUMMING")
             if not self.args.test:
                 update_event(checksum_event, uploaded_file.info())
             checksums = self._checksum_file(checksummer, uploaded_file)
