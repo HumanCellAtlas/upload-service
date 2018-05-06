@@ -5,6 +5,7 @@ RUN apk add --no-cache bash
 COPY requirements.txt /tmp/
 RUN pip install --requirement /tmp/requirements.txt
 
+ADD code /
 ADD harness.py /
 ADD VERSION /HARNESS_VERSION
 

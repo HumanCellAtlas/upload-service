@@ -26,7 +26,7 @@ RUN chmod +x /validator
 
 The Docker container will be invoked by the Upload Service:
  * with the command: `/validator s3://location/of/file-to-be-validated`
- * and with environment variables `INGEST_API_KEY`, `DEPLOYMENT_STAGE`, `VALIDATION_ID`, and `API_HOST`
+ * and with environment variables `DEPLOYMENT_STAGE`, `VALIDATION_ID`, `API_HOST`, and `CONTAINER`
 
 The harness script intercepts execution then:
  * Stages the file to be validated under `/data`.
@@ -51,9 +51,10 @@ to attempt to contact Ingest.
 ```bash
 docker build -t myvalidator .
 
-docker run --rm -e VALIDATION_ID=1 -e DEPLOYMENT_STAGE=dev -e INGEST_API_KEY=mykey \
-                -e AWS_ACCESS_KEY_ID=mykey -e AWS_SECRET_ACCESS_KEY=mysecret \
-           myvalidator -t /validator s3://mybucket/myfile
+docker run --rm -e VALIDATION_ID=1 -e DEPLOYMENT_STAGE=dev \
+           -e AWS_BATCH_JOB_ID=500 -e AWS_BATCH_JOB_ATTEMPT=1 -e CONTAINER=docker \
+           API_HOST=upload.dev.data.humancellatlas.org -v ~/.aws:/root/.aws \
+           my-validator -t /validator s3://mubucket/somefile
 ```
 
 ## Testing a Validator in the Upload Service Development Environment (DCP Developers Only)

@@ -72,7 +72,9 @@ class ChecksumDaemon:
             'BUCKET_NAME': self.config.bucket_name,
             'DEPLOYMENT_STAGE': self.deployment_stage,
             'INGEST_AMQP_SERVER': self.ingest_amqp_server,
-            'API_HOST': self.api_host
+            'API_HOST': self.api_host,
+            'CHECKSUM_ID': checksum_id,
+            'CONTAINER': 'DOCKER'
         }
         job_name = "-".join(["csum", self.deployment_stage, uploaded_file.upload_area.uuid, uploaded_file.name])
         job_id = self._enqueue_batch_job(queue_arn=self.job_q_arn,

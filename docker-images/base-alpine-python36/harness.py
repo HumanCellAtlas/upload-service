@@ -1,54 +1,22 @@
 #!/usr/bin/env python
 
 import argparse
-import json
-import logging
 import os
 import pathlib
 import sys
 import subprocess
 import time
 import urllib.parse
-import requests
 import boto3
-import pika
 from urllib3.util import parse_url
 
-
-def get_logger(name, corr_id_name, corr_id_val):
-    ch = logging.StreamHandler(sys.stdout)
-    log_level_name = os.environ['LOG_LEVEL'] if 'LOG_LEVEL' in os.environ else 'DEBUG'
-    log_level = getattr(logging, log_level_name.upper())
-    ch.setLevel(log_level)
-    formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s' +
-                                  f' corr_id:{corr_id_name}:{corr_id_val} %(message)s', datefmt="%Y-%m-%dT%H:%M:%S%z")
-    ch.setFormatter(formatter)
-    logger = logging.getLogger(name)
-    logger.handlers = []
-    logger.addHandler(ch)
-    logger.setLevel(logging.DEBUG)
-    return logger
+from upload.common.validation_event import UploadedFileValidationEvent
+from upload.common.logging import get_logger
+from upload.common.logging import format_logger_with_id
+from upload.common.upload_api_client import update_event
 
 
-def update_event(event, file_payload={}, client=requests):
-    url = os.environ["API_HOST"]
-    api_version = "v1"
-    header = {'Content-type': 'application/json'}
-    event_type = type(event).__name__
-    if event_type == "UploadedFileValidationEvent":
-        action = 'update_validation'
-    elif event_type == "UploadedFileChecksumEvent":
-        action = 'update_checksum'
-
-    data = {"status": event.status,
-            "job_id": event.job_id,
-            "payload": file_payload
-            }
-    upload_area_id = file_payload["upload_area_id"]
-    event_id = event.id
-    api_url = f"http://{url}/{api_version}/area/{upload_area_id}/{event_id}/{action}"
-    response = client.post(api_url, headers=header, data=json.dumps(data))
-    return response
+logger = get_logger(f"CHECKSUMMER [{os.environ.get('AWS_BATCH_JOB_ID')}]")
 
 
 class ValidatorHarness:
@@ -60,7 +28,10 @@ class ValidatorHarness:
         self.validation_id = os.environ['AWS_BATCH_JOB_ID']
         self.id = os.environ['VALIDATION_ID']
         self._parse_args()
-        self.logger = get_logger('HARNESS', "file_key", self.s3_object_key)
+        key_parts = self.s3_object_key.split('/')
+        upload_area_id = key_parts.pop(0)
+        file_name = "/".join(key_parts)
+        format_logger_with_id(logger, "file_key", self.s3_object_key)
         self._log("VERSION {version}, attempt {attempt} with argv: {argv}".format(
             version=self.version, attempt=os.environ['AWS_BATCH_JOB_ATTEMPT'], argv=sys.argv))
         self._stage_file_to_be_validated()
@@ -68,13 +39,15 @@ class ValidatorHarness:
                                                        validation_id=self.id,
                                                        job_id=self.validation_id,
                                                        status="VALIDATING")
-        if not args.test:
-            update_event(validation_event)
+        if not self.args.test:
+            update_event(validation_event, {"upload_area_id": upload_area_id, "name": file_name})
         results = self._run_validator()
+        results["upload_area_id"] = upload_area_id
+        results["name"] = file_name
         self._unstage_file()
         validation_event.status = "VALIDATED"
-        if not args.test:
-            update_event(validation_event)
+        if not self.args.test:
+            update_event(validation_event, results)
 
     def _find_version(self):
         try:
@@ -146,7 +119,7 @@ class ValidatorHarness:
         os.remove(self.staged_file_path)
 
     def _log(self, message):
-        self.logger.info("[{id}]: ".format(id=self.validation_id) + str(message))
+        logger.info("[{id}]: ".format(id=self.validation_id) + str(message))
 
 
 if __name__ == '__main__':

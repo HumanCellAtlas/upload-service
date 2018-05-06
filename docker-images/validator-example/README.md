@@ -49,7 +49,8 @@ make build
 aws s3 cp somefile s3://mybucket/
 
 docker run --rm -e VALIDATION_ID=1 -e DEPLOYMENT_STAGE=dev \
-           -v ~/.aws:/root/.aws \
+           -e AWS_BATCH_JOB_ID=500 -e AWS_BATCH_JOB_ATTEMPT=1 -e CONTAINER=docker \
+           API_HOST=upload.dev.data.humancellatlas.org -v ~/.aws:/root/.aws \
            upload-validator-example -t /validator s3://mubucket/somefile
 ```
 

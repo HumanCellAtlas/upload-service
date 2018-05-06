@@ -1,7 +1,8 @@
+import os
 from datetime import datetime
 from .logging import get_logger
-from .logging import format_logger_with_id
-from .database import create_pg_record, update_pg_record
+if not os.environ.get("CONTAINER"):
+    from .database import create_pg_record, update_pg_record
 
 logger = get_logger(__name__)
 

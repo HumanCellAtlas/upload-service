@@ -1,7 +1,9 @@
 import boto3
+import os
 from botocore.errorfactory import ClientError
 
-secrets_mgr = boto3.client(service_name='secretsmanager')
+if not os.environ.get("CONTAINER"):
+    secrets_mgr = boto3.client(service_name='secretsmanager')
 
 
 class AwsSecret:
