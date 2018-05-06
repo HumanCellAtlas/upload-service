@@ -99,6 +99,7 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
         self.assertEqual(record["status"], "VALIDATING")
         self.assertEqual(str(type(record.get("validation_started_at"))), "<class 'datetime.datetime'>")
         self.assertEqual(record["validation_ended_at"], None)
+        self.assertEqual(record.get("results"), None)
 
         validation_event.status = "VALIDATED"
         response = update_event(validation_event, uploaded_file.info(), self.client)
@@ -107,6 +108,7 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
         self.assertEqual(record["status"], "VALIDATED")
         self.assertEqual(str(type(record.get("validation_started_at"))), "<class 'datetime.datetime'>")
         self.assertEqual(str(type(record.get("validation_ended_at"))), "<class 'datetime.datetime'>")
+        self.assertEqual(record.get("results"), uploaded_file.info())
 
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')

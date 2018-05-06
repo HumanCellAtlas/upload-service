@@ -28,6 +28,7 @@ class UploadedFileValidationEvent:
             vals_dict["validation_started_at"] = datetime.utcnow()
         elif self.status == "VALIDATED":
             vals_dict["validation_ended_at"] = datetime.utcnow()
+            vals_dict["results"] = self.results
 
         return vals_dict
 
