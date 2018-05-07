@@ -77,46 +77,12 @@ resource "aws_iam_role_policy_attachment" "AmazonEC2SpotFleetRole" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole"
 }
 
-# I don't think we can let Terraform create these two roles, as it doesn't support Service Linked Roles.
-# See https://github.com/terraform-providers/terraform-provider-aws/issues/921
-# We should create them beforehand in the console.  Terraform sees then as regular IAM roles.
-
-resource "aws_iam_role" "AWSServiceRoleForEC2Spot" {
-  name = "AWSServiceRoleForEC2Spot"
-  path = "/aws-service-role/spot.amazonaws.com/"
+resource aws_iam_service_linked_role "AWSServiceRoleForEC2Spot" {
+  aws_service_name = "spot.amazonaws.com"
   description = "Allows EC2 Spot to launch and manage spot instances."
-  assume_role_policy = <<POLICY
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "spot.amazonaws.com"
-      },
-      "Action": "sts:AssumeRole"
-    }
-  ]
-}
-POLICY
 }
 
-resource "aws_iam_role" "AWSServiceRoleForEC2SpotFleet" {
-  name = "AWSServiceRoleForEC2SpotFleet"
-  path = "/aws-service-role/spotfleet.amazonaws.com/"
+resource aws_iam_service_linked_role "AWSServiceRoleForEC2SpotFleet" {
+  aws_service_name = "spotfleet.amazonaws.com"
   description = "Default EC2 Spot Fleet Service Linked Role"
-  assume_role_policy = <<POLICY
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "spotfleet.amazonaws.com"
-      },
-      "Action": "sts:AssumeRole"
-    }
-  ]
-}
-POLICY
 }
