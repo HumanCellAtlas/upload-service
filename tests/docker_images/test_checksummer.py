@@ -25,7 +25,6 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
         self.environment = {
             'BUCKET_NAME': self.upload_bucket_name,
             'DEPLOYMENT_STAGE': self.deployment_stage,
-            'DCP_EVENTS_TOPIC': 'bogotopic',
             'AWS_BATCH_JOB_ID': '1',
             'INGEST_AMQP_SERVER': 'bogoamqp',
             'CHECKSUM_ID': self.checksum_id

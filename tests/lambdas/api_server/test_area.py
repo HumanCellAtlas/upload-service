@@ -72,7 +72,6 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.environment = {
             'BUCKET_NAME': self.upload_bucket_name,
             'DEPLOYMENT_STAGE': self.deployment_stage,
-            'DCP_EVENTS_TOPIC': 'bogotopic',
             'INGEST_API_KEY': self.api_key,
             'INGEST_AMQP_SERVER': 'foo',
             'CSUM_JOB_Q_ARN': 'bogoqarn',
@@ -86,8 +85,6 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.upload_bucket.create()
         # Authentication
         self.authentication_header = {'Api-Key': self.api_key}
-        # Setup SNS
-        boto3.resource('sns').create_topic(Name='bogotopic')
         # Setup app
         self.client = client_for_test_api_server()
 

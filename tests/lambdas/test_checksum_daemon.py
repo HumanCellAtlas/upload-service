@@ -28,7 +28,6 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
             'BUCKET_NAME': self.UPLOAD_BUCKET_NAME,
             'DEPLOYMENT_STAGE': self.DEPLOYMENT_STAGE,
             'INGEST_AMQP_SERVER': 'foo',
-            'DCP_EVENTS_TOPIC': 'bogotopic',
             'CSUM_JOB_Q_ARN': 'bogoqarn',
             'CSUM_JOB_ROLE_ARN': 'bogorolearn',
             'CSUM_DOCKER_IMAGE': 'bogoimage'

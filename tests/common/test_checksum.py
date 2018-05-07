@@ -18,7 +18,6 @@ class TestUploadedFileChecksummer(UploadTestCaseUsingMockAWS):
         self.environment = {
             'BUCKET_NAME': 'bogobucket',
             'DEPLOYMENT_STAGE': 'test',
-            'DCP_EVENTS_TOPIC': 'bogotopic'
         }
         self.environmentor = EnvironmentSetup(self.environment)
         self.environmentor.enter()
