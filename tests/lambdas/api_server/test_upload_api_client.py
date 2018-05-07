@@ -34,13 +34,10 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
         self.api_key = "foo"
         os.environ['INGEST_API_KEY'] = self.api_key
         self.authentication_header = {'Api-Key': self.api_key}
-        # Setup SNS
-        boto3.resource('sns').create_topic(Name='bogotopic')
         # Setup app
         self.environment = {
             'BUCKET_NAME': self.upload_bucket_name,
             'DEPLOYMENT_STAGE': self.deployment_stage,
-            'DCP_EVENTS_TOPIC': 'bogotopic',
             'INGEST_AMQP_SERVER': 'foo',
             'CSUM_JOB_Q_ARN': 'bogoqarn',
             'CSUM_JOB_ROLE_ARN': 'bogorolearn',

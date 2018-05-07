@@ -1,6 +1,5 @@
 from proforma import CompositeComponent
 from .upload_bucket import UploadBucketAssembly
-from .slack_feed import SlackFeed
 from .upload_api import UploadApi
 from .checksum_daemon import ChecksumDaemon
 from .batch_shared import BatchSharedConfig
@@ -11,7 +10,6 @@ class SetupConductor(CompositeComponent):
 
     SUBCOMPONENTS = {
         'bucket': UploadBucketAssembly,
-        'slack-feed': SlackFeed,
         'upload-api': UploadApi,
         'checksum-daemon': ChecksumDaemon,
         'batch-shared': BatchSharedConfig,

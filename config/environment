@@ -19,7 +19,6 @@ BUCKET_NAME_PREFIX='org-humancellatlas-upload-'
 BUCKET_NAME_TEMPLATE="${BUCKET_NAME_PREFIX}{deployment_stage}"
 BUCKET_NAME="${BUCKET_NAME_PREFIX}${DEPLOYMENT_STAGE}"
 AWS_DEFAULT_REGION='us-east-1'
-DCP_EVENTS_TOPIC='dcp-events'
 CSUM_DOCKER_IMAGE='humancellatlas/upload-checksummer'
 set +a
 

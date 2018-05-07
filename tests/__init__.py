@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from moto import mock_iam, mock_s3, mock_sns, mock_sts
+from moto import mock_iam, mock_s3, mock_sts
 
 os.environ['DEPLOYMENT_STAGE'] = 'test'
 os.environ['LOG_LEVEL'] = 'CRITICAL'
@@ -79,13 +79,10 @@ class UploadTestCaseUsingMockAWS(unittest.TestCase):
         self.s3_mock.start()
         self.iam_mock = mock_iam()
         self.iam_mock.start()
-        self.sns_mock = mock_sns()
-        self.sns_mock.start()
         self.sts_mock = mock_sts()
         self.sts_mock.start()
 
     def tearDown(self):
         self.s3_mock.stop()
         self.iam_mock.stop()
-        self.sns_mock.stop()
         self.sts_mock.stop()

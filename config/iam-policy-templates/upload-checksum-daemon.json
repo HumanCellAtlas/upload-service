@@ -14,15 +14,6 @@
       "Effect": "Allow"
     },
     {
-      "Sid": "PubSub",
-      "Action": [
-        "sns:CreateTopic",
-        "sns:Publish"
-      ],
-      "Resource": "arn:aws:sns:*:*:*",
-      "Effect": "Allow"
-    },
-    {
       "Sid": "LambdaLogging",
       "Action": [
         "logs:CreateLogGroup",
@@ -56,15 +47,6 @@
       ],
       "Resource": [
         "arn:aws:batch:*:$account_id:*"
-      ]
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "SNS:Publish"
-      ],
-      "Resource": [
-        "arn:aws:sns:*:$account_id:*"
       ]
     },
     {
