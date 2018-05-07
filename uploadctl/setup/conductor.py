@@ -1,8 +1,6 @@
 from proforma import CompositeComponent
 from .upload_api import UploadApi
 from .checksum_daemon import ChecksumDaemon
-from .batch_shared import BatchSharedConfig
-from .batch_validation import BatchValidation
 
 
 class SetupConductor(CompositeComponent):
@@ -10,8 +8,6 @@ class SetupConductor(CompositeComponent):
     SUBCOMPONENTS = {
         'upload-api': UploadApi,
         'checksum-daemon': ChecksumDaemon,
-        'batch-shared': BatchSharedConfig,
-        'validation': BatchValidation,
     }
 
     def __str__(self):
