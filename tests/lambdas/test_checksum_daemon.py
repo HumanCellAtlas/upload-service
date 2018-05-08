@@ -25,14 +25,14 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
         # Config
         self.config = UploadConfig()
         self.config.set({
-            'bucket_name': 'bogobucket',
+            'bucket_name': 'bogo_bucket',
+            'csum_job_q_arn': 'bogo_arn',
+            'csum_job_role_arn': 'bogo_role_arn',
         })
         # Environment
         self.environment = {
             'DEPLOYMENT_STAGE': 'test',
             'INGEST_AMQP_SERVER': 'foo',
-            'CSUM_JOB_Q_ARN': 'bogoqarn',
-            'CSUM_JOB_ROLE_ARN': 'bogorolearn',
             'CSUM_DOCKER_IMAGE': 'bogoimage'
         }
         self.environmentor = EnvironmentSetup(self.environment)

@@ -7,8 +7,8 @@ import boto3
 
 from ...common.uploaded_file import UploadedFile
 from ...common.batch import JobDefinition
-from ...common.database import create_pg_record, update_pg_record
 from ...common.validation_event import UploadedFileValidationEvent
+from ...common.upload_config import UploadConfig
 
 batch = boto3.client('batch')
 
@@ -20,6 +20,7 @@ class ValidationScheduler:
     def __init__(self, uploaded_file: UploadedFile):
         self.file = uploaded_file
         self.file_key = self.file.upload_area.uuid + '/' + urllib.parse.quote(self.file.name)
+        self.config = UploadConfig()
 
     def schedule_validation(self, validator_docker_image: str, environment: dict) -> str:
         validation_id = str(uuid.uuid4())
@@ -48,7 +49,7 @@ class ValidationScheduler:
         if job_defn.load():
             return job_defn
         else:
-            job_defn.create(job_role_arn=os.environ['VALIDATION_JOB_ROLE_ARN'])
+            job_defn.create(job_role_arn=self.config.validation_job_role_arn)
         return job_defn
 
     def _enqueue_batch_job(self, job_defn, command, environment):
@@ -56,7 +57,7 @@ class ValidationScheduler:
         job_name = re.sub(self.JOB_NAME_ALLOWABLE_CHARS, "", job_name)[0:128]
         job = batch.submit_job(
             jobName=job_name,
-            jobQueue=os.environ['VALIDATION_JOB_QUEUE_ARN'],
+            jobQueue=self.config.validation_job_q_arn,
             jobDefinition=job_defn.arn,
             containerOverrides={
                 'command': command,

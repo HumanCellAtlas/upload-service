@@ -36,19 +36,3 @@ module "upload-service" {
   db_username = "${var.db_username}"
   db_password = "${var.db_password}"
 }
-
-output "validation_job_q_arn" {
-  value = "${module.upload-service.validation_job_q_arn}"
-}
-
-output "validation_job_role_arn" {
-  value = "${module.upload-service.validation_job_role_arn}"
-}
-
-output "csum_job_q_arn" {
-  value = "${module.upload-service.csum_job_q_arn}"
-}
-
-output "csum_job_role_arn" {
-  value = "${module.upload-service.csum_job_role_arn}"
-}
