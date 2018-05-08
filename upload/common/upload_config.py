@@ -13,11 +13,10 @@ class Config:
     If source is specified, it must be the path to a JSON file
     """
 
-    def __init__(self, component_name, deployment=None, secret='secrets', source=None):
+    def __init__(self, component_name, deployment=None, source=None):
         super().__init__()
         self._component_name = component_name
         self._deployment = deployment or os.environ['DEPLOYMENT_STAGE']
-        self._secret = secret
         self._source = self._determine_source(source)
         self.config = None
 
@@ -38,7 +37,7 @@ class Config:
             self.load_from_file(self._source)
 
     def load_from_aws(self):
-        secret_path = f"dcp/{self._component_name}/{self._deployment}/{self._secret}"
+        secret_path = f"dcp/{self._component_name}/{self._deployment}/secrets"
         logger.debug(f"loading from AWS secret {secret_path}")
         secret = AwsSecret(secret_path)
         self.from_json(secret.value)
