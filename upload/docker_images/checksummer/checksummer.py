@@ -10,7 +10,7 @@ from upload.common.logging import format_logger_with_id
 from upload.common.checksum import UploadedFileChecksummer
 from upload.common.checksum_event import UploadedFileChecksumEvent
 from upload.common.upload_api_client import update_event
-
+from upload.common.upload_config import UploadConfig
 
 logger = get_logger(f"CHECKSUMMER [{os.environ.get('AWS_BATCH_JOB_ID')}]")
 
@@ -18,6 +18,7 @@ logger = get_logger(f"CHECKSUMMER [{os.environ.get('AWS_BATCH_JOB_ID')}]")
 class Checksummer:
 
     def __init__(self, argv):
+        UploadConfig.use_env = True  # AWS Secrets are not available to batch jobs, use environment
         self._parse_args(argv)
         upload_area, uploaded_file = self._find_file()
         checksummer = UploadedFileChecksummer(uploaded_file)

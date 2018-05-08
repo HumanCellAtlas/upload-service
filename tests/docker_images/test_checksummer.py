@@ -11,6 +11,7 @@ from .. import UploadTestCaseUsingMockAWS, EnvironmentSetup, FIXTURE_DATA_CHECKS
 
 from upload.docker_images.checksummer.checksummer import Checksummer
 from upload.common.upload_area import UploadArea
+from upload.common.upload_config import UploadConfig
 
 
 class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
@@ -18,6 +19,7 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
     @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def setUp(self):
         super().setUp()
+        UploadConfig.use_env = True
         # Setup environment
         self.deployment_stage = 'test'
         self.upload_bucket_name = 'bogobucket'
