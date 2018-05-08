@@ -10,8 +10,6 @@ fi
 export daemon_name=$1 stage=$2
 export lambda_name="${daemon_name}-${stage}" iam_role_name="${daemon_name}-${stage}"
 export account_id=$(aws sts get-caller-identity | jq -r .Account)
-export CSUM_JOB_Q_ARN=`( cd ${PROJECT_ROOT}/terraform/envs/${stage} ; terraform output csum_job_q_arn)`
-export CSUM_JOB_ROLE_ARN=`( cd ${PROJECT_ROOT}/terraform/envs/${stage} ; terraform output csum_job_role_arn)`
 config_json=".chalice/config.json"
 deployed_json=".chalice/deployed.json"
 policy_template="${PROJECT_ROOT}/config/iam-policy-templates/${daemon_name}.json"

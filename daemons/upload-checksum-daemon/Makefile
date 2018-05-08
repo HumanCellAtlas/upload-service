@@ -3,8 +3,6 @@ include ../../common.mk
 export EXPORT_ENV_VARS_TO_LAMBDA=DEPLOYMENT_STAGE \
 			INGEST_AMQP_SERVER \
 			CSUM_DOCKER_IMAGE \
-			CSUM_JOB_Q_ARN \
-			CSUM_JOB_ROLE_ARN \
 			API_HOST
 
 clean:

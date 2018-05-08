@@ -35,8 +35,6 @@ class ChecksumDaemon:
 
     def _read_environment(self):
         self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
-        self.job_q_arn = os.environ['CSUM_JOB_Q_ARN']
-        self.job_role_arn = os.environ['CSUM_JOB_ROLE_ARN']
         self.docker_image = os.environ['CSUM_DOCKER_IMAGE']
         self.ingest_amqp_server = os.environ['INGEST_AMQP_SERVER']
         self.api_host = os.environ["API_HOST"]
@@ -77,7 +75,7 @@ class ChecksumDaemon:
             'CONTAINER': 'DOCKER'
         }
         job_name = "-".join(["csum", self.deployment_stage, uploaded_file.upload_area.uuid, uploaded_file.name])
-        job_id = self._enqueue_batch_job(queue_arn=self.job_q_arn,
+        job_id = self._enqueue_batch_job(queue_arn=self.config.csum_job_q_arn,
                                          job_name=job_name,
                                          job_defn=self._find_or_create_job_definition(),
                                          command=command,
@@ -90,7 +88,7 @@ class ChecksumDaemon:
 
     def _find_or_create_job_definition(self):
         job_defn = JobDefinition(docker_image=self.docker_image, deployment=self.deployment_stage)
-        job_defn.find_or_create(self.job_role_arn)
+        job_defn.find_or_create(self.config.csum_job_role_arn)
         return job_defn
 
     def _enqueue_batch_job(self, queue_arn, job_name, job_defn, command, environment):
