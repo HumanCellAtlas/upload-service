@@ -495,6 +495,25 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+  /v1/health:
+    get:
+      summary: Retreive health status of Upload Service
+      description: |
+        Returns a 200 if Upload Service is healthy.
+      operationId: upload.lambdas.api_server.v1.health_check.health
+      tags:
+        - All
+      responses:
+        200:
+          description: Status is nominnal.
+        503:
+          description: Service unavailable.
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
 
 definitions:
 
