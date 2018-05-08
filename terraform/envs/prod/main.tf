@@ -30,12 +30,11 @@ module "upload-service" {
 
   // Checksumming Batch infrastructure.
   csum_cluster_ec2_key_pair = "${var.csum_cluster_ec2_key_pair}"
-}
 
-module "upload-service-database" {
-  source = "../../modules/database"
-  deployment_stage = "${var.deployment_stage}"
+  // Database
   vpc_rds_security_group_id = "${var.vpc_rds_security_group_id}"
+  db_username = "${var.db_username}"
+  db_password = "${var.db_password}"
 }
 
 output "validation_job_q_arn" {

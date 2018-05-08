@@ -5,9 +5,8 @@ from sqlalchemy import create_engine, MetaData
 
 from .upload_config import UploadConfig
 
-db_config = UploadConfig(secret="database", deployment=(os.environ['DEPLOYMENT_STAGE']))
-uri = f'{db_config.engine}://{db_config.username}:{db_config.password}@{db_config.host}/{db_config.dbname}'
-engine = create_engine(uri)
+config = UploadConfig()
+engine = create_engine(config.database_uri)
 conn = engine.connect()
 
 meta = MetaData(engine, reflect=True)
