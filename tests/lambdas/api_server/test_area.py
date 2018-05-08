@@ -14,6 +14,7 @@ from upload.common.validation_event import UploadedFileValidationEvent
 from upload.common.uploaded_file import UploadedFile
 from upload.common.upload_area import UploadArea
 from upload.common.database import get_pg_record
+from upload.common.upload_config import UploadConfig
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
@@ -24,10 +25,8 @@ class TestApiAuthenticationErrors(UploadTestCaseUsingMockAWS):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         # Setup app
         with EnvironmentSetup({
-            'BUCKET_NAME': "bogobucket",
             'DEPLOYMENT_STAGE': 'test',
             'INGEST_API_KEY': 'unguessable'
         }):
@@ -36,7 +35,6 @@ class TestApiAuthenticationErrors(UploadTestCaseUsingMockAWS):
     def test_call_without_auth_setup(self):
         # Use a different app instance started without an INGEST_API_KEY
         with EnvironmentSetup({
-            'BUCKET_NAME': "bogobucket",
             'DEPLOYMENT_STAGE': 'test',
             'INGEST_API_KEY': None
         }):
@@ -65,12 +63,15 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
     def setUp(self):
         super().setUp()
+        # Config
+        self.config = UploadConfig()
+        self.config.set({
+            'bucket_name': 'bogobucket',
+        })
         # Environment
         self.deployment_stage = 'test'
-        self.upload_bucket_name = f'bogobucket'
         self.api_key = "foo"
         self.environment = {
-            'BUCKET_NAME': self.upload_bucket_name,
             'DEPLOYMENT_STAGE': self.deployment_stage,
             'INGEST_API_KEY': self.api_key,
             'INGEST_AMQP_SERVER': 'foo',
@@ -80,8 +81,9 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         }
         self.environmentor = EnvironmentSetup(self.environment)
         self.environmentor.enter()
+
         # Setup upload bucket
-        self.upload_bucket = boto3.resource('s3').Bucket(self.upload_bucket_name)
+        self.upload_bucket = boto3.resource('s3').Bucket(self.config.bucket_name)
         self.upload_bucket.create()
         # Authentication
         self.authentication_header = {'Api-Key': self.api_key}
@@ -104,7 +106,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         file1_key = f"{area_id}/{filename}"
         s3obj = self.upload_bucket.Object(file1_key)
         s3obj.put(Body=contents, ContentType=content_type)
-        boto3.client('s3').put_object_tagging(Bucket=self.upload_bucket_name, Key=file1_key, Tagging={
+        boto3.client('s3').put_object_tagging(Bucket=self.config.bucket_name, Key=file1_key, Tagging={
             'TagSet': [
                 {'Key': 'hca-dss-content-type', 'Value': content_type},
                 {'Key': 'hca-dss-s3_etag', 'Value': checksums['s3_etag']},
@@ -161,7 +163,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             'size': 3,
             'last_modified': s3obj.last_modified.isoformat(),
             'content_type': "application/json",
-            'url': f"s3://{self.upload_bucket_name}/{area_id}/foo.json",
+            'url': f"s3://{self.config.bucket_name}/{area_id}/foo.json",
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         })
         record = get_pg_record("checksum", checksum_id)
@@ -216,7 +218,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             'size': 3,
             'last_modified': s3obj.last_modified.isoformat(),
             'content_type': "application/json",
-            'url': f"s3://{self.upload_bucket_name}/{area_id}/foo.json",
+            'url': f"s3://{self.config.bucket_name}/{area_id}/foo.json",
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         })
         record = get_pg_record("validation", validation_id)
@@ -249,7 +251,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             self.fail("Staging area (user) was not created!")
         policy = user.Policy(f"upload-{area_id}")
         self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
-        self.assertIn(f'"Resource": ["arn:aws:s3:::{self.upload_bucket_name}/{area_id}/*"]',
+        self.assertIn(f'"Resource": ["arn:aws:s3:::{self.config.bucket_name}/{area_id}/*"]',
                       policy.policy_document)
         record = get_pg_record("upload_area", area_id)
         self.assertEqual(record["status"], "UNLOCKED")
@@ -288,7 +290,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         area_id = str(uuid.uuid4())
         user = boto3.resource('iam').User(f"upload-{self.deployment_stage}-user-{area_id}")
         user.create()
-        bucket = boto3.resource('s3').Bucket(self.upload_bucket_name)
+        bucket = boto3.resource('s3').Bucket(self.config.bucket_name)
         bucket.create()
         obj = bucket.Object(f'{area_id}/test_file')
         obj.put(Body="foo")
@@ -364,7 +366,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             'size': 16,
             'last_modified': o1.last_modified.isoformat(),
             'content_type': 'application/json; dcp-type="metadata/sample"',
-            'url': f"s3://{self.upload_bucket_name}/{area_id}/some.json",
+            'url': f"s3://{self.config.bucket_name}/{area_id}/some.json",
             'checksums': {
                 "crc32c": "FE9ADA52",
                 "s3_etag": "18f17fbfdd21cf869d664731e10d4ffd",
@@ -399,7 +401,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             'name': 'file1.json',
             'last_modified': o1.last_modified.isoformat(),
             'content_type': 'application/json; dcp-type="metadata/foo"',
-            'url': f"s3://{self.upload_bucket_name}/{area_id}/file1.json",
+            'url': f"s3://{self.config.bucket_name}/{area_id}/file1.json",
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         })
         self.assertEqual(data['files'][1], {
@@ -407,7 +409,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             'name': 'file2.fastq.gz',
             'last_modified': o2.last_modified.isoformat(),
             'content_type': 'application/octet-stream; dcp-type=data',
-            'url': f"s3://{self.upload_bucket_name}/{area_id}/file2.fastq.gz",
+            'url': f"s3://{self.config.bucket_name}/{area_id}/file2.fastq.gz",
             'checksums': {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'}
         })
 
@@ -441,7 +443,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             'name': 'file1.json',
             'last_modified': s3obj.last_modified.isoformat(),
             'content_type': 'application/json',
-            'url': f"s3://{self.upload_bucket_name}/{area_id}/file1.json",
+            'url': f"s3://{self.config.bucket_name}/{area_id}/file1.json",
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         })
 
@@ -481,7 +483,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             'name': 'file1.json',
             'last_modified': o1.last_modified.isoformat(),
             'content_type': 'application/json; dcp-type="metadata/foo"',
-            'url': f"s3://{self.upload_bucket_name}/{area_id}/file1.json",
+            'url': f"s3://{self.config.bucket_name}/{area_id}/file1.json",
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         })
         self.assertEqual(data[1], {
@@ -489,7 +491,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             'name': 'file2.fastq.gz',
             'last_modified': o2.last_modified.isoformat(),
             'content_type': 'application/octet-stream; dcp-type=data',
-            'url': f"s3://{self.upload_bucket_name}/{area_id}/file2.fastq.gz",
+            'url': f"s3://{self.config.bucket_name}/{area_id}/file2.fastq.gz",
             'checksums': {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'}
         })
 
