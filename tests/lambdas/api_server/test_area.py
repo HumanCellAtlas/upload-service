@@ -201,6 +201,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(record["status"], "VALIDATING")
         self.assertEqual(str(type(record.get("validation_started_at"))), "<class 'datetime.datetime'>")
         self.assertEqual(record["validation_ended_at"], None)
+        self.assertEqual(record.get("results"), None)
         mock_format_and_send_notification.assert_not_called()
 
         data = {
@@ -225,6 +226,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(record["status"], "VALIDATED")
         self.assertEqual(str(type(record.get("validation_started_at"))), "<class 'datetime.datetime'>")
         self.assertEqual(str(type(record.get("validation_ended_at"))), "<class 'datetime.datetime'>")
+        self.assertEqual(record.get("results"), uploaded_file.info())
 
     @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def test_create_with_unused_upload_area_id(self):

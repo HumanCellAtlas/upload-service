@@ -1,10 +1,12 @@
+import os
 from functools import reduce
 
 import boto3
 from botocore.exceptions import ClientError
 
 from .exceptions import UploadException
-from .database import create_pg_record, update_pg_record, get_pg_record
+if not os.environ.get("CONTAINER"):
+    from .database import create_pg_record, update_pg_record, get_pg_record
 
 s3 = boto3.resource('s3')
 s3client = boto3.client('s3')

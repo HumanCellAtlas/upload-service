@@ -28,6 +28,7 @@ class ValidationScheduler:
         environment['INGEST_AMQP_SERVER'] = os.environ['INGEST_AMQP_SERVER']
         environment['INGEST_API_KEY'] = os.environ['INGEST_API_KEY']
         environment['API_HOST'] = os.environ['API_HOST']
+        environment['CONTAINER'] = 'DOCKER'
         environment['VALIDATION_ID'] = validation_id
         file_s3loc = "s3://{bucket}/{file_key}".format(
             bucket=self.file.upload_area.bucket_name,

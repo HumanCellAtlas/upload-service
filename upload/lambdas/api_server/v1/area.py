@@ -110,6 +110,7 @@ def update_validation_event(upload_area_id: str, validation_id: str, body: str):
                                                    job_id=job_id,
                                                    status=status)
     if validation_event.status == "VALIDATED":
+        validation_event.results = payload
         _notify_ingest(payload, "file_validated")
     validation_event.update_record()
 

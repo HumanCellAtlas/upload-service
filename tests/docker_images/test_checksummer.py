@@ -21,12 +21,14 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
         # Setup environment
         self.deployment_stage = 'test'
         self.upload_bucket_name = 'bogobucket'
+        self.checksum_id = str(uuid.uuid4())
         self.environment = {
             'BUCKET_NAME': self.upload_bucket_name,
             'DEPLOYMENT_STAGE': self.deployment_stage,
             'DCP_EVENTS_TOPIC': 'bogotopic',
             'AWS_BATCH_JOB_ID': '1',
-            'INGEST_AMQP_SERVER': 'bogoamqp'
+            'INGEST_AMQP_SERVER': 'bogoamqp',
+            'CHECKSUM_ID': self.checksum_id
         }
         self.environmentor = EnvironmentSetup(self.environment)
         self.environmentor.enter()
@@ -36,7 +38,6 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
         self.upload_area_id = str(uuid.uuid4())
         self.upload_area = UploadArea(self.upload_area_id)
         self.upload_area.create()
-        self.checksum_id = str(uuid.uuid4())
 
     def tearDown(self):
         super().tearDown()
@@ -66,7 +67,7 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
         self._mock_upload_file(filename, contents=file_contents)
         s3_url = f"s3://{self.upload_bucket_name}/{file_s3_key}"
 
-        Checksummer([s3_url, self.checksum_id])
+        Checksummer([s3_url])
 
         tagging = boto3.client('s3').get_object_tagging(Bucket=self.upload_bucket_name, Key=file_s3_key)
         self.assertEqual(

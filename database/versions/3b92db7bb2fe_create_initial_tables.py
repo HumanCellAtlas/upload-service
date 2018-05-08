@@ -95,6 +95,7 @@ def upgrade():
         sa.Column('file_id', sa.String, nullable=False),
         sa.Column('job_id', sa.String, nullable=False),
         sa.Column('status', validation_event_status_enum, nullable=False),
+        sa.Column('results', JSONB, nullable=True),
         sa.Column('validation_started_at', sa.types.DateTime(timezone=True), nullable=True),
         sa.Column('validation_ended_at', sa.types.DateTime(timezone=True), nullable=True),
         sa.Column('created_at', sa.types.DateTime(timezone=True), nullable=False, server_default=text('now()')),

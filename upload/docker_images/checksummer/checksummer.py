@@ -21,29 +21,33 @@ class Checksummer:
         self._parse_args(argv)
         upload_area, uploaded_file = self._find_file()
         checksummer = UploadedFileChecksummer(uploaded_file)
+        checksum_event = UploadedFileChecksumEvent(file_id=uploaded_file.s3obj.key,
+                                                   checksum_id=os.environ['CHECKSUM_ID'],
+                                                   job_id=os.environ['AWS_BATCH_JOB_ID'],
+                                                   status="CHECKSUMMING")
         if checksummer.has_checksums():
             logger.info(f"File {uploaded_file.name} is already checksummed.")
+            checksum_event.status = "CHECKSUMMED"
+            if not self.args.test:
+                update_event(checksum_event, uploaded_file.info())
         else:
             logger.info(f"Checksumming {uploaded_file.name}...")
-            checksum_event = UploadedFileChecksumEvent(file_id=uploaded_file.s3obj.key,
-                                                       checksum_id=self.checksum_id,
-                                                       job_id=os.environ['AWS_BATCH_JOB_ID'],
-                                                       status="CHECKSUMMING")
-            update_event(checksum_event, uploaded_file.info())
+            if not self.args.test:
+                update_event(checksum_event, uploaded_file.info())
             checksums = self._checksum_file(checksummer, uploaded_file)
             logger.info(f"Checksums {checksums} used to tag file {upload_area.uuid}/{uploaded_file.name}")
             checksum_event.status = "CHECKSUMMED"
-            update_event(checksum_event, uploaded_file.info())
+            if not self.args.test:
+                update_event(checksum_event, uploaded_file.info())
 
     def _parse_args(self, argv):
         parser = argparse.ArgumentParser()
         parser.add_argument('s3_url', metavar="S3_URL", help="S3 URL of file to checksum")
-        parser.add_argument('checksum_id', metavar="CHECKSUM_ID")
+        parser.add_argument('-t', '--test', action='store_true', help="Test only, do not submit results to Upload API")
         self.args = parser.parse_args(args=argv)
         url_bits = parse_url(self.args.s3_url)
         self.bucket_name = url_bits.netloc
         self.s3_object_key = url_bits.path.lstrip('/')
-        self.checksum_id = self.args.checksum_id
         format_logger_with_id(logger, "file_key", self.s3_object_key)
         logger.debug(f"bucket_name {self.bucket_name}")
         logger.debug(f"s3_object_key {self.s3_object_key}")

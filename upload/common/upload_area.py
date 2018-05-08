@@ -10,10 +10,11 @@ from dcplib.media_types import DcpMediaType
 
 from .checksum import UploadedFileChecksummer
 from .uploaded_file import UploadedFile
-from .exceptions import UploadException
-from .database import create_pg_record, update_pg_record
 from .checksum_event import UploadedFileChecksumEvent
+from .exceptions import UploadException
 from .upload_config import UploadConfig
+if not os.environ.get("CONTAINER"):
+    from .database import create_pg_record, update_pg_record
 
 s3 = boto3.resource('s3')
 iam = boto3.resource('iam')
