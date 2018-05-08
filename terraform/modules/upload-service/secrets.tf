@@ -7,6 +7,7 @@ resource "aws_secretsmanager_secret_version" "secrets" {
   secret_string = <<SECRETS_JSON
 {
   "bucket_name": "${aws_s3_bucket.upload_areas_bucket.bucket}",
+  "database_uri": "${module.upload-service-database.database_uri}"
 }
 SECRETS_JSON
 }

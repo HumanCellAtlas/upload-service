@@ -26,6 +26,22 @@ variable "csum_cluster_ec2_key_pair" {
   type = "string"
 }
 
+# Database
+
+variable "vpc_rds_security_group_id" {
+  type = "string"
+}
+
+variable "db_username" {
+  type = "string"
+}
+
+variable "db_password" {
+  type = "string"
+}
+
+# Data Sources
+
 data "aws_caller_identity" "current" {}
 
 data "aws_subnet_ids" "vpc" {

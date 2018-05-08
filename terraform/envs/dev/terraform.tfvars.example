@@ -1,7 +1,6 @@
 // The VPC in which you want your Batch infrastructure deployed.
 vpc_id = "vpc-xxxxxxxx"
 vpc_default_security_group_id = "sg-xxxxxxxx"
-vpc_rds_security_group_id = "sg-xxxxxxxx"
 
 bucket_name_prefix = "org-humancellatlas-upload-"
 
@@ -11,3 +10,8 @@ validation_cluster_ami_id = "ami-xxxxxxxx"
 
 // Checksumming Batch infrastructure.
 validation_cluster_ec2_key_pair = "my-ec2-keypair"
+
+// Database
+vpc_rds_security_group_id = "sg-xxxxxxxx"
+db_username = "xxxxxxxx"
+db_password = "xxxxxxxxxxxxx"

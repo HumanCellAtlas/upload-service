@@ -20,4 +20,19 @@ module "upload-service-database" {
   source = "../../modules/database"
   deployment_stage = "${var.deployment_stage}"
   vpc_rds_security_group_id = "${var.vpc_rds_security_group_id}"
+  db_username = "${var.db_username}"
+  db_password = "${var.db_password}"
+}
+
+resource "aws_secretsmanager_secret" "secrets" {
+  name = "dcp/upload/${var.deployment_stage}/secrets"
+}
+
+resource "aws_secretsmanager_secret_version" "secrets" {
+  secret_id = "${aws_secretsmanager_secret.secrets.id}"
+  secret_string = <<SECRETS_JSON
+{
+  "database_uri": "${module.upload-service-database.database_uri}"
+}
+SECRETS_JSON
 }
