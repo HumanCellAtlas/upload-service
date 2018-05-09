@@ -18,7 +18,6 @@ build:
 		  ../upload/common \
 		chalicelib/upload
 	cp -R ../upload/lambdas/__init__.py \
-		  ../upload/lambdas/common \
 		  ../upload/lambdas/api_server \
 		chalicelib/upload/lambdas
 	mkdir -p chalicelib/config

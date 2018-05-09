@@ -17,7 +17,6 @@ build:
 		  ../../upload/common \
 		domovoilib/upload
 	cp -R ../../upload/lambdas/__init__.py \
-		  ../../upload/lambdas/common \
 		  ../../upload/lambdas/checksum_daemon \
 		domovoilib/upload/lambdas
 	shopt -s nullglob; for wheel in vendor.in/*/*.whl; do unzip -q -o -d vendor $$wheel; done
