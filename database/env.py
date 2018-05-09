@@ -71,13 +71,8 @@ def run_migrations_online():
     if os.environ["DEPLOYMENT_STAGE"] != db_name:
         raise Exception("Deployment stage os environ var and target db arg are different")
 
-    upload_config = UploadConfig(secret="database")
-    host = upload_config.host
-    db = upload_config.dbname
-    username = upload_config.username
-    password = upload_config.password
-    engine = upload_config.engine
-    alembic_config["sqlalchemy.url"] = f'{engine}://{username}:{password}@{host}/{db}'
+    upload_config = UploadConfig()
+    alembic_config["sqlalchemy.url"] = upload_config.database_uri
 
     engine = engine_from_config(
         alembic_config,
@@ -92,6 +87,7 @@ def run_migrations_online():
 
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()
