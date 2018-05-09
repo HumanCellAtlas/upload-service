@@ -15,3 +15,4 @@ validation_cluster_ec2_key_pair = "my-ec2-keypair"
 vpc_rds_security_group_id = "sg-xxxxxxxx"
 db_username = "xxxxxxxx"
 db_password = "xxxxxxxxxxxxx"
+db_instance_count = 1

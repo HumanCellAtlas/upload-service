@@ -13,3 +13,8 @@ variable "db_username" {
 variable "db_password" {
   type = "string"
 }
+
+variable "db_instance_count" {
+  type = "string"
+  default = 2
+}

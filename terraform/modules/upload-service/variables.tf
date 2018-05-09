@@ -40,6 +40,11 @@ variable "db_password" {
   type = "string"
 }
 
+variable "db_instance_count" {
+  type = "string"
+  default = 2
+}
+
 # Data Sources
 
 data "aws_caller_identity" "current" {}

@@ -1,5 +1,5 @@
 resource "aws_rds_cluster_instance" "cluster_instances" {
-  count              = 2
+  count              = "${var.db_instance_count}"
   identifier         = "upload-cluster-${var.deployment_stage}-${count.index}"
   cluster_identifier = "${aws_rds_cluster.upload.id}"
   instance_class     = "db.r4.large"
