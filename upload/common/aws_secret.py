@@ -1,9 +1,5 @@
 import boto3
-import os
 from botocore.errorfactory import ClientError
-
-if not os.environ.get("CONTAINER"):
-    secrets_mgr = boto3.client(service_name='secretsmanager')
 
 
 class AwsSecret:
@@ -23,6 +19,7 @@ class AwsSecret:
 
     def __init__(self, name):
         self.name = name
+        self.secrets_mgr = boto3.client(service_name='secretsmanager')
         self.secret_metadata = None
         self._load()
 
@@ -32,28 +29,28 @@ class AwsSecret:
             raise RuntimeError("No such secret")
         if 'DeletedDate' in self.secret_metadata:
             raise RuntimeError("This secret is deleted")
-        response = secrets_mgr.get_secret_value(SecretId=self.secret_metadata['ARN'])
+        response = self.secrets_mgr.get_secret_value(SecretId=self.secret_metadata['ARN'])
         return response['SecretString']
 
     def update(self, value):
         if not self.secret_metadata:
-            secrets_mgr.create_secret(Name=self.name, SecretString=value)
+            self.secrets_mgr.create_secret(Name=self.name, SecretString=value)
             self._load()
         else:
             self._restore()
-            secrets_mgr.put_secret_value(SecretId=self.secret_metadata['ARN'],
-                                         SecretString=value)
+            self.secrets_mgr.put_secret_value(SecretId=self.secret_metadata['ARN'],
+                                              SecretString=value)
 
     def delete(self):
         if not self.secret_metadata:
             raise RuntimeError("No such secret")
         if 'DeletedDate' not in self.secret_metadata:
-            secrets_mgr.delete_secret(SecretId=self.secret_metadata['ARN'])
+            self.secrets_mgr.delete_secret(SecretId=self.secret_metadata['ARN'])
             self._load()
 
     def _load(self):
         try:
-            response = secrets_mgr.describe_secret(SecretId=self.name)
+            response = self.secrets_mgr.describe_secret(SecretId=self.name)
             if response:
                 self.secret_metadata = response
         except ClientError as e:
@@ -62,5 +59,5 @@ class AwsSecret:
 
     def _restore(self):
         if 'DeletedDate' in self.secret_metadata:
-            secrets_mgr.restore_secret(SecretId=self.secret_metadata['ARN'])
+            self.secrets_mgr.restore_secret(SecretId=self.secret_metadata['ARN'])
             self._load()
