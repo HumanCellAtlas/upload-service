@@ -33,7 +33,8 @@ resource "aws_secretsmanager_secret_version" "secrets" {
   secret_id = "${aws_secretsmanager_secret.secrets.id}"
   secret_string = <<SECRETS_JSON
 {
-  "database_uri": "${module.upload-service-database.database_uri}"
+  "database_uri": "${module.upload-service-database.database_uri}",
+  "bucket_name": "bogo-bucket"
 }
 SECRETS_JSON
 }
