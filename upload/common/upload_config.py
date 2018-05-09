@@ -94,20 +94,21 @@ class Config:
 
     def value_from_config(self, name):
         if name in self.config:
-            logger.debug(f"From config, {name} is {self.config[name]}")
+            # logger.debug(f"From config, {name} is {self.config[name]}")
             return self.config[name]
         else:
             return None
 
     def value_from_env(self, name):
         if self.__class__.use_env and name.upper() in os.environ:
-            logger.debug(f"from env, {name} is in {os.environ[name.upper()]}")
+            # logger.debug(f"from env, {name} is in {os.environ[name.upper()]}")
             return os.environ[name.upper()]
         else:
             return None
 
     def raise_error(self, name):
         raise RuntimeError(f"{name} is not in configuration")
+
 
 class UploadConfig(Config):
 
