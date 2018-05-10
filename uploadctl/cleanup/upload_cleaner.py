@@ -109,6 +109,7 @@ class UploadCleaner:
         last_file_modified_at = datetime.fromtimestamp(0, tz=timezone.utc)
         files = upload_area.ls()['files']
         sys.stdout.write(f"{len(files)} files, ")
+        sys.stdout.flush()
         for file in files:
             file_last_modified = dateutil.parser.parse(file['last_modified'])
             if file_last_modified > last_file_modified_at:
