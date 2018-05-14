@@ -14,22 +14,46 @@ s3client = boto3.client('s3')
 
 class UploadedFile:
 
+    """
+    The UploadedFile class represents newly-uploaded or previously uploaded files.
+
+    If the parameters to __init__() include 'name', 'data', 'content_type': a new file will be created.
+    """
+
     CHECKSUM_TAGS = ('hca-dss-sha1', 'hca-dss-sha256', 'hca-dss-crc32c', 'hca-dss-s3_etag')
 
     @classmethod
     def from_s3_key(cls, upload_area, s3_key):
         s3object = s3.Bucket(upload_area.bucket_name).Object(s3_key)
-        return cls(upload_area, s3object)
+        return cls(upload_area, s3object=s3object)
 
-    def __init__(self, upload_area, s3object):
+    def __init__(self, upload_area, name=None, content_type=None, data=None, s3object=None):
         self.upload_area = upload_area
+        self.s3obj = None
+        self.name = name
+        self.content_type = content_type
+        self.checksums = {}
+        if name and data and content_type:
+            self._create(data)
+        elif s3object:
+            self._load_s3_object(s3object)
+        else:
+            raise RuntimeError("you must provide s3object, or name, content_type and data")
+
+    def _create(self, data):
+        self.s3obj = self.upload_area.s3_object_for_file(self.name)
+        self.s3obj.put(Body=data, ContentType=self.content_type)
+        self.fetch_or_create_db_record()
+
+    def _load_s3_object(self, s3object):
         self.s3obj = s3object
-        self.name = s3object.key[upload_area.key_prefix_length:]  # cut off upload-area-id/
-        self.content_type_tag = None
+        self.name = s3object.key[self.upload_area.key_prefix_length:]  # cut off upload-area-id/
         tags = self._dcp_tags_of_file()
         if 'content-type' in tags:
-            self.content_type_tag = tags['content-type']
+            self.content_type = tags['content-type']
             del tags['content-type']
+        else:
+            self.content_type = self.s3obj.content_type
         self.checksums = tags
 
     def info(self):
@@ -37,7 +61,7 @@ class UploadedFile:
             'upload_area_id': self.upload_area.uuid,
             'name': self.name,
             'size': self.size,
-            'content_type': self.content_type_tag or self.s3obj.content_type,
+            'content_type': self.content_type,
             'url': f"s3://{self.upload_area.bucket_name}/{self.s3obj.key}",
             'checksums': self.checksums,
             'last_modified': self.s3obj.last_modified.isoformat()
