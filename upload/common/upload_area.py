@@ -98,20 +98,21 @@ class UploadArea:
         self.status = "UNLOCKED"
         self._update_record()
 
+    def s3_object_for_file(self, filename):
+        return self._bucket.Object(self.key_prefix + filename)
+
     def store_file(self, filename, content, content_type):
         media_type = DcpMediaType.from_string(content_type)
         if 'dcp-type' not in media_type.parameters:
             raise UploadException(status=400, title="Invalid Content-Type",
                                   detail="Content-Type is missing parameter 'dcp-type'," +
                                          " e.g. 'application/json; dcp-type=\"metadata/sample\"'.")
-        key = f"{self.uuid}/{filename}"
-        s3obj = self._bucket.Object(key)
-        s3obj.put(Body=content, ContentType=content_type)
-        file = UploadedFile(upload_area=self, s3object=s3obj)
-        file.fetch_or_create_db_record()
+
+        file = UploadedFile(upload_area=self, name=filename, content_type=str(media_type), data=content)
+
         checksummer = UploadedFileChecksummer(uploaded_file=file)
         checksum_id = str(uuid.uuid4())
-        checksum_event = UploadedFileChecksumEvent(file_id=key,
+        checksum_event = UploadedFileChecksumEvent(file_id=f"{self.key_prefix}{filename}",
                                                    checksum_id=checksum_id,
                                                    status="CHECKSUMMING")
         checksum_event.create_record()
@@ -124,7 +125,7 @@ class UploadArea:
         return file.info()
 
     def uploaded_file(self, filename):
-        key = f"{self.uuid}/{filename}"
+        key = f"{self.key_prefix}{filename}"
         return UploadedFile.from_s3_key(self, key)
 
     def is_extant(self) -> bool:
