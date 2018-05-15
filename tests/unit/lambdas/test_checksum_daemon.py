@@ -1,5 +1,6 @@
-import sys
+from datetime import datetime, timedelta
 import os
+import sys
 from unittest.mock import Mock, patch
 import uuid
 
@@ -9,6 +10,7 @@ from .. import UploadTestCaseUsingMockAWS, EnvironmentSetup
 
 from upload.common.upload_area import UploadArea
 from upload.common.upload_config import UploadConfig
+from upload.common.database_orm import db_session_maker, DbFile, DbChecksum
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
@@ -55,10 +57,8 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
         self.file_contents = "exquisite corpse"
         self.object = self.upload_bucket.Object(self.file_key)
         self.object.put(Key=self.file_key, Body=self.file_contents, ContentType=self.content_type)
-
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.schedule_checksumming')
-    def test_that_a_batch_job_is_scheduled(self, mock_schedule_checksumming):
-        event = {'Records': [
+        # Event
+        self.event = {'Records': [
             {'eventVersion': '2.0', 'eventSource': 'aws:s3', 'awsRegion': 'us-east-1',
              'eventTime': '2017-09-15T00:05:10.378Z', 'eventName': 'ObjectCreated:Put',
              'userIdentity': {'principalId': 'AWS:AROAI4WRRXW2K3Y2IFL6Q:upload-api-dev'},
@@ -74,6 +74,41 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
                                'eTag': 'fea79d4ad9be6cf1c76a219bb735f85a',
                                'sequencer': '0059BB193641C4EAB0'}}}]}
 
-        self.daemon.consume_event(event)
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.schedule_checksumming')
+    def test_that_if_the_file_has_not_been_checksummed_a_batch_job_is_scheduled(self, mock_schedule_checksumming):
+
+        self.daemon.consume_event(self.event)
+
+        mock_schedule_checksumming.assert_called()
+
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.schedule_checksumming')
+    def test_if_the_file_has_been_summed_since_last_change_a_job_is_not_scheduled(self, mock_schedule_checksumming):
+        session = db_session_maker()
+        file = DbFile(id=self.file_key, upload_area_id=self.upload_area.uuid, name=self.filename, size=123)
+        checksum_time = datetime.utcnow() + timedelta(minutes=5)
+        checksum = DbChecksum(id=str(uuid.uuid4()), file_id=self.file_key, status='CHECKSUMMED',
+                              checksum_started_at=checksum_time, checksum_ended_at=checksum_time,
+                              updated_at=checksum_time)
+        session.add(file)
+        session.add(checksum)
+        session.commit()
+
+        self.daemon.consume_event(self.event)
+
+        mock_schedule_checksumming.assert_not_called()
+
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.schedule_checksumming')
+    def test_if_the_file_has_updated_since_last_csum_then_a_job_is_scheduled(self, mock_schedule_checksumming):
+        session = db_session_maker()
+        file = DbFile(id=self.file_key, upload_area_id=self.upload_area.uuid, name=self.filename, size=123)
+        checksum_time = self.object.last_modified - timedelta(minutes=5)
+        checksum = DbChecksum(id=str(uuid.uuid4()), file_id=self.file_key, status='CHECKSUMMED',
+                              checksum_started_at=checksum_time, checksum_ended_at=checksum_time,
+                              updated_at=checksum_time)
+        session.add(file)
+        session.add(checksum)
+        session.commit()
+
+        self.daemon.consume_event(self.event)
 
         mock_schedule_checksumming.assert_called()
