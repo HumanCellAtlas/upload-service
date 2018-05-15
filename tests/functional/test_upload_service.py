@@ -7,14 +7,10 @@ import unittest
 
 import boto3
 import requests
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
-
 
 from .waitfor import WaitFor
 
-from upload.common.upload_config import UploadConfig
-from upload.common.database_orm import Base, DbUploadArea, DbChecksum, DbValidation
+from upload.common.database_orm import DbUploadArea, DbChecksum, DbValidation, db_session_maker
 
 MINUTE_SEC = 60
 
@@ -50,10 +46,6 @@ class TestUploadService(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.batch = boto3.client('batch')
-        engine = create_engine(UploadConfig().database_uri)
-        Base.metadata.bind = engine
-        self.db_session_maker = sessionmaker()
-        self.db_session_maker.bind = engine
 
     def setUp(self):
         self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
@@ -141,17 +133,17 @@ class TestUploadService(unittest.TestCase):
         return record.status if record else None
 
     def _upload_area_record(self):
-        db = self.db_session_maker()
+        db = db_session_maker()()
         return db.query(DbUploadArea).filter(DbUploadArea.id == self.upload_area_id).one_or_none()
 
     def _checksum_record(self, filename):
-        db = self.db_session_maker()
+        db = db_session_maker()()
         file_id = f"{self.upload_area_id}/{filename}"
         record = db.query(DbChecksum).filter(DbChecksum.file_id == file_id).one_or_none()
         return record
 
     def _validation_record(self, validation_job_id):
-        db = self.db_session_maker()
+        db = db_session_maker()()
         return db.query(DbValidation).filter(DbValidation.job_id == validation_job_id).one_or_none()
 
     def _batch_job_status(self, job_id):
