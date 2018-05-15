@@ -2,6 +2,8 @@ from datetime import datetime
 
 import boto3
 
+from .db_dumper import DbDumper
+
 
 class DiagnosticsCLI:
 
@@ -15,10 +17,19 @@ class DiagnosticsCLI:
         job_parser.set_defaults(command='diag', diag_command='job')
         job_parser.add_argument('validation_id', nargs='?', help="Show data bout this validation job")
 
+        job_parser = diag_subparsers.add_parser('db', description="Dump database records")
+        job_parser.set_defaults(command='diag', diag_command='db')
+        job_parser.add_argument('upload_area_id', nargs='?', help="Show record for this upload area")
+
     @classmethod
     def run(cls, args):
         if args.diag_command == 'job':
             cls().describe_validation_job(args.validation_id)
+        elif args.diag_command == 'db':
+            if args.upload_area_id:
+                DbDumper().dump_one_area(args.upload_area_id)
+            else:
+                DbDumper().dump_all()
 
     def __init__(self):
         self.batch = boto3.client('batch')
