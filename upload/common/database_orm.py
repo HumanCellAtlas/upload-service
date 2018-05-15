@@ -15,8 +15,8 @@ class DbUploadArea(Base):
     id = Column(String(), primary_key=True)
     bucket_name = Column(String(), nullable=False)
     status = Column(String(), nullable=False)
-    created_at = Column(DateTime(), nullable=False)
-    updated_at = Column(DateTime(), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, nullable=False, onupdate=datetime.utcnow)
 
 
 class DbFile(Base):
@@ -25,8 +25,8 @@ class DbFile(Base):
     upload_area_id = Column(String(), ForeignKey('upload_area.id'), nullable=False)
     name = Column(String(), nullable=False)
     size = Column(Integer(), nullable=False)
-    created_at = Column(DateTime(), nullable=False)
-    updated_at = Column(DateTime(), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, nullable=False, onupdate=datetime.utcnow)
 
     upload_area = relationship("DbUploadArea", back_populates="files")
 
@@ -40,8 +40,8 @@ class DbChecksum(Base):
     checksums = Column(String(), nullable=False)
     checksum_started_at = Column(DateTime(), nullable=False)
     checksum_ended_at = Column(DateTime(), nullable=False)
-    created_at = Column(DateTime(), nullable=False)
-    updated_at = Column(DateTime(), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, nullable=False, onupdate=datetime.utcnow)
 
     file = relationship("DbFile", back_populates='checksums')
 
@@ -55,8 +55,8 @@ class DbValidation(Base):
     results = Column(String(), nullable=False)
     validation_started_at = Column(DateTime(), nullable=False)
     validation_ended_at = Column(DateTime(), nullable=False)
-    created_at = Column(DateTime(), nullable=False)
-    updated_at = Column(DateTime(), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, nullable=False, onupdate=datetime.utcnow)
 
     file = relationship("DbFile", back_populates='validations')
 
