@@ -20,6 +20,7 @@ class DiagnosticsCLI:
         job_parser = diag_subparsers.add_parser('db', description="Dump database records")
         job_parser.set_defaults(command='diag', diag_command='db')
         job_parser.add_argument('upload_area_id', nargs='?', help="Show record for this upload area")
+        job_parser.add_argument('filename', nargs='?', help="Show record for this file in the upload area")
 
     @classmethod
     def run(cls, args):
@@ -27,7 +28,7 @@ class DiagnosticsCLI:
             cls().describe_validation_job(args.validation_id)
         elif args.diag_command == 'db':
             if args.upload_area_id:
-                DbDumper().dump_one_area(args.upload_area_id)
+                DbDumper().dump_one_area(args.upload_area_id, args.filename)
             else:
                 DbDumper().dump_all()
 
