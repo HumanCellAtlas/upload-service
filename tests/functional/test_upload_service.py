@@ -3,14 +3,18 @@ import json
 import os
 import random
 import subprocess
-import time
 import unittest
 
 import boto3
 import requests
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+
 
 from .waitfor import WaitFor
-from .db import db_session_maker, AreaRecord, ChecksumRecord, ValidationRecord
+
+from upload.common.upload_config import UploadConfig
+from upload.common.database_orm import Base, DbUploadArea, DbChecksum, DbValidation
 
 MINUTE_SEC = 60
 
@@ -46,6 +50,10 @@ class TestUploadService(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.batch = boto3.client('batch')
+        engine = create_engine(UploadConfig().database_uri)
+        Base.metadata.bind = engine
+        self.db_session_maker = sessionmaker()
+        self.db_session_maker.bind = engine
 
     def setUp(self):
         self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
@@ -81,8 +89,8 @@ class TestUploadService(unittest.TestCase):
         self._run("UPLOAD FILE USING CLI", ['hca', 'upload', 'file', filename])
 
     def _verify_file_is_checksummed(self, filename):
-        time.sleep(3)
-        self.assertEqual('SCHEDULED', self._checksum_record_status(filename))
+        WaitFor(self._checksum_record_status, filename)\
+            .to_return_value('SCHEDULED', timeout_seconds=30)
 
         csum_record = self._checksum_record(filename)
         WaitFor(self._batch_job_status, csum_record.job_id)\
@@ -121,24 +129,30 @@ class TestUploadService(unittest.TestCase):
         self.assertEqual('DELETED', self._upload_area_record_status())
 
     def _upload_area_record_status(self):
-        db = db_session_maker()
-        return db.query(AreaRecord).filter(AreaRecord.id == self.upload_area_id).one().status
+        record = self._upload_area_record()
+        return record.status if record else None
 
     def _checksum_record_status(self, filename):
-        return self._checksum_record(filename).status
+        record = self._checksum_record(filename)
+        return record.status if record else None
 
     def _validation_record_status(self, validation_job_id):
-        return self._validation_record(validation_job_id).status
+        record = self._validation_record(validation_job_id)
+        return record.status if record else None
+
+    def _upload_area_record(self):
+        db = self.db_session_maker()
+        return db.query(DbUploadArea).filter(DbUploadArea.id == self.upload_area_id).one_or_none()
 
     def _checksum_record(self, filename):
-        db = db_session_maker()
+        db = self.db_session_maker()
         file_id = f"{self.upload_area_id}/{filename}"
-        record = db.query(ChecksumRecord).filter(ChecksumRecord.file_id == file_id).one()
+        record = db.query(DbChecksum).filter(DbChecksum.file_id == file_id).one_or_none()
         return record
 
     def _validation_record(self, validation_job_id):
-        db = db_session_maker()
-        return db.query(ValidationRecord).filter(ValidationRecord.job_id == validation_job_id).one()
+        db = self.db_session_maker()
+        return db.query(DbValidation).filter(DbValidation.job_id == validation_job_id).one_or_none()
 
     def _batch_job_status(self, job_id):
         response = self.batch.describe_jobs(jobs=[job_id])
