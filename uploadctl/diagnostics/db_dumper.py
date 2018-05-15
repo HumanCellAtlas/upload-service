@@ -1,17 +1,9 @@
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
-
-from upload.common.upload_config import UploadConfig
-from upload.common.database_orm import Base, DbUploadArea, DbFile
+from upload.common.database_orm import db_session_maker, DbUploadArea, DbFile
 
 
 class DbDumper:
 
     def __init__(self):
-        engine = create_engine(UploadConfig().database_uri)
-        Base.metadata.bind = engine
-        db_session_maker = sessionmaker()
-        db_session_maker.bind = engine
         self.db = db_session_maker()
 
     def dump_all(self):
@@ -31,7 +23,6 @@ class DbDumper:
     def print_area(self, area):
         print(f"\nUPLOAD AREA {area.bucket_name}/{area.id}:\n"
               f"\tStatus {area.status} Created {area.created_at} Updated {area.updated_at}")
-
 
     def print_file(self, file):
         print(f"\t{file.name}")

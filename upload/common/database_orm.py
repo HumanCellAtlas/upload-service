@@ -1,6 +1,11 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from datetime import datetime
+
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, sessionmaker
+
+from upload.common.upload_config import UploadConfig
+
 
 Base = declarative_base()
 
@@ -59,3 +64,8 @@ class DbValidation(Base):
 DbUploadArea.files = relationship('DbFile', order_by=DbFile.id, back_populates='upload_area')
 DbFile.checksums = relationship('DbChecksum', order_by=DbChecksum.created_at, back_populates='file')
 DbFile.validations = relationship('DbValidation', order_by=DbValidation.created_at, back_populates='file')
+
+engine = create_engine(UploadConfig().database_uri)
+Base.metadata.bind = engine
+db_session_maker = sessionmaker()
+db_session_maker.bind = engine
