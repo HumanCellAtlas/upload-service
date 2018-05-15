@@ -6,6 +6,7 @@ import boto3
 from six.moves import urllib
 from ...common.upload_area import UploadArea
 from ...common.checksum_event import UploadedFileChecksumEvent
+from ...common.database_orm import db_session_maker, DbChecksum
 from ...common.logging import get_logger
 from ...common.logging import format_logger_with_id
 from ...common.batch import JobDefinition
@@ -46,8 +47,11 @@ class ChecksumDaemon:
                 continue
             file_key = record['s3']['object']['key']
             self._find_file(file_key)
-            logger.debug("Scheduling checksumming batch job")
-            self.schedule_checksumming(self.uploaded_file)
+            if self._the_file_was_checksummed_more_recently_than_it_was_modified(file_key):
+                logger.debug("Checksum batch job not scheduled.")
+            else:
+                logger.debug("Scheduling checksumming batch job")
+                self.schedule_checksumming(self.uploaded_file)
 
     def _find_file(self, file_key):
         format_logger_with_id(logger, "file_key", file_key)
@@ -60,6 +64,16 @@ class ChecksumDaemon:
         self.upload_area = UploadArea(area_uuid)
         self.uploaded_file = self.upload_area.uploaded_file(filename)
         self.uploaded_file.fetch_or_create_db_record()
+
+    def _the_file_was_checksummed_more_recently_than_it_was_modified(self, file_key):
+        db_session = db_session_maker()
+        checksums = db_session.query(DbChecksum).filter(DbChecksum.file_id == file_key).all()
+        for csum in checksums:
+            if csum.updated_at >= self.uploaded_file.s3obj.last_modified:
+                logger.debug(f"Found a checksum ({csum.id}) which is newer ({csum.updated_at}) than "
+                             f"the file data ({self.uploaded_file.s3obj.last_modified})")
+                return True
+        return False
 
     JOB_NAME_ALLOWABLE_CHARS = '[^\w-]'
 
