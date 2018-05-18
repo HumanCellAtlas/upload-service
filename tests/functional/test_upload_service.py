@@ -133,17 +133,17 @@ class TestUploadService(unittest.TestCase):
         return record.status if record else None
 
     def _upload_area_record(self):
-        db = db_session_maker()()
+        db = db_session_maker()
         return db.query(DbUploadArea).filter(DbUploadArea.id == self.upload_area_id).one_or_none()
 
     def _checksum_record(self, filename):
-        db = db_session_maker()()
+        db = db_session_maker()
         file_id = f"{self.upload_area_id}/{filename}"
         record = db.query(DbChecksum).filter(DbChecksum.file_id == file_id).one_or_none()
         return record
 
     def _validation_record(self, validation_job_id):
-        db = db_session_maker()()
+        db = db_session_maker()
         return db.query(DbValidation).filter(DbValidation.job_id == validation_job_id).one_or_none()
 
     def _batch_job_status(self, job_id):
