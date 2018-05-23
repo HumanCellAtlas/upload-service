@@ -14,6 +14,7 @@ class UploadedFileChecksumEvent:
         self.id = kwargs["checksum_id"]
         self.file_id = kwargs["file_id"]
         self.status = kwargs["status"]
+        self.checksums = None
 
     def _format_prop_vals_dict(self):
         vals_dict = {
