@@ -9,6 +9,7 @@ import boto3
 import requests
 
 from .waitfor import WaitFor
+from .. import fixture_file_path, FIXTURE_DATA_CHECKSUMS
 
 from upload.common.database_orm import DbUploadArea, DbChecksum, DbValidation, db_session_maker
 
@@ -57,12 +58,19 @@ class TestUploadService(unittest.TestCase):
         print(f"\n\nUsing environment {self.deployment_stage} at URL {self.api_url}.\n")
 
         self.upload_area_id = "deadbeef-dead-dead-dead-%012d" % random.randint(0, 999999999999)
-        filename = 'LICENSE'
-
         self._create_upload_area()
-        self._upload_file_using_cli(filename)
-        self._verify_file_is_checksummed(filename)
-        self._validate_file(filename)
+
+        small_file_name = 'small_file'
+        small_file_path = fixture_file_path(small_file_name)
+        self._upload_file_using_cli(small_file_path)
+        self._verify_file_was_checksummed_inline(small_file_name)
+
+        large_file_name = '4097MB_file'
+        self._copy_file_directly_to_upload_area(large_file_name)
+        self._verify_file_is_checksummed_via_batch(large_file_name)
+
+        self._validate_file(small_file_name)
+
         self._forget_upload_area()
         self._delete_upload_area()
 
@@ -76,11 +84,28 @@ class TestUploadService(unittest.TestCase):
         self.urn = UploadAreaURN(data['urn'])
         self.assertEqual('UNLOCKED', self._upload_area_record_status())
 
-    def _upload_file_using_cli(self, filename):
+    def _upload_file_using_cli(self, file_path):
         self._run("SELECT UPLOAD AREA", ['hca', 'upload', 'select', self.urn.urn])
-        self._run("UPLOAD FILE USING CLI", ['hca', 'upload', 'file', filename])
+        self._run("UPLOAD FILE USING CLI", ['hca', 'upload', 'file', file_path])
 
-    def _verify_file_is_checksummed(self, filename):
+    def _copy_file_directly_to_upload_area(self, filename):
+        source_url = f"s3://org-humancellatlas-dcp-test-data/upload_service/{filename}"
+        target_url = "s3://org-humancellatlas-upload-{env}/{uuid}/{filename}".format(
+            env=os.environ['DEPLOYMENT_STAGE'], uuid=self.upload_area_id, filename=filename)
+
+        self._run("COPY S3 FILE TO UPLOAD AREA", ['aws', 's3', 'cp', source_url, target_url])
+
+    def _verify_file_was_checksummed_inline(self, filename):
+        print("VERIFY FILE WAS CHECKSUMMED INLINE...")
+        WaitFor(self._checksum_record_status, filename)\
+            .to_return_value('CHECKSUMMED', timeout_seconds=30)
+
+        # Inline checksums get no job_id
+        checksum_record = self._checksum_record(filename)
+        self.assertEqual(None, checksum_record.job_id)
+        self.assertEqual(FIXTURE_DATA_CHECKSUMS['small_file']['checksums'], checksum_record.checksums)
+
+    def _verify_file_is_checksummed_via_batch(self, filename):
         WaitFor(self._checksum_record_status, filename)\
             .to_return_value('SCHEDULED', timeout_seconds=30)
 
@@ -88,9 +113,9 @@ class TestUploadService(unittest.TestCase):
         WaitFor(self._batch_job_status, csum_record.job_id)\
             .to_return_value('SUCCEEDED', timeout_seconds=20 * MINUTE_SEC)
 
-        self.assertEqual('CHECKSUMMED', self._checksum_record_status(filename))
-
-        # TODO: pull checksums out of S3 and check them
+        checksum_record = self._checksum_record(filename)
+        self.assertEqual('CHECKSUMMED', checksum_record.status)
+        self.assertEqual(FIXTURE_DATA_CHECKSUMS[filename]['checksums'], checksum_record.checksums)
 
     def _validate_file(self, filename):
         response = self._make_request(description="VALIDATE",
@@ -168,7 +193,7 @@ class TestUploadService(unittest.TestCase):
         return response.content
 
     def _run(self, description, command, expected_returncode=0):
-        print("\n", description + ": ")
+        print("\n" + description + ": ")
         print(' '.join(command))
         completed_process = subprocess.run(command, stdout=None, stderr=None)
         self.assertEqual(expected_returncode, completed_process.returncode)
