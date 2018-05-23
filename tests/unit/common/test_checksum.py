@@ -3,7 +3,8 @@ from unittest.mock import patch
 
 import boto3
 
-from .. import UploadTestCaseUsingMockAWS, EnvironmentSetup, FIXTURE_DATA_CHECKSUMS
+from .. import UploadTestCaseUsingMockAWS, EnvironmentSetup
+from ... import FIXTURE_DATA_CHECKSUMS
 
 from upload.common.upload_area import UploadArea
 from upload.common.checksum import UploadedFileChecksummer

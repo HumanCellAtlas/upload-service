@@ -1,6 +1,7 @@
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import PropertyMock, patch
 
-from .. import UploadTestCaseUsingLiveAWS, EnvironmentSetup, fixture_file_path
+from .. import UploadTestCaseUsingLiveAWS, EnvironmentSetup
+from ... import fixture_file_path
 
 from upload.common.aws_secret import AwsSecret
 from upload.common.upload_config import UploadConfig
