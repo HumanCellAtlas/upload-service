@@ -1,6 +1,4 @@
 import time
-import uuid
-from datetime import datetime
 import boto3
 from boto3.s3.transfer import TransferConfig
 from dcplib.checksumming_io import ChecksummingSink
