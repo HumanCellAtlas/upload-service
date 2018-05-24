@@ -14,7 +14,7 @@ resource "aws_ecs_task_definition" "pgbouncer" {
     "environment": [
       {
         "name": "DATABASE_URL",
-        "value": "postgresql://${var.db_username}:${var.db_password}@upload-dev.cluster-cdaogjt23uha.us-east-1.rds.amazonaws.com/upload_${var.deployment_stage}"
+        "value": "postgresql://${var.db_username}:${var.db_password}@${aws_rds_cluster.upload.endpoint}/upload_${var.deployment_stage}"
       },
       {
         "name": "DEFAULT_POOL_SIZE",
