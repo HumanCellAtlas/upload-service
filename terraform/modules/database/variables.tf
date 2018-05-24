@@ -1,3 +1,15 @@
+variable "subnet_id" {
+  type = "string"
+}
+
+variable "subnet_ids" {
+  type = "list"
+}
+
+variable "vpc_id" {
+  type = "string"
+}
+
 variable "deployment_stage" {
   type = "string"
 }
