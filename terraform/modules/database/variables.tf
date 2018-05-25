@@ -1,8 +1,8 @@
-variable "subnet_id" {
+variable "pgbouncer_subnet_id" {
   type = "string"
 }
 
-variable "subnet_ids" {
+variable "lb_subnet_ids" {
   type = "list"
 }
 
