@@ -1,3 +1,15 @@
+variable "pgbouncer_subnet_id" {
+  type = "string"
+}
+
+variable "lb_subnet_ids" {
+  type = "list"
+}
+
+variable "vpc_id" {
+  type = "string"
+}
+
 variable "deployment_stage" {
   type = "string"
 }

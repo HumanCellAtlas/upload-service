@@ -7,7 +7,7 @@ from .upload_config import UploadConfig
 
 config = UploadConfig()
 engine = create_engine(config.database_uri)
-conn = engine.connect()
+
 
 meta = MetaData(engine, reflect=True)
 
@@ -25,7 +25,7 @@ def create_pg_record(record_type, prop_vals_dict):
     prop_vals_dict["updated_at"] = datetime.utcnow()
     table = record_type_table_map[record_type]
     ins = table.insert().values(prop_vals_dict)
-    conn.execute(ins)
+    engine.execute(ins)
 
 
 def update_pg_record(record_type, prop_vals_dict):
@@ -34,13 +34,13 @@ def update_pg_record(record_type, prop_vals_dict):
     prop_vals_dict["updated_at"] = datetime.utcnow()
     table = record_type_table_map[record_type]
     update = table.update().where(table.c.id == record_id).values(prop_vals_dict)
-    conn.execute(update)
+    engine.execute(update)
 
 
 def get_pg_record(record_type, record_id):
     table = record_type_table_map[record_type]
     select = table.select().where(table.c.id == record_id)
-    result = conn.execute(select)
+    result = engine.execute(select)
     column_keys = result.keys()
     rows = result.fetchall()
     if len(rows) == 0:
