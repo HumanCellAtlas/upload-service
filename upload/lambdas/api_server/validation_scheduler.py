@@ -7,6 +7,7 @@ import boto3
 
 from ...common.uploaded_file import UploadedFile
 from ...common.batch import JobDefinition
+from ...common.retry import retry_on_aws_too_many_requests
 from ...common.validation_event import UploadedFileValidationEvent
 from ...common.upload_config import UploadConfig
 
@@ -52,6 +53,7 @@ class ValidationScheduler:
             job_defn.create(job_role_arn=self.config.validation_job_role_arn)
         return job_defn
 
+    @retry_on_aws_too_many_requests
     def _enqueue_batch_job(self, job_defn, command, environment):
         job_name = "-".join(["validation", os.environ['DEPLOYMENT_STAGE'], self.file.upload_area.uuid, self.file.name])
         job_name = re.sub(self.JOB_NAME_ALLOWABLE_CHARS, "", job_name)[0:128]

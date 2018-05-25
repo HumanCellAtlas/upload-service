@@ -4,6 +4,8 @@ import os
 
 import boto3
 
+from .retry import retry_on_aws_too_many_requests
+
 batch = boto3.client('batch')
 
 
@@ -37,7 +39,7 @@ class JobDefinition:
         return self
 
     def load(self):
-        jobdefs = batch.describe_job_definitions(jobDefinitionName=self.name, status='ACTIVE')['jobDefinitions']
+        jobdefs = self._describe_job_definitions(jobDefinitionName=self.name, status='ACTIVE')['jobDefinitions']
         if len(jobdefs) > 0:
             self.metadata = jobdefs[0]
             self.arn = self.metadata['jobDefinitionArn']
@@ -45,6 +47,7 @@ class JobDefinition:
         else:
             return None
 
+    @retry_on_aws_too_many_requests
     def create(self, job_role_arn):
         self.metadata = batch.register_job_definition(
             jobDefinitionName=self.name,
@@ -81,6 +84,10 @@ class JobDefinition:
     def delete(self):
         print(f"Deleting job definition {self.name} ({self.docker_image})")
         batch.deregister_job_definition(jobDefinition=self.arn)
+
+    @retry_on_aws_too_many_requests
+    def _describe_job_definitions(self, *args, **kwargs):
+        return batch.describe_job_definitions(*args, **kwargs)
 
     def _job_definition_name(self):
         """

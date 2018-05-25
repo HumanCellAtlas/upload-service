@@ -4,14 +4,15 @@ import re
 import uuid
 import boto3
 from six.moves import urllib
-from ...common.upload_area import UploadArea
+from ...common.batch import JobDefinition
 from ...common.checksum import UploadedFileChecksummer
 from ...common.checksum_event import UploadedFileChecksumEvent
 from ...common.database_orm import db_session_maker, DbChecksum
 from ...common.ingest_notifier import IngestNotifier
 from ...common.logging import get_logger
 from ...common.logging import format_logger_with_id
-from ...common.batch import JobDefinition
+from ...common.retry import retry_on_aws_too_many_requests
+from ...common.upload_area import UploadArea
 from ...common.upload_config import UploadConfig
 
 logger = get_logger(__name__)
@@ -138,6 +139,7 @@ class ChecksumDaemon:
 
     JOB_NAME_ALLOWABLE_CHARS = '[^\w-]'
 
+    @retry_on_aws_too_many_requests
     def _enqueue_batch_job(self, queue_arn, job_name, job_defn, command, environment):
         job_name = re.sub(self.JOB_NAME_ALLOWABLE_CHARS, "", job_name)[0:128]
         job = batch.submit_job(
