@@ -1,16 +1,13 @@
 from datetime import datetime
-import os
 
 from sqlalchemy import create_engine, MetaData
+from sqlalchemy.exc import OperationalError
 
 from .upload_config import UploadConfig
 
 config = UploadConfig()
-engine = create_engine(config.database_uri)
-
-
+engine = create_engine(config.pgbouncer_uri, pool_size=1)
 meta = MetaData(engine, reflect=True)
-
 record_type_table_map = {
     "upload_area": meta.tables['upload_area'],
     "file": meta.tables['file'],
@@ -25,7 +22,7 @@ def create_pg_record(record_type, prop_vals_dict):
     prop_vals_dict["updated_at"] = datetime.utcnow()
     table = record_type_table_map[record_type]
     ins = table.insert().values(prop_vals_dict)
-    engine.execute(ins)
+    _run_query(ins)
 
 
 def update_pg_record(record_type, prop_vals_dict):
@@ -34,13 +31,13 @@ def update_pg_record(record_type, prop_vals_dict):
     prop_vals_dict["updated_at"] = datetime.utcnow()
     table = record_type_table_map[record_type]
     update = table.update().where(table.c.id == record_id).values(prop_vals_dict)
-    engine.execute(update)
+    _run_query(update)
 
 
 def get_pg_record(record_type, record_id):
     table = record_type_table_map[record_type]
     select = table.select().where(table.c.id == record_id)
-    result = engine.execute(select)
+    result = _run_query(select)
     column_keys = result.keys()
     rows = result.fetchall()
     if len(rows) == 0:
@@ -53,3 +50,12 @@ def get_pg_record(record_type, record_id):
             column = column_keys[idx]
             output[column] = val
         return output
+
+
+def _run_query(query):
+    try:
+        results = engine.execute(query)
+    except OperationalError as e:
+        engine.dispose()
+        results = engine.execute(query)
+    return results

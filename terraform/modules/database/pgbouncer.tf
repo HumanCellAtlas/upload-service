@@ -109,4 +109,5 @@ resource "aws_lb_target_group" "pgbouncer" {
 
 resource "aws_cloudwatch_log_group" "pgbouncer" {
   name = "/aws/service/upload-pgbouncer-${var.deployment_stage}"
+  retention_in_days = 90
 }

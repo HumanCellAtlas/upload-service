@@ -23,8 +23,8 @@ module "upload-service-database" {
   db_username = "${var.db_username}"
   db_password = "${var.db_password}"
   db_instance_count = "${var.db_instance_count}"
-  subnet_id = "${element(data.aws_subnet_ids.vpc.ids, 0)}"
-  subnet_ids = "${data.aws_subnet_ids.vpc.ids}"
+  pgbouncer_subnet_id = "${element(data.aws_subnet_ids.vpc.ids, 0)}"
+  lb_subnet_ids = "${data.aws_subnet_ids.vpc.ids}"
   vpc_id = "${var.vpc_id}"
 }
 
@@ -37,6 +37,7 @@ resource "aws_secretsmanager_secret_version" "secrets" {
   secret_string = <<SECRETS_JSON
 {
   "database_uri": "${module.upload-service-database.database_uri}",
+  "pgbouncer_uri": "${module.upload-service-database.pgbouncer_uri}",
   "bucket_name": "bogo-bucket"
 }
 SECRETS_JSON
