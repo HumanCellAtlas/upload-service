@@ -26,7 +26,11 @@ batch = boto3.client('batch')
 
 class ChecksumDaemon:
 
-    RECOGNIZED_S3_EVENTS = ('ObjectCreated:Put', 'ObjectCreated:CompleteMultipartUpload')
+    RECOGNIZED_S3_EVENTS = (
+        'ObjectCreated:Put',
+        'ObjectCreated:CompleteMultipartUpload',
+        'ObjectCreated:Copy'
+    )
     USE_BATCH_IF_FILE_LARGER_THAN = 4 * GB
 
     def __init__(self, context):
