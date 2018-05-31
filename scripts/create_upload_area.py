@@ -53,7 +53,7 @@ def check_and_create_directories(args, credential_dir_path, credential_file_path
 
 
 def write_credentials_to_disk(args, urn, credential_file_path):
-    proj_cred_line = "Dataset name:{0}\nCLI URN to copy for HCA Upload Select:{1}\n".format(args.dataset_name, urn)
+    proj_cred_line = "Dataset name:{0}\nCLI URN to copy for HCA Upload Select:{1}\n\n".format(args.dataset_name, urn)
     with open(credential_file_path, "a") as myfile:
         myfile.write(proj_cred_line)
     print("\nDataset name: {0}\n".format(args.dataset_name))

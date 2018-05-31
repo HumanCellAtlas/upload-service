@@ -7,8 +7,6 @@ adduser $user
 adduser $user wranglers
 mkdir -p /home/$user/.ssh
 touch /home/$user/.ssh/authorized_keys
-useradd -d /home/$user $user
-chown root:root /home/$user
 chmod 700 /home/$user/.ssh
 chmod 644 /home/$user/.ssh/authorized_keys
 echo "Type user public ssh key, followed by [ENTER]:"
@@ -17,4 +15,3 @@ echo $userkey >> /home/$user/.ssh/authorized_keys
 cd /home/$user
 hca
 chown -R $user:$user /home/$user/
-sudo /etc/init.d/ssh restart
