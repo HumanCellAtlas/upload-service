@@ -28,6 +28,7 @@ class UploadArea:
 
     def __init__(self, uuid):
         self.uuid = uuid
+        self.status = None
         self.config = UploadConfig()
         self.key_prefix = f"{self.uuid}/"
         self.key_prefix_length = len(self.key_prefix)
@@ -83,18 +84,10 @@ class UploadArea:
         return {'files': self._file_list()}
 
     def lock(self):
-        self.status = "LOCKING"
-        self._update_record()
-        iam.UserPolicy(self.user_name, self.access_policy_name).delete()
-        time.sleep(self.IAM_SETTLE_TIME_SEC)
         self.status = "LOCKED"
         self._update_record()
 
     def unlock(self):
-        self.status = "UNLOCKING"
-        self._update_record()
-        self._set_access_policy()
-        time.sleep(self.IAM_SETTLE_TIME_SEC)
         self.status = "UNLOCKED"
         self._update_record()
 

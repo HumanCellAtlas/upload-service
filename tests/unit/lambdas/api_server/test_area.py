@@ -311,20 +311,14 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.content_type, 'application/problem+json')
 
-    @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def test_locking_of_upload_area(self):
         area_id = self._create_area()
-        user_name = f"upload-{self.deployment_stage}-user-" + area_id
-        policy_name = 'upload-' + area_id
-        policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
-        self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
         record = get_pg_record("upload_area", area_id)
         self.assertEqual(record["status"], "UNLOCKED")
 
         response = self.client.post(f"/v1/area/{area_id}/lock", headers=self.authentication_header)
 
         self.assertEqual(response.status_code, 204)
-        self.assertEqual(len(list(boto3.resource('iam').User(user_name).policies.all())), 0)
         record = get_pg_record("upload_area", area_id)
         self.assertEqual(record["status"], "LOCKED")
 
@@ -333,9 +327,6 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(response.status_code, 204)
         record = get_pg_record("upload_area", area_id)
         self.assertEqual(record["status"], "UNLOCKED")
-
-        policy = boto3.resource('iam').UserPolicy(user_name, policy_name)
-        self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
 
     def test_put_file_without_content_type_dcp_type_param(self):
         headers = {'Content-Type': 'application/json'}
