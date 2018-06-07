@@ -7,8 +7,10 @@ resource "aws_batch_compute_environment" "csum_compute_env" {
     bid_percentage = 100
     spot_iam_fleet_role = "${aws_iam_role.AmazonEC2SpotFleetRole.arn}"
     max_vcpus = 64
-    min_vcpus = 0
-    desired_vcpus = 0
+    min_vcpus = "${var.csum_cluster_min_vcpus}"
+    // We set desired vcpus to min vcpus, as that is the resting state in AWS
+    // and otherwise we get a change on every apply.
+    desired_vcpus = "${var.csum_cluster_min_vcpus}"
     instance_type = [
       "m4"
     ]

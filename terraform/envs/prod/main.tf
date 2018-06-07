@@ -33,9 +33,11 @@ module "upload-service" {
   // Validation Batch infrastructure.
   validation_cluster_ec2_key_pair = "${var.validation_cluster_ec2_key_pair}"
   validation_cluster_ami_id = "${var.validation_cluster_ami_id}"
+  validation_cluster_min_vcpus = "${var.validation_cluster_min_vcpus}"
 
   // Checksumming Batch infrastructure.
   csum_cluster_ec2_key_pair = "${var.csum_cluster_ec2_key_pair}"
+  csum_cluster_min_vcpus = "${var.csum_cluster_min_vcpus}"
 
   // Database
   vpc_rds_security_group_id = "${var.vpc_rds_security_group_id}"

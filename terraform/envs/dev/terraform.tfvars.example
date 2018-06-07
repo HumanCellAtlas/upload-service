@@ -14,9 +14,11 @@ ingest_api_key = "xxxxxxxxxxxxxxxxxxxx"
 // Validation Batch infrastructure.
 validation_cluster_ec2_key_pair = "my-ec2-keypair"
 validation_cluster_ami_id = "ami-xxxxxxxx"
+validation_cluster_min_vcpus = 0
 
 // Checksumming Batch infrastructure.
-validation_cluster_ec2_key_pair = "my-ec2-keypair"
+csum_cluster_ec2_key_pair = "my-ec2-keypair"
+csum_cluster_min_vcpus = 0
 
 // Database
 vpc_rds_security_group_id = "sg-xxxxxxxx"

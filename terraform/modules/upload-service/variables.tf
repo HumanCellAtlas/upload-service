@@ -30,12 +30,17 @@ variable "ingest_api_key" {
 variable "validation_cluster_ec2_key_pair" {
   type = "string"
 }
-
 variable "validation_cluster_ami_id" {
+  type = "string"
+}
+variable "validation_cluster_min_vcpus" {
   type = "string"
 }
 
 variable "csum_cluster_ec2_key_pair" {
+  type = "string"
+}
+variable "csum_cluster_min_vcpus" {
   type = "string"
 }
 
