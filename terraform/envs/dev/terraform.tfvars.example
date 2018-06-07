@@ -1,8 +1,15 @@
+deployment_stage = "XXX"
+
 // The VPC in which you want your Batch infrastructure deployed.
 vpc_id = "vpc-xxxxxxxx"
 vpc_default_security_group_id = "sg-xxxxxxxx"
 
+// S3
 bucket_name_prefix = "org-humancellatlas-upload-"
+
+// API Lambda
+upload_api_fqdn = "upload.<deployment_stage>.data.humancellatlas.org"
+ingest_api_key = "xxxxxxxxxxxxxxxxxxxx"
 
 // Validation Batch infrastructure.
 validation_cluster_ec2_key_pair = "my-ec2-keypair"
@@ -16,3 +23,6 @@ vpc_rds_security_group_id = "sg-xxxxxxxx"
 db_username = "xxxxxxxx"
 db_password = "xxxxxxxxxxxxx"
 db_instance_count = 1
+
+// DCP Ingest
+ingest_amqp_server = "amqp.ingest.<deployment_stage>.data.humancellatlas.org"
