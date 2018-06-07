@@ -1,8 +1,11 @@
+import re
 from datetime import datetime
 
+import requests
 from sqlalchemy import create_engine, MetaData
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, IntegrityError
 
+from .exceptions import UploadException
 from .upload_config import UploadConfig
 
 config = UploadConfig()
@@ -22,7 +25,15 @@ def create_pg_record(record_type, prop_vals_dict):
     prop_vals_dict["updated_at"] = datetime.utcnow()
     table = record_type_table_map[record_type]
     ins = table.insert().values(prop_vals_dict)
-    _run_query(ins)
+    try:
+        _run_query(ins)
+    except IntegrityError as e:
+        if re.search("duplicate key value violates unique constraint", e.orig.pgerror):
+            raise UploadException(status=requests.codes.conflict,
+                                  title=f"{record_type} Already Exists",
+                                  detail=f"{record_type} {prop_vals_dict['id']} already exists")
+        else:
+            raise e
 
 
 def update_pg_record(record_type, prop_vals_dict):

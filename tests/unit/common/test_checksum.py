@@ -1,5 +1,4 @@
 import uuid
-from unittest.mock import patch
 
 import boto3
 
@@ -13,7 +12,6 @@ from upload.common.upload_config import UploadConfig
 
 class TestUploadedFileChecksummer(UploadTestCaseUsingMockAWS):
 
-    @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def setUp(self):
         super().setUp()
         # Config

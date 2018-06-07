@@ -94,7 +94,6 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         super().tearDown()
         self.environmentor.exit()
 
-    @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def _create_area(self):
         area_id = str(uuid.uuid4())
         self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
@@ -117,7 +116,6 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         })
         return s3obj
 
-    @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_update_file_checksum(self, mock_format_and_send_notification, mock_connect):
@@ -171,7 +169,6 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(str(type(record.get("checksum_started_at"))), "<class 'datetime.datetime'>")
         self.assertEqual(str(type(record.get("checksum_ended_at"))), "<class 'datetime.datetime'>")
 
-    @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_update_file_validation(self, mock_format_and_send_notification, mock_connect):
@@ -227,7 +224,6 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(str(type(record.get("validation_ended_at"))), "<class 'datetime.datetime'>")
         self.assertEqual(record.get("results"), uploaded_file.info())
 
-    @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def test_create_with_unused_upload_area_id(self):
         area_id = str(uuid.uuid4())
 
@@ -235,51 +231,17 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
         self.assertEqual(response.status_code, 201)
         body = json.loads(response.data)
-        self.assertEqual(list(body.keys()), ['urn'])
-        urnbits = body['urn'].split(':')
-        self.assertEqual(len(urnbits), 6)  # dcp:upl:aws:dev:uuid:encoded-creds
-        self.assertEqual(urnbits[0:4], ['dcp', 'upl', 'aws', 'test'])
-        self.assertEqual(urnbits[4], area_id)
-        creds = json.loads(base64.b64decode(urnbits[5].encode('utf8')))
-        self.assertEqual(list(creds.keys()), ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'])
+        self.assertEqual(
+            {'uri': f"s3://{self.config.bucket_name}/{area_id}/"},
+            body)
 
-        try:
-            user_name = f"upload-{self.deployment_stage}-user-{area_id}"
-            user = boto3.resource('iam').User(user_name)
-            user.load()
-        except ClientError:
-            self.fail("Staging area (user) was not created!")
-        policy = user.Policy(f"upload-{area_id}")
-        self.assertIn('{"Effect": "Allow", "Action": ["s3:PutObject"', policy.policy_document)
-        self.assertIn(f'"Resource": ["arn:aws:s3:::{self.config.bucket_name}/{area_id}/*"]',
-                      policy.policy_document)
         record = get_pg_record("upload_area", area_id)
+        self.assertEqual(record["id"], area_id)
+        self.assertEqual(record["bucket_name"], self.config.bucket_name)
         self.assertEqual(record["status"], "UNLOCKED")
 
-    @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
-    def test_create_in_production_returns_5_part_urn(self):
-        prod_env = dict(self.environment)
-        prod_env['DEPLOYMENT_STAGE'] = 'prod'
-        with EnvironmentSetup(prod_env):
-
-            area_id = str(uuid.uuid4())
-
-            response = self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
-
-            self.assertEqual(response.status_code, 201)
-            body = json.loads(response.data)
-            self.assertEqual(list(body.keys()), ['urn'])
-            urnbits = body['urn'].split(':')
-            self.assertEqual(len(urnbits), 5)  # dcp:upl:aws:uuid:encoded-creds
-            self.assertEqual(urnbits[0:3], ['dcp', 'upl', 'aws'])
-            self.assertEqual(urnbits[3], area_id)
-            creds = json.loads(base64.b64decode(urnbits[4].encode('utf8')))
-            self.assertEqual(list(creds.keys()), ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'])
-
     def test_create_with_already_used_upload_area_id(self):
-        area_id = str(uuid.uuid4())
-        user_name = f"upload-{self.deployment_stage}-user-{area_id}"
-        boto3.resource('iam').User(user_name).create()
+        area_id = self._create_area()
 
         response = self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
 
@@ -287,19 +249,16 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(response.content_type, 'application/problem+json')
 
     def test_delete_with_id_of_real_non_empty_upload_area(self):
-        area_id = str(uuid.uuid4())
-        user = boto3.resource('iam').User(f"upload-{self.deployment_stage}-user-{area_id}")
-        user.create()
-        bucket = boto3.resource('s3').Bucket(self.config.bucket_name)
-        bucket.create()
-        obj = bucket.Object(f'{area_id}/test_file')
+        area_id = self._create_area()
+
+        obj = self.upload_bucket.Object(f'{area_id}/test_file')
         obj.put(Body="foo")
 
         response = self.client.delete(f"/v1/area/{area_id}", headers=self.authentication_header)
 
-        self.assertEqual(response.status_code, 204)
-        with self.assertRaises(ClientError):
-            user.load()
+        self.assertEqual(204, response.status_code)
+        record = get_pg_record("upload_area", area_id)
+        self.assertEqual(record["status"], "DELETED")
         with self.assertRaises(ClientError):
             obj.load()
 
@@ -438,7 +397,6 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         })
 
-    @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def test_get_file_returns_404_for_missing_area_or_file(self):
         response = self.client.get(f"/v1/area/bogoarea/bogofile")
         self.assertEqual(response.status_code, 404)
