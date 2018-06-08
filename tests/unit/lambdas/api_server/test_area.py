@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.6
 
-import os, sys, unittest, uuid, json, base64
+import os, sys, unittest, uuid, json
 from unittest.mock import patch
 
 import boto3
@@ -42,21 +42,21 @@ class TestApiAuthenticationErrors(UploadTestCaseUsingMockAWS):
 
             response = self.client.post(f"/v1/area/{str(uuid.uuid4())}", headers={'Api-Key': 'foo'})
 
-        self.assertEqual(response.status_code, 500)
+        self.assertEqual(500, response.status_code)
         self.assertIn("INGEST_API_KEY", response.data.decode('utf8'))
 
     def test_call_with_unautenticated(self):
 
         response = self.client.post(f"/v1/area/{str(uuid.uuid4())}")
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(400, response.status_code)
         self.assertRegex(str(response.data), "Missing header.*Api-Key")
 
     def test_call_with_bad_api_key(self):
 
         response = self.client.post(f"/v1/area/{str(uuid.uuid4())}", headers={'Api-Key': 'I-HAXX0RED-U'})
 
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(401, response.status_code)
 
 
 class TestAreaApi(UploadTestCaseUsingMockAWS):
@@ -139,11 +139,11 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         response = self.client.post(f"/v1/area/{area_id}/update_checksum/{checksum_id}",
                                     headers=self.authentication_header,
                                     data=json.dumps(data))
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(204, response.status_code)
         record = get_pg_record("checksum", checksum_id)
-        self.assertEqual(record["status"], "CHECKSUMMING")
-        self.assertEqual(str(type(record.get("checksum_started_at"))), "<class 'datetime.datetime'>")
-        self.assertEqual(record["checksum_ended_at"], None)
+        self.assertEqual("CHECKSUMMING", record["status"])
+        self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("checksum_started_at"))))
+        self.assertEqual(None, record["checksum_ended_at"])
         mock_format_and_send_notification.assert_not_called()
 
         data = {
@@ -154,7 +154,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         response = self.client.post(f"/v1/area/{area_id}/update_checksum/{checksum_id}",
                                     headers=self.authentication_header,
                                     data=json.dumps(data))
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(204, response.status_code)
         mock_format_and_send_notification.assert_called_once_with({
             'upload_area_id': area_id,
             'name': 'foo.json',
@@ -165,9 +165,9 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         })
         record = get_pg_record("checksum", checksum_id)
-        self.assertEqual(record["status"], "CHECKSUMMED")
-        self.assertEqual(str(type(record.get("checksum_started_at"))), "<class 'datetime.datetime'>")
-        self.assertEqual(str(type(record.get("checksum_ended_at"))), "<class 'datetime.datetime'>")
+        self.assertEqual("CHECKSUMMED", record["status"])
+        self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("checksum_started_at"))))
+        self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("checksum_ended_at"))))
 
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
@@ -192,12 +192,12 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         response = self.client.post(f"/v1/area/{area_id}/update_validation/{validation_id}",
                                     headers=self.authentication_header,
                                     data=json.dumps(data))
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(204, response.status_code)
         record = get_pg_record("validation", validation_id)
-        self.assertEqual(record["status"], "VALIDATING")
-        self.assertEqual(str(type(record.get("validation_started_at"))), "<class 'datetime.datetime'>")
-        self.assertEqual(record["validation_ended_at"], None)
-        self.assertEqual(record.get("results"), None)
+        self.assertEqual("VALIDATING", record["status"])
+        self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("validation_started_at"))))
+        self.assertEqual(None, record["validation_ended_at"])
+        self.assertEqual(None, record.get("results"))
         mock_format_and_send_notification.assert_not_called()
 
         data = {
@@ -208,7 +208,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         response = self.client.post(f"/v1/area/{area_id}/update_validation/{validation_id}",
                                     headers=self.authentication_header,
                                     data=json.dumps(data))
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(204, response.status_code)
         mock_format_and_send_notification.assert_called_once_with({
             'upload_area_id': area_id,
             'name': 'foo.json',
@@ -219,34 +219,34 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         })
         record = get_pg_record("validation", validation_id)
-        self.assertEqual(record["status"], "VALIDATED")
-        self.assertEqual(str(type(record.get("validation_started_at"))), "<class 'datetime.datetime'>")
-        self.assertEqual(str(type(record.get("validation_ended_at"))), "<class 'datetime.datetime'>")
-        self.assertEqual(record.get("results"), uploaded_file.info())
+        self.assertEqual("VALIDATED", record["status"])
+        self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("validation_started_at"))))
+        self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("validation_ended_at"))))
+        self.assertEqual(uploaded_file.info(), record.get("results"))
 
     def test_create_with_unused_upload_area_id(self):
         area_id = str(uuid.uuid4())
 
         response = self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
 
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(201, response.status_code)
         body = json.loads(response.data)
         self.assertEqual(
             {'uri': f"s3://{self.config.bucket_name}/{area_id}/"},
             body)
 
         record = get_pg_record("upload_area", area_id)
-        self.assertEqual(record["id"], area_id)
-        self.assertEqual(record["bucket_name"], self.config.bucket_name)
-        self.assertEqual(record["status"], "UNLOCKED")
+        self.assertEqual(area_id, record["id"])
+        self.assertEqual(self.config.bucket_name, record["bucket_name"])
+        self.assertEqual("UNLOCKED", record["status"])
 
     def test_create_with_already_used_upload_area_id(self):
         area_id = self._create_area()
 
         response = self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
 
-        self.assertEqual(response.status_code, 409)
-        self.assertEqual(response.content_type, 'application/problem+json')
+        self.assertEqual(409, response.status_code)
+        self.assertEqual('application/problem+json', response.content_type)
 
     def test_delete_with_id_of_real_non_empty_upload_area(self):
         area_id = self._create_area()
@@ -258,7 +258,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
         self.assertEqual(204, response.status_code)
         record = get_pg_record("upload_area", area_id)
-        self.assertEqual(record["status"], "DELETED")
+        self.assertEqual("DELETED", record["status"])
         with self.assertRaises(ClientError):
             obj.load()
 
@@ -267,25 +267,25 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
         response = self.client.delete(f"/v1/area/{area_id}", headers=self.authentication_header)
 
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.content_type, 'application/problem+json')
+        self.assertEqual(404, response.status_code)
+        self.assertEqual('application/problem+json', response.content_type)
 
     def test_locking_of_upload_area(self):
         area_id = self._create_area()
         record = get_pg_record("upload_area", area_id)
-        self.assertEqual(record["status"], "UNLOCKED")
+        self.assertEqual("UNLOCKED", record["status"])
 
         response = self.client.post(f"/v1/area/{area_id}/lock", headers=self.authentication_header)
 
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(204, response.status_code)
         record = get_pg_record("upload_area", area_id)
-        self.assertEqual(record["status"], "LOCKED")
+        self.assertEqual("LOCKED", record["status"])
 
         response = self.client.delete(f"/v1/area/{area_id}/lock", headers=self.authentication_header)
 
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(204, response.status_code)
         record = get_pg_record("upload_area", area_id)
-        self.assertEqual(record["status"], "UNLOCKED")
+        self.assertEqual("UNLOCKED", record["status"])
 
     def test_put_file_without_content_type_dcp_type_param(self):
         headers = {'Content-Type': 'application/json'}
@@ -294,8 +294,8 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
         response = self.client.put(f"/v1/area/{area_id}/some.json", data="exquisite corpse", headers=headers)
 
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.content_type, 'application/problem+json')
+        self.assertEqual(400, response.status_code)
+        self.assertEqual('application/problem+json', response.content_type)
         self.assertIn("missing parameter \'dcp-type\'", response.data.decode('utf8'))
 
     def test_put_file(self):
@@ -308,8 +308,8 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         s3_key = f"{area_id}/some.json"
         o1 = self.upload_bucket.Object(s3_key)
         o1.load()
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.content_type, 'application/json')
+        self.assertEqual(201, response.status_code)
+        self.assertEqual('application/json', response.content_type)
         self.assertEqual(json.loads(response.data), {
             'upload_area_id': area_id,
             'name': 'some.json',
@@ -325,12 +325,12 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             }
         })
         obj = self.upload_bucket.Object(f"{area_id}/some.json")
-        self.assertEqual(obj.get()['Body'].read(), "exquisite corpse".encode('utf8'))
+        self.assertEqual("exquisite corpse".encode('utf8'), obj.get()['Body'].read())
 
         record = get_pg_record("file", s3_key)
-        self.assertEqual(record["size"], 16)
-        self.assertEqual(record["upload_area_id"], area_id)
-        self.assertEqual(record["name"], "some.json")
+        self.assertEqual(16, record["size"])
+        self.assertEqual(area_id, record["upload_area_id"])
+        self.assertEqual("some.json", record["name"])
 
     def test_list_files(self):
         area_id = self._create_area()
@@ -341,7 +341,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
         response = self.client.get(f"/v1/area/{area_id}")
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
         data = json.loads(response.data)
         self.assertIn('size', data['files'][0].keys())  # moto file sizes are not accurate
         for fileinfo in data['files']:
@@ -373,9 +373,9 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
         response = self.client.get(f"/v1/area/{area2_id}")
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
         data = json.loads(response.data)
-        self.assertEqual([file['name'] for file in data['files']], area_2_files)
+        self.assertEqual(area_2_files, [file['name'] for file in data['files']])
 
     def test_get_file_for_existing_file(self):
         area_id = self._create_area()
@@ -384,7 +384,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
         response = self.client.get(f"/v1/area/{area_id}/{filename}")
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
         data = json.loads(response.data)
         self.assertIn('size', data.keys())  # moto file sizes are not accurate
         del data['size']
@@ -399,14 +399,14 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
     def test_get_file_returns_404_for_missing_area_or_file(self):
         response = self.client.get(f"/v1/area/bogoarea/bogofile")
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(404, response.status_code)
 
         area_id = str(uuid.uuid4())
 
         self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
 
         response = self.client.get(f"/v1/area/{area_id}/bogofile")
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(404, response.status_code)
 
     def test_put_files_info(self):
         area_id = self._create_area()
@@ -419,9 +419,9 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         response = self.client.put(f"/v1/area/{area_id}/files_info", content_type='application/json',
                                    data=(json.dumps(['file1.json', 'file2.fastq.gz'])))
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
         data = json.loads(response.data)
-        self.assertEqual(len(data), 2)
+        self.assertEqual(2, len(data))
 
         self.assertIn('size', data[0].keys())  # moto file sizes are not accurate
         for fileinfo in data:
