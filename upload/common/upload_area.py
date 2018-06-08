@@ -1,6 +1,8 @@
+import json
 import os
-import boto3
 import uuid
+
+import boto3
 
 from dcplib.media_types import DcpMediaType
 
@@ -9,8 +11,12 @@ from .uploaded_file import UploadedFile
 from .checksum_event import UploadedFileChecksumEvent
 from .exceptions import UploadException
 from .upload_config import UploadConfig
+from .logging import get_logger
+
 if not os.environ.get("CONTAINER"):
     from .database import get_pg_record, create_pg_record, update_pg_record
+
+logger = get_logger(__name__)
 
 s3 = boto3.resource('s3')
 
@@ -40,6 +46,43 @@ class UploadArea:
     def create(self):
         self.status = "UNLOCKED"
         self._create_record()
+
+    def credentials(self):
+        record = self._db_record()
+        if not record['status'] == 'UNLOCKED':
+            raise UploadException(status=409, title="Upload Area is Not Writable",
+                                  detail=f"Cannot issue credentials, upload area {self.uuid} is {record['status']}")
+
+        sts = boto3.client("sts")
+        policy_json = json.dumps({
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": ["s3:PutObject", "s3:PutObjectTagging"],
+                    "Resource": [f"arn:aws:s3:::{self.bucket_name}/{self.uuid}/*"]
+                },
+                {
+                    "Effect": "Allow",
+                    "Action": ["s3:ListBucket"],
+                    "Resource": [f"arn:aws:s3:::{self.bucket_name}"],
+                    "Condition": {
+                        "StringEquals": {"s3:prefix": f"{self.uuid}/"}
+                    }
+                }
+            ]
+        })
+        logger.debug(policy_json)
+        response = sts.assume_role(
+            RoleArn=self.config.upload_submitter_role_arn,
+            RoleSessionName=self.uuid,
+            DurationSeconds=900,
+            ExternalId="TBD",
+            Policy=policy_json
+        )
+        creds = response['Credentials']
+        del creds['Expiration']
+        return creds
 
     def delete(self):
         # This may need to be offloaded to an async lambda if _empty_bucket() starts taking a long time.
@@ -120,6 +163,9 @@ class UploadArea:
             "bucket_name": self.bucket_name,
             "status": self.status
         }
+
+    def _db_record(self):
+        return get_pg_record('upload_area', self.uuid)
 
     def _create_record(self):
         prop_vals_dict = self._format_prop_vals_dict()

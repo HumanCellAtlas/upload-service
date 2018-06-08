@@ -69,6 +69,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             'bucket_name': 'bogobucket',
             'csum_job_q_arn': 'bogo_arn',
             'csum_job_role_arn': 'bogo_role_arn',
+            'upload_submitter_role_arn': 'bogo_submitter_role_arn',
         })
         # Environment
         self.deployment_stage = 'test'
@@ -247,6 +248,37 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
         self.assertEqual(409, response.status_code)
         self.assertEqual('application/problem+json', response.content_type)
+
+    def test_credentials_with_non_existent_upload_area(self):
+        area_id = str(uuid.uuid4())
+
+        response = self.client.post(f"/v1/area/{area_id}/credentials")
+
+        self.assertEqual(404, response.status_code)
+
+    def test_credentials_with_existing_locked_upload_area(self):
+        area_id = self._create_area()
+        UploadArea(area_id).lock()
+
+        response = self.client.post(f"/v1/area/{area_id}/credentials")
+
+        self.assertEqual(409, response.status_code)
+
+    def test_credentials_with_deleted_upload_area(self):
+        area_id = self._create_area()
+        UploadArea(area_id).delete()
+
+        response = self.client.post(f"/v1/area/{area_id}/credentials")
+
+        self.assertEqual(404, response.status_code)
+
+    def test_credentials_with_existing_unlocked_upload_area(self):
+        area_id = self._create_area()
+
+        response = self.client.post(f"/v1/area/{area_id}/credentials")
+
+        data = json.loads(response.data)
+        self.assertEqual(['AccessKeyId', 'SecretAccessKey', 'SessionToken'], list(data.keys()))
 
     def test_delete_with_id_of_real_non_empty_upload_area(self):
         area_id = self._create_area()

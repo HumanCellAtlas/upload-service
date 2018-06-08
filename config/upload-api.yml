@@ -50,11 +50,11 @@ paths:
           schema:
             type: object
             properties:
-              urn:
+              uri:
                 type: string
-                description: URN of the form "dcp:upl:aws:<upload-area-id>:<encoded-credentials>".
+                description: URI describing the location of the upload area.
             required:
-              - urn
+              - uri
         401:
           description: Unrecognized Api-Key.
           schema:
@@ -132,6 +132,31 @@ paths:
           description: Could not find an upload area with that ID.
           schema:
             $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /v1/area/{upload_area_id}/credentials:
+
+    post:
+      summary: Create credentials for access to this upload area
+      operationId: upload.lambdas.api_server.v1.area.credentials
+      description: |
+        Request a set of AWS access credentials that will allow write/list access to this upload area.
+      tags:
+        - All
+      parameters:
+        - name: upload_area_id
+          in: path
+          description: A RFC4122-compliant ID for the upload area.
+          required: true
+          type: string
+      responses:
+        201:
+          description: Credentials were created.
+        423:
+          description: This upload area is currently locked.  No credentials can be issued.
         default:
           description: Unexpected error
           schema:

@@ -23,6 +23,12 @@ def create(upload_area_id: str):
 
 
 @return_exceptions_as_http_errors
+def credentials(upload_area_id: str):
+    upload_area = _load_upload_area(upload_area_id)
+    return upload_area.credentials(), requests.codes.created
+
+
+@return_exceptions_as_http_errors
 @require_authenticated
 def delete(upload_area_id: str):
     upload_area = _load_upload_area(upload_area_id)
