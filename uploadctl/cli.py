@@ -49,7 +49,7 @@ class UploadctlCLI:
     def _setup_argparse():
         parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
         parser.add_argument('-d', '--deployment',
-                            choices=['dev', 'integration', 'staging', 'prod'],
+                            choices=['predev', 'dev', 'integration', 'staging', 'prod'],
                             help="operate on this deployment")
         subparsers = parser.add_subparsers()
 
