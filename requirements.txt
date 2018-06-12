@@ -4,7 +4,7 @@ crcmod
 pika
 requests
 dcplib >= 1.2.0
-proforma >= 0.2.0
+proforma >= 0.2.1
 alembic
 psycopg2-binary
 sqlalchemy
