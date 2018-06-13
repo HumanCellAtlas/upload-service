@@ -1,4 +1,3 @@
-import base64
 import json
 import os
 import random
@@ -16,37 +15,12 @@ from upload.common.database_orm import DbUploadArea, DbChecksum, DbValidation, d
 MINUTE_SEC = 60
 
 
-class UploadAreaURN:
-
-    def __init__(self, urn):
-        self.urn = urn
-        urnbits = urn.split(':')
-        assert urnbits[0:3] == ['dcp', 'upl', 'aws'], "URN does not start with 'dcp:upl:aws': %s" % (urn,)
-        if len(urnbits) == 5:  # production URN dcp:upl:aws:uuid:creds
-            self.deployment_stage = 'prod'
-            self.uuid = urnbits[3]
-            self.encoded_credentials = urnbits[4]
-        elif len(urnbits) == 6:  # non-production URN dcp:upl:aws:stage:uuid:creds
-            self.deployment_stage = urnbits[3]
-            self.uuid = urnbits[4]
-            self.encoded_credentials = urnbits[5]
-        else:
-            raise RuntimeError("Bad URN: %s" % (urn,))
-
-    def __repr__(self):
-        return ":".join(['dcp', 'upl', 'aws', self.deployment_stage, self.uuid])
-
-    @property
-    def credentials(self):
-        uppercase_credentials = json.loads(base64.b64decode(self.encoded_credentials).decode('ascii'))
-        return {k.lower(): v for k, v in uppercase_credentials.items()}
-
-
 class TestUploadService(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.batch = boto3.client('batch')
+        self.uri = None
 
     def setUp(self):
         self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
@@ -81,18 +55,16 @@ class TestUploadService(unittest.TestCase):
                                       headers=self.auth_headers,
                                       expected_status=201)
         data = json.loads(response)
-        self.urn = UploadAreaURN(data['urn'])
+        self.uri = data['uri']
         self.assertEqual('UNLOCKED', self._upload_area_record_status())
 
     def _upload_file_using_cli(self, file_path):
-        self._run("SELECT UPLOAD AREA", ['hca', 'upload', 'select', self.urn.urn])
+        self._run("SELECT UPLOAD AREA", ['hca', 'upload', 'select', self.uri])
         self._run("UPLOAD FILE USING CLI", ['hca', 'upload', 'file', file_path])
 
     def _copy_file_directly_to_upload_area(self, filename):
         source_url = f"s3://org-humancellatlas-dcp-test-data/upload_service/{filename}"
-        target_url = "s3://org-humancellatlas-upload-{env}/{uuid}/{filename}".format(
-            env=os.environ['DEPLOYMENT_STAGE'], uuid=self.upload_area_id, filename=filename)
-
+        target_url = self.uri + filename
         self._run("COPY S3 FILE TO UPLOAD AREA", ['aws', 's3', 'cp', source_url, target_url])
 
     def _verify_file_was_checksummed_inline(self, filename):
@@ -135,7 +107,7 @@ class TestUploadService(unittest.TestCase):
         # TODO: check validation results
 
     def _forget_upload_area(self):
-        self._run("FORGET UPLOAD AREA", ['hca', 'upload', 'forget', self.urn.uuid])
+        self._run("FORGET UPLOAD AREA", ['hca', 'upload', 'forget', self.upload_area_id])
 
     def _delete_upload_area(self):
         self._make_request(description="DELETE UPLOAD AREA",
