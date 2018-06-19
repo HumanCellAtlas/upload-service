@@ -246,8 +246,16 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
         response = self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
 
-        self.assertEqual(409, response.status_code)
-        self.assertEqual('application/problem+json', response.content_type)
+        self.assertEqual(201, response.status_code)
+        body = json.loads(response.data)
+        self.assertEqual(
+            {'uri': f"s3://{self.config.bucket_name}/{area_id}/"},
+            body)
+
+        record = get_pg_record("upload_area", area_id)
+        self.assertEqual(area_id, record["id"])
+        self.assertEqual(self.config.bucket_name, record["bucket_name"])
+        self.assertEqual("UNLOCKED", record["status"])
 
     def test_credentials_with_non_existent_upload_area(self):
         area_id = str(uuid.uuid4())

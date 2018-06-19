@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 @require_authenticated
 def create(upload_area_id: str):
     upload_area = UploadArea(upload_area_id)
-    upload_area.create()
+    upload_area.get_or_create()
     return {'uri': upload_area.uri}, requests.codes.created
 
 

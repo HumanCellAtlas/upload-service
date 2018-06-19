@@ -43,9 +43,12 @@ class UploadArea:
     def uri(self):
         return f"s3://{self._bucket.name}/{self.key_prefix}"
 
-    def create(self):
+    def get_or_create(self):
         self.status = "UNLOCKED"
-        self._create_record()
+        if self._db_record():
+            self._update_record()
+        else:
+            self._create_record()
 
     def credentials(self):
         record = self._db_record()
