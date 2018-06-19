@@ -26,7 +26,7 @@ paths:
       summary: Create an Upload Area
       operationId: upload.lambdas.api_server.v1.area.create
       description: |
-        Create an Upload Area.
+        Create an Upload Area. This endpoint is idempotent and can be called for an existing upload area.
       tags:
         - For Ingestion Service Use Only
       security:
@@ -56,10 +56,6 @@ paths:
               - uri
         401:
           description: Unrecognized Api-Key.
-          schema:
-            $ref: '#/definitions/Error'
-        409:
-          description: An upload area with that ID already exists.
           schema:
             $ref: '#/definitions/Error'
         default:

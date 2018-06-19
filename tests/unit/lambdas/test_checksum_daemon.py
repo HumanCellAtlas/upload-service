@@ -46,7 +46,7 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
         # Upload area
         self.area_id = str(uuid.uuid4())
         self.upload_area = UploadArea(self.area_id)
-        self.upload_area.create()
+        self.upload_area.update_or_create()
         # daemon
         context = Mock()
         self.daemon = ChecksumDaemon(context)
