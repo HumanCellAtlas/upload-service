@@ -22,7 +22,6 @@ from upload.lambdas.checksum_daemon import ChecksumDaemon  # noqa
 
 class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
 
-    @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def setUp(self):
         super().setUp()
         # Config
@@ -47,7 +46,7 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
         # Upload area
         self.area_id = str(uuid.uuid4())
         self.upload_area = UploadArea(self.area_id)
-        self.upload_area.create()
+        self.upload_area.update_or_create()
         # daemon
         context = Mock()
         self.daemon = ChecksumDaemon(context)

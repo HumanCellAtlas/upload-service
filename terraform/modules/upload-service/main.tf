@@ -1,3 +1,8 @@
+locals {
+  bucket_name = "${var.bucket_name_prefix}${var.deployment_stage}"
+  account_id = "${data.aws_caller_identity.current.account_id}"
+}
+
 module "upload-service-database" {
   source = "../../modules/database"
   deployment_stage = "${var.deployment_stage}"

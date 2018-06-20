@@ -53,7 +53,6 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
         super().tearDown()
         self.environmentor.exit()
 
-    @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def _create_area(self):
         area_id = str(uuid.uuid4())
         self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)

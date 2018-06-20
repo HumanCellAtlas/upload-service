@@ -1,10 +1,8 @@
-import base64
 import json
 import os
-import time
-import boto3
 import uuid
-from botocore.exceptions import ClientError
+
+import boto3
 
 from dcplib.media_types import DcpMediaType
 
@@ -13,28 +11,25 @@ from .uploaded_file import UploadedFile
 from .checksum_event import UploadedFileChecksumEvent
 from .exceptions import UploadException
 from .upload_config import UploadConfig
+from .logging import get_logger
+
 if not os.environ.get("CONTAINER"):
-    from .database import create_pg_record, update_pg_record
+    from .database import get_pg_record, create_pg_record, update_pg_record
+
+logger = get_logger(__name__)
 
 s3 = boto3.resource('s3')
-iam = boto3.resource('iam')
 
 
 class UploadArea:
 
-    USER_NAME_TEMPLATE = "upload-{deployment_stage}-user-{uuid}"
-    ACCESS_POLICY_NAME_TEMPLATE = "upload-{uuid}"
-    IAM_SETTLE_TIME_SEC = 15
-
     def __init__(self, uuid):
         self.uuid = uuid
+        self.status = None
         self.config = UploadConfig()
         self.key_prefix = f"{self.uuid}/"
         self.key_prefix_length = len(self.key_prefix)
-        self.user_name = self.USER_NAME_TEMPLATE.format(deployment_stage=self._deployment_stage, uuid=uuid)
         self._bucket = s3.Bucket(self.bucket_name)
-        self._user = iam.User(self.user_name)
-        self._credentials = None
 
     @property
     def bucket_name(self):
@@ -45,37 +40,58 @@ class UploadArea:
         return os.environ['DEPLOYMENT_STAGE']
 
     @property
-    def urn(self):
-        encoded_credentials = base64.b64encode(json.dumps(self._credentials).encode('utf8')).decode('utf8')
-        if self._deployment_stage == 'prod':
-            return f"dcp:upl:aws:{self.uuid}:{encoded_credentials}"
-        else:
-            return f"dcp:upl:aws:{self._deployment_stage}:{self.uuid}:{encoded_credentials}"
+    def uri(self):
+        return f"s3://{self._bucket.name}/{self.key_prefix}"
 
-    @property
-    def access_policy_name(self):
-        return self.ACCESS_POLICY_NAME_TEMPLATE.format(uuid=self.uuid)
-
-    def create(self):
-        self.status = "CREATING"
-        self._create_record()
-        self._user.create()
-        self._set_access_policy()
-        self._create_credentials()
-        time.sleep(self.IAM_SETTLE_TIME_SEC)
+    def update_or_create(self):
         self.status = "UNLOCKED"
-        self._update_record()
+        if self._db_record():
+            self._update_record()
+        else:
+            self._create_record()
+
+    def credentials(self):
+        record = self._db_record()
+        if not record['status'] == 'UNLOCKED':
+            raise UploadException(status=409, title="Upload Area is Not Writable",
+                                  detail=f"Cannot issue credentials, upload area {self.uuid} is {record['status']}")
+
+        sts = boto3.client("sts")
+        policy_json = json.dumps({
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": ["s3:PutObject", "s3:PutObjectTagging"],
+                    "Resource": [f"arn:aws:s3:::{self.bucket_name}/{self.uuid}/*"]
+                },
+                {
+                    "Effect": "Allow",
+                    "Action": ["s3:ListBucket"],
+                    "Resource": [f"arn:aws:s3:::{self.bucket_name}"],
+                    "Condition": {
+                        "StringEquals": {"s3:prefix": f"{self.uuid}/"}
+                    }
+                }
+            ]
+        })
+        logger.debug(policy_json)
+        response = sts.assume_role(
+            RoleArn=self.config.upload_submitter_role_arn,
+            RoleSessionName=self.uuid,
+            DurationSeconds=900,
+            ExternalId="TBD",
+            Policy=policy_json
+        )
+        creds = response['Credentials']
+        del creds['Expiration']
+        return creds
 
     def delete(self):
         # This may need to be offloaded to an async lambda if _empty_bucket() starts taking a long time.
         self.status = "DELETING"
         self._update_record()
         self._empty_upload_area()
-        for access_key in self._user.access_keys.all():
-            access_key.delete()
-        for policy in self._user.policies.all():
-            policy.delete()
-        self._user.delete()
         self.status = "DELETED"
         self._update_record()
 
@@ -83,18 +99,10 @@ class UploadArea:
         return {'files': self._file_list()}
 
     def lock(self):
-        self.status = "LOCKING"
-        self._update_record()
-        iam.UserPolicy(self.user_name, self.access_policy_name).delete()
-        time.sleep(self.IAM_SETTLE_TIME_SEC)
         self.status = "LOCKED"
         self._update_record()
 
     def unlock(self):
-        self.status = "UNLOCKING"
-        self._update_record()
-        self._set_access_policy()
-        time.sleep(self.IAM_SETTLE_TIME_SEC)
         self.status = "UNLOCKED"
         self._update_record()
 
@@ -129,15 +137,10 @@ class UploadArea:
         return UploadedFile.from_s3_key(self, key)
 
     def is_extant(self) -> bool:
-        # A upload area is a folder, however there is no concept of folder in S3.
-        # The existence of a upload area is the existence of the user who can access that area.
-        try:
-            self._user.load()
+        record = get_pg_record('upload_area', self.uuid)
+        if record and record['status'] != 'DELETED':
             return True
-        except ClientError as e:
-            if e.response['Error']['Code'] != 'NoSuchEntity':
-                raise UploadException(status=500, title="Unexpected Error",
-                                      detail=f"bucket.load() returned {e.response}")
+        else:
             return False
 
     def _file_list(self):
@@ -149,43 +152,6 @@ class UploadArea:
                     file = UploadedFile.from_s3_key(self, o['Key'])
                     file_list.append(file.info())
         return file_list
-
-    def _set_access_policy(self):
-        policy_document = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Action": [
-                        "s3:PutObject",
-                        "s3:PutObjectTagging"
-                    ],
-                    "Resource": [
-                        f"arn:aws:s3:::{self.bucket_name}/{self.uuid}/*",
-                    ]
-                },
-                {
-                    "Effect": "Allow",
-                    "Action": [
-                        "s3:ListBucket"
-                    ],
-                    "Resource": [
-                        f"arn:aws:s3:::{self.bucket_name}"
-                    ],
-                    "Condition": {
-                        "StringEquals": {
-                            "s3:prefix": f"{self.uuid}/"
-                        }
-                    }
-                }
-            ]
-        }
-        self._user.create_policy(PolicyName=self.access_policy_name, PolicyDocument=json.dumps(policy_document))
-
-    def _create_credentials(self):
-        credentials = self._user.create_access_key_pair()
-        self._credentials = {'AWS_ACCESS_KEY_ID': credentials.access_key_id,
-                             'AWS_SECRET_ACCESS_KEY': credentials.secret_access_key}
 
     def _empty_upload_area(self):
         paginator = s3.meta.client.get_paginator('list_objects')
@@ -200,6 +166,9 @@ class UploadArea:
             "bucket_name": self.bucket_name,
             "status": self.status
         }
+
+    def _db_record(self):
+        return get_pg_record('upload_area', self.uuid)
 
     def _create_record(self):
         prop_vals_dict = self._format_prop_vals_dict()

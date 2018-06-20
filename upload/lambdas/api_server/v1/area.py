@@ -18,11 +18,14 @@ logger = get_logger(__name__)
 @require_authenticated
 def create(upload_area_id: str):
     upload_area = UploadArea(upload_area_id)
-    if upload_area.is_extant():
-        raise UploadException(status=requests.codes.conflict, title="Upload Area Already Exists",
-                              detail=f"Upload area {upload_area_id} already exists.")
-    upload_area.create()
-    return {'urn': upload_area.urn}, requests.codes.created
+    upload_area.update_or_create()
+    return {'uri': upload_area.uri}, requests.codes.created
+
+
+@return_exceptions_as_http_errors
+def credentials(upload_area_id: str):
+    upload_area = _load_upload_area(upload_area_id)
+    return upload_area.credentials(), requests.codes.created
 
 
 @return_exceptions_as_http_errors
@@ -136,7 +139,6 @@ def files_info(upload_area_id: str, body: str):
 
 def _load_upload_area(upload_area_id: str):
     upload_area = UploadArea(upload_area_id)
-
     if not upload_area.is_extant():
         raise UploadException(status=requests.codes.not_found, title="Upload Area Not Found")
     return upload_area

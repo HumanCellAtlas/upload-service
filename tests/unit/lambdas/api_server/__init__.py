@@ -1,11 +1,14 @@
-import connexion
+import os
 import yaml
+
+import connexion
 
 
 def client_for_test_api_server():
     flask_app = connexion.FlaskApp(__name__)
 
-    with open('config/upload-api.yml', mode='rb') as swagger_yaml:
+    swagger_yaml_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../config/upload-api.yml'))
+    with open(swagger_yaml_path, mode='rb') as swagger_yaml:
         contents = swagger_yaml.read()
         swagger_string = contents.decode()
         specification = yaml.safe_load(swagger_string)  # type: dict

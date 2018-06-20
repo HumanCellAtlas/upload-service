@@ -1,5 +1,4 @@
 import uuid
-from unittest.mock import patch
 
 import boto3
 
@@ -13,7 +12,6 @@ from upload.common.upload_config import UploadConfig
 
 class TestUploadedFileChecksummer(UploadTestCaseUsingMockAWS):
 
-    @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def setUp(self):
         super().setUp()
         # Config
@@ -33,7 +31,7 @@ class TestUploadedFileChecksummer(UploadTestCaseUsingMockAWS):
 
         self.upload_area_id = str(uuid.uuid4())
         self.upload_area = UploadArea(self.upload_area_id)
-        self.upload_area.create()
+        self.upload_area.update_or_create()
 
         self.checksum_id = str(uuid.uuid4())
         self.job_id = str(uuid.uuid4())

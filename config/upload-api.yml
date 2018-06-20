@@ -26,8 +26,7 @@ paths:
       summary: Create an Upload Area
       operationId: upload.lambdas.api_server.v1.area.create
       description: |
-        Create an Upload Area.
-        This action takes approximately 15 seconds to complete.
+        Create an Upload Area. This endpoint is idempotent and can be called for an existing upload area.
       tags:
         - For Ingestion Service Use Only
       security:
@@ -50,17 +49,13 @@ paths:
           schema:
             type: object
             properties:
-              urn:
+              uri:
                 type: string
-                description: URN of the form "dcp:upl:aws:<upload-area-id>:<encoded-credentials>".
+                description: URI describing the location of the upload area.
             required:
-              - urn
+              - uri
         401:
           description: Unrecognized Api-Key.
-          schema:
-            $ref: '#/definitions/Error'
-        409:
-          description: An upload area with that ID already exists.
           schema:
             $ref: '#/definitions/Error'
         default:
@@ -137,6 +132,31 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+  /v1/area/{upload_area_id}/credentials:
+
+    post:
+      summary: Create credentials for access to this upload area
+      operationId: upload.lambdas.api_server.v1.area.credentials
+      description: |
+        Request a set of AWS access credentials that will allow write/list access to this upload area.
+      tags:
+        - All
+      parameters:
+        - name: upload_area_id
+          in: path
+          description: A RFC4122-compliant ID for the upload area.
+          required: true
+          type: string
+      responses:
+        201:
+          description: Credentials were created.
+        423:
+          description: This upload area is currently locked.  No credentials can be issued.
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
   /v1/area/{upload_area_id}/lock:
 
     post:
@@ -144,7 +164,6 @@ paths:
       operationId: upload.lambdas.api_server.v1.area.lock
       description: |
         Lock an Upload area so that submitters may not add/delete/rename files in it.
-        This action takes approximately 15 seconds to complete.
       tags:
         - For Ingestion Service Use Only
       security:
@@ -177,7 +196,6 @@ paths:
       operationId: upload.lambdas.api_server.v1.area.unlock
       description: |
         Unlock an Upload area so that submitters may add/delete/rename files in it.
-        This action takes approximately 15 seconds to complete.
       tags:
         - For Ingestion Service Use Only
       security:

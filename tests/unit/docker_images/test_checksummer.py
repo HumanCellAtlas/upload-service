@@ -17,7 +17,6 @@ from upload.common.upload_config import UploadConfig
 
 class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
 
-    @patch('upload.common.upload_area.UploadArea.IAM_SETTLE_TIME_SEC', 0)
     def setUp(self):
         super().setUp()
         UploadConfig.use_env = True
@@ -39,7 +38,7 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
         self.upload_bucket.create()
         self.upload_area_id = str(uuid.uuid4())
         self.upload_area = UploadArea(self.upload_area_id)
-        self.upload_area.create()
+        self.upload_area.update_or_create()
 
     def tearDown(self):
         super().tearDown()
