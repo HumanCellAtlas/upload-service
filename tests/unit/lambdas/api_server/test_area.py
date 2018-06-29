@@ -179,6 +179,10 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
         uploaded_file.create_record()
+        response = self.client.get(f"/v1/area/{area_id}/foo.json/validate", headers=self.authentication_header)
+        validation_status = response.get_json()['validation_status']
+        self.assertEqual(validation_status, "UNSCHEDULED")
+
         validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
                                                        validation_id=validation_id,
                                                        job_id='12345',
@@ -189,6 +193,9 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             "job_id": validation_event.job_id,
             "payload": uploaded_file.info()
         }
+        response = self.client.get(f"/v1/area/{area_id}/foo.json/validate", headers=self.authentication_header)
+        validation_status = response.get_json()['validation_status']
+        self.assertEqual(validation_status, "SCHEDULED")
 
         response = self.client.post(f"/v1/area/{area_id}/update_validation/{validation_id}",
                                     headers=self.authentication_header,
@@ -199,6 +206,10 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("validation_started_at"))))
         self.assertEqual(None, record["validation_ended_at"])
         self.assertEqual(None, record.get("results"))
+        response = self.client.get(f"/v1/area/{area_id}/foo.json/validate", headers=self.authentication_header)
+        validation_status = response.get_json()['validation_status']
+        self.assertEqual(validation_status, "VALIDATING")
+
         mock_format_and_send_notification.assert_not_called()
 
         data = {
@@ -224,6 +235,9 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("validation_started_at"))))
         self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("validation_ended_at"))))
         self.assertEqual(uploaded_file.info(), record.get("results"))
+        response = self.client.get(f"/v1/area/{area_id}/foo.json/validate", headers=self.authentication_header)
+        validation_status = response.get_json()['validation_status']
+        self.assertEqual(validation_status, "VALIDATED")
 
     def test_create_with_unused_upload_area_id(self):
         area_id = str(uuid.uuid4())

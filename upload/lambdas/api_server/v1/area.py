@@ -73,6 +73,15 @@ def schedule_file_validation(upload_area_id: str, filename: str, json_request_bo
 
 
 @return_exceptions_as_http_errors
+@require_authenticated
+def retrieve_validation_status_and_results(upload_area_id: str, filename: str):
+    upload_area = _load_upload_area(upload_area_id)
+    file = upload_area.uploaded_file(urllib.parse.unquote(filename))
+    status, results = file.retrieve_latest_file_validation_status_and_results()
+    return {'validation_status': status, 'validation_results': results}, requests.codes.ok
+
+
+@return_exceptions_as_http_errors
 def update_checksum_event(upload_area_id: str, checksum_id: str, body: str):
     _load_upload_area(upload_area_id)
     body = json.loads(body)
