@@ -44,10 +44,10 @@ class ValidatorHarness:
         results = self._run_validator()
         results["upload_area_id"] = upload_area_id
         results["name"] = file_name
-        self._unstage_file()
         validation_event.status = "VALIDATED"
         if not self.args.test:
             update_event(validation_event, results)
+        self._unstage_file()
 
     def _find_version(self):
         try:

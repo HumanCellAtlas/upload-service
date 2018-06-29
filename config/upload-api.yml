@@ -364,6 +364,51 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+    get:
+      summary: Get status of validation event on a file
+      operationId: upload.lambdas.api_server.v1.area.retrieve_validation_status_and_results
+      description: |
+        Get status of latest batch validation event on a file.
+        If the batch event has completed, this endpoint returns valid/invalid for the file.
+      tags:
+        - For wrangler use via API calls in scripts
+        - For ingest service use via API calls from ingest services
+      security:
+        - api_key: []
+      parameters:
+        - name: Api-Key
+          in: header
+          description: An authentication token provided by the service provider.
+          required: true
+          type: string
+        - name: upload_area_id
+          in: path
+          description: A RFC4122-compliant ID for the upload area.
+          required: true
+          type: string
+        - name: filename
+          in: path
+          description: Name of file.  Must exist in the upload area.
+          required: true
+          type: string
+      responses:
+        200:
+          description: Validation status
+          schema:
+            type: object
+            properties:
+              validation_status:
+                type: string
+                description: A status for the validation event.
+        401:
+          description: Unrecognized Api-Key.
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
   /v1/area/{upload_area_id}/files_info:
     put:
       summary: Get information about files

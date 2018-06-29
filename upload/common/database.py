@@ -70,3 +70,12 @@ def _run_query(query):
         engine.dispose()
         results = engine.execute(query)
     return results
+
+
+def run_query_with_params(query, params):
+    try:
+        results = engine.execute(query, params)
+    except OperationalError as e:
+        engine.dispose()
+        results = engine.execute(query, params)
+    return results

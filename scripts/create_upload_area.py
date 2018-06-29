@@ -29,7 +29,7 @@ def create_upload_area_and_fetch_credentials(args, dataset_dir_path):
     if response.status_code == 401:
         os.rmdir(dataset_dir_path)
         raise Exception("\n Invalid Upload Service API Key. Please retry with the correct key.\n")
-    urn = json.loads(response.text)["urn"]
+    urn = json.loads(response.text)["uri"]
     return urn
 
 
