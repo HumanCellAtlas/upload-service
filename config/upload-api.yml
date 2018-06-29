@@ -368,8 +368,7 @@ paths:
       summary: Get status of validation event on a file
       operationId: upload.lambdas.api_server.v1.area.retrieve_validation_status_and_results
       description: |
-        Get status of latest batch validation event on a file.
-        If the batch event has completed, this endpoint returns valid/invalid for the file.
+        Get status and results of latest validation event on a file.
       tags:
         - For wrangler use via API calls in scripts
         - For ingest service use via API calls from ingest services
