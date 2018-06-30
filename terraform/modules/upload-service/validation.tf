@@ -23,6 +23,10 @@ resource "aws_batch_compute_environment" "validation_compute_env" {
     ]
     ec2_key_pair = "${var.validation_cluster_ec2_key_pair}"
     instance_role = "${aws_iam_instance_profile.ecsInstanceRole.arn}"
+    // Do not appear to work.  They do not stick.
+    // tags {
+    //   Name = "dcp-upload-validation-${var.deployment_stage}"
+    // }
   }
   depends_on = [
     "aws_iam_role_policy_attachment.AWSBatchServiceRole"

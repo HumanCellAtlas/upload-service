@@ -104,7 +104,7 @@ EOF
 
 resource "aws_lambda_function" "upload_api_lambda" {
   function_name    = "upload-api-${var.deployment_stage}"
-  role             = "arn:aws:iam::861229788715:role/upload-api-dev"
+  role             = "arn:aws:iam::${local.account_id}:role/upload-api-${var.deployment_stage}"
   handler          = "app.app"
   runtime          = "python3.6"
   memory_size      = 512
