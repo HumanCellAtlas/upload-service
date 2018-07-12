@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-This script retrieves fastq validation event status and results for all files in an upload area id
+This script retrieves fastq validation job statuses and results for all files in an upload area id
 """
 
 import argparse
@@ -20,7 +20,7 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='schedule validation jobs')
+    parser = argparse.ArgumentParser(description='retrieve validation jobs')
     parser.add_argument('--dataset-name', help='dataset directory name')
     parser.add_argument('--upload-area-id', help='upload area id')
     parser.add_argument('--environment', help="upload environment", default="staging")

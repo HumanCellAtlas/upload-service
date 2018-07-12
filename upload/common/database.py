@@ -63,6 +63,13 @@ def get_pg_record(record_type, record_id):
         return output
 
 
+# Engine.dispose() protects us from situations where the client thinks it has
+# an active connection but for some reason it is inactive. Potential causes
+# include network issues or pgbouncer dropping inactive client connections after
+# a long idle timeout. Sometimes its difficult to determine how long AWS actually
+# keeps old lambda containers warmed up and waiting. This code path should not be
+# followed often, but it is a good protective measure.
+
 def _run_query(query):
     try:
         results = engine.execute(query)

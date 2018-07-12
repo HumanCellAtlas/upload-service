@@ -172,8 +172,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_update_file_validation(self, mock_format_and_send_notification, mock_connect):
-        validation_id = str(uuid.uuid4())
+    def test_unscheduled_status_file_validation(self, mock_format_and_send_notification, mock_connect):
         area_id = self._create_area()
         s3obj = self._mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
@@ -183,6 +182,33 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         validation_status = response.get_json()['validation_status']
         self.assertEqual(validation_status, "UNSCHEDULED")
 
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
+    def test_scheduled_status_file_validation(self, mock_format_and_send_notification, mock_connect):
+        validation_id = str(uuid.uuid4())
+        area_id = self._create_area()
+        s3obj = self._mock_upload_file(area_id, 'foo.json')
+        upload_area = UploadArea(area_id)
+        uploaded_file = UploadedFile(upload_area, s3object=s3obj)
+        uploaded_file.create_record()
+        validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
+                                                       validation_id=validation_id,
+                                                       job_id='12345',
+                                                       status="SCHEDULED")
+        validation_event.create_record()
+        response = self.client.get(f"/v1/area/{area_id}/foo.json/validate", headers=self.authentication_header)
+        validation_status = response.get_json()['validation_status']
+        self.assertEqual(validation_status, "SCHEDULED")
+
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
+    def test_validating_status_file_validation(self, mock_format_and_send_notification, mock_connect):
+        validation_id = str(uuid.uuid4())
+        area_id = self._create_area()
+        s3obj = self._mock_upload_file(area_id, 'foo.json')
+        upload_area = UploadArea(area_id)
+        uploaded_file = UploadedFile(upload_area, s3object=s3obj)
+        uploaded_file.create_record()
         validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
                                                        validation_id=validation_id,
                                                        job_id='12345',
@@ -193,10 +219,6 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             "job_id": validation_event.job_id,
             "payload": uploaded_file.info()
         }
-        response = self.client.get(f"/v1/area/{area_id}/foo.json/validate", headers=self.authentication_header)
-        validation_status = response.get_json()['validation_status']
-        self.assertEqual(validation_status, "SCHEDULED")
-
         response = self.client.post(f"/v1/area/{area_id}/update_validation/{validation_id}",
                                     headers=self.authentication_header,
                                     data=json.dumps(data))
@@ -209,9 +231,30 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         response = self.client.get(f"/v1/area/{area_id}/foo.json/validate", headers=self.authentication_header)
         validation_status = response.get_json()['validation_status']
         self.assertEqual(validation_status, "VALIDATING")
-
         mock_format_and_send_notification.assert_not_called()
 
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
+    def test_validated_status_file_validation(self, mock_format_and_send_notification, mock_connect):
+        validation_id = str(uuid.uuid4())
+        area_id = self._create_area()
+        s3obj = self._mock_upload_file(area_id, 'foo.json')
+        upload_area = UploadArea(area_id)
+        uploaded_file = UploadedFile(upload_area, s3object=s3obj)
+        uploaded_file.create_record()
+        validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
+                                                       validation_id=validation_id,
+                                                       job_id='12345',
+                                                       status="SCHEDULED")
+        validation_event.create_record()
+        data = {
+            "status": "VALIDATING",
+            "job_id": validation_event.job_id,
+            "payload": uploaded_file.info()
+        }
+        response = self.client.post(f"/v1/area/{area_id}/update_validation/{validation_id}",
+                                    headers=self.authentication_header,
+                                    data=json.dumps(data))
         data = {
             "status": "VALIDATED",
             "job_id": validation_event.job_id,

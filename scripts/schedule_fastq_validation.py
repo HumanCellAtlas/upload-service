@@ -19,7 +19,10 @@ def main(args):
             if response.status_code == requests.codes.ok:
                 print("scheduled {0} for validation".format(file))
             else:
-                print("failed to schedule {0} for validation".format(file))
+                response_json = response.json()
+                code = response_json["status"]
+                detail = response_json["title"]
+                print("failed to schedule {0} for validation with status code {1} and error: {2}".format(file, code, detail))
 
 
 if __name__ == "__main__":
