@@ -343,7 +343,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         response = self.client.post(f"/v1/area/{area_id}/credentials")
 
         data = json.loads(response.data)
-        self.assertEqual(['AccessKeyId', 'SecretAccessKey', 'SessionToken'], list(data.keys()))
+        self.assertEqual(['AccessKeyId', 'Expiration', 'SecretAccessKey', 'SessionToken'], list(data.keys()))
 
     def test_delete_with_id_of_real_non_empty_upload_area(self):
         area_id = self._create_area()
