@@ -79,12 +79,11 @@ class UploadArea:
         response = sts.assume_role(
             RoleArn=self.config.upload_submitter_role_arn,
             RoleSessionName=self.uuid,
-            DurationSeconds=900,
+            DurationSeconds=3600,
             ExternalId="TBD",
             Policy=policy_json
         )
         creds = response['Credentials']
-        del creds['Expiration']
         return creds
 
     def delete(self):

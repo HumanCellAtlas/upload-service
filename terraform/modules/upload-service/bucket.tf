@@ -44,6 +44,7 @@ locals {
 
 resource "aws_iam_role" "upload_submitter" {
   name = "dcp-upload-submitter-${var.deployment_stage}"
+  max_session_duration = 3600,
   assume_role_policy = <<POLICY
 {
     "Version": "2012-10-17",
