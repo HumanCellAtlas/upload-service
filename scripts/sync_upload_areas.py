@@ -29,10 +29,13 @@ def main(args):
 
 
 def sync_s3_bucket_with_local_dir(area_parsed_list):
+    area_id_string = area_parsed_list.replace("s3://", "")
+    area_id_string = area_id_string.replace("/", ":", 1)
+    area_id_string = area_id_string.replace("/", "")
     area_id_parts = area_parsed_list.split(":")
     dir_name = area_id_parts[0]
-    environment = area_id_parts[4]
-    upload_area_id = area_id_parts[5]
+    environment = "staging"
+    upload_area_id = area_id_parts[2]
     data_dir_path = "{0}/{1}".format(args.data_dir_path, dir_name)
     s3_bucket_uri = "s3://org-humancellatlas-upload-{0}/{1}".format(environment, upload_area_id)
     print("Starting aws s3 sync of {0}".format(upload_area_id))
