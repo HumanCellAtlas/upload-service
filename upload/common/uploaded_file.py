@@ -1,12 +1,11 @@
 import os
 from functools import reduce
-
 import boto3
 from botocore.exceptions import ClientError
 
 from .exceptions import UploadException
 if not os.environ.get("CONTAINER"):
-    from .database import create_pg_record, update_pg_record, get_pg_record
+    from .database import create_pg_record, update_pg_record, get_pg_record, run_query_with_params
 
 s3 = boto3.resource('s3')
 s3client = boto3.client('s3')
@@ -124,3 +123,14 @@ class UploadedFile:
         existing_file = get_pg_record("file", self.s3obj.key)
         if not existing_file:
             self.create_record()
+
+    def retrieve_latest_file_validation_status_and_results(self):
+        status = "UNSCHEDULED"
+        results = None
+        query_results = run_query_with_params("SELECT status, results->>'stdout' FROM validation \
+            WHERE file_id = %s order by created_at desc limit 1;", (self.s3obj.key,))
+        rows = query_results.fetchall()
+        if len(rows) > 0:
+            status = rows[0][0]
+            results = rows[0][1]
+        return status, results
