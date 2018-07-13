@@ -4,7 +4,9 @@ import re
 import urllib.parse
 import uuid
 import boto3
+import requests
 
+from upload.common.exceptions import UploadException
 from ...common.uploaded_file import UploadedFile
 from ...common.batch import JobDefinition
 from ...common.retry import retry_on_aws_too_many_requests
@@ -22,6 +24,10 @@ class ValidationScheduler:
         self.file = uploaded_file
         self.file_key = self.file.upload_area.uuid + '/' + urllib.parse.quote(self.file.name)
         self.config = UploadConfig()
+
+    def check_file_can_be_validated(self):
+        if self.file.size >= 1000000000000:
+            raise UploadException(status=requests.codes.bad_request, title="File too large for validation")
 
     def schedule_validation(self, validator_docker_image: str, environment: dict) -> str:
         validation_id = str(uuid.uuid4())

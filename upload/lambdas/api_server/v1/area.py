@@ -68,7 +68,9 @@ def schedule_file_validation(upload_area_id: str, filename: str, json_request_bo
     file = upload_area.uploaded_file(urllib.parse.unquote(filename))
     body = json.loads(json_request_body)
     environment = body['environment'] if 'environment' in body else {}
-    validation_id = ValidationScheduler(file).schedule_validation(body['validator_image'], environment)
+    validation_scheduler = ValidationScheduler(file)
+    validation_scheduler.check_file_can_be_validated()
+    validation_id = validation_scheduler.schedule_validation(body['validator_image'], environment)
     return {'validation_id': validation_id}, requests.codes.ok
 
 
