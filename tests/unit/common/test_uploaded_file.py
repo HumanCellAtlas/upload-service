@@ -1,10 +1,8 @@
 import uuid
 
 import boto3
-import requests
 
-from upload.common.exceptions import UploadException
-from upload.lambdas.api_server.validation_scheduler import ValidationScheduler
+from upload.lambdas.api_server.validation_scheduler import ValidationScheduler, MAX_FILE_SIZE_IN_BYTES
 from .. import UploadTestCaseUsingMockAWS
 from unittest.mock import patch
 
@@ -50,21 +48,22 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         self.assertEqual("file2_content".encode('utf8'),
                          self.upload_bucket.Object(f"{self.upload_area_id}/file2").get()['Body'].read())
 
-    @patch('upload.common.upload_area.UploadedFile.size', 2000000000000)
-    def test_check_file_can_be_validated_throws_error_if_file_is_too_large_for_validation(self):
+    @patch('upload.common.upload_area.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES+1)
+    def test_check_file_can_be_validated_returns_false_if_file_is_too_large_for_validation(self):
         uploaded_file = UploadedFile(upload_area=self.upload_area, name="file2",
                                      content_type="application/octet-stream; dcp-type=data", data="file2_content")
         scheduler = ValidationScheduler(uploaded_file)
-        with self.assertRaises(UploadException):
-            scheduler.check_file_can_be_validated()
+        file_validatable = scheduler.check_file_can_be_validated()
+        self.assertEqual(False, file_validatable)
 
-    @patch('upload.common.upload_area.UploadedFile.size', 999999999999)
-    def test_error_not_thrown_if_file_is_appropriate_size(self):
+    @patch('upload.common.upload_area.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES-1)
+    def test_check_file_can_be_validated_returns_true_if_file_is_not_too_large(self):
         uploaded_file = UploadedFile(upload_area=self.upload_area, name="file2",
                                      content_type="application/octet-stream; dcp-type=data", data="file2_content")
         scheduler = ValidationScheduler(uploaded_file)
-        # check UploadException not raised
-        scheduler.check_file_can_be_validated()
+
+        file_validatable = scheduler.check_file_can_be_validated()
+        self.assertEqual(True, file_validatable)
 
     def test_info(self):
         # TODO

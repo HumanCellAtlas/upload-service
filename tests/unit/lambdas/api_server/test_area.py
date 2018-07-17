@@ -6,6 +6,7 @@ from unittest.mock import patch
 import boto3
 from botocore.exceptions import ClientError
 
+from upload.lambdas.api_server.validation_scheduler import MAX_FILE_SIZE_IN_BYTES
 from . import client_for_test_api_server
 from ... import UploadTestCaseUsingMockAWS, EnvironmentSetup
 
@@ -169,6 +170,30 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual("CHECKSUMMED", record["status"])
         self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("checksum_started_at"))))
         self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("checksum_ended_at"))))
+
+    @patch('upload.common.uploaded_file.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES+1)
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
+    def test_schedule_file_validation_raises_error_if_file_too_large(self, mock_format_and_send_notification, mock_connect):
+        area_id = self._create_area()
+        s3obj = self._mock_upload_file(area_id, 'foo.json')
+        response = self.client.put(f"/v1/area/{area_id}/foo.json/validate", headers=self.authentication_header, json={"validator_image": "humancellatlas/upload-validator-example"})
+        self.assertEqual(400, response.status_code)
+
+
+
+    @patch('upload.common.upload_area.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES-1)
+    @patch('upload.lambdas.api_server.v1.area.ValidationScheduler.schedule_validation')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
+    def test_schedule_file_validation_doesnt_raise_error_for_correct_file_size(self, mock_format_and_send_notification,
+                                                                     mock_connect, mock_validate):
+        mock_validate.return_value = 4472093160
+        area_id = self._create_area()
+        s3obj = self._mock_upload_file(area_id, 'foo.json')
+        response = self.client.put(f"/v1/area/{area_id}/foo.json/validate", headers=self.authentication_header,
+                            json={"validator_image": "humancellatlas/upload-validator-example"})
+        self.assertEqual(200, response.status_code)
 
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
