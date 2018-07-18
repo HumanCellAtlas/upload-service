@@ -355,6 +355,10 @@ paths:
               validation_id:
                 type: string
                 description: A reference ID for this validation, which will be used later during the callback.
+        400:
+          description: File too large due to 1tb limit for staging files from s3 during validation process
+          schema:
+            $ref: '#/definitions/Error'
         401:
           description: Unrecognized Api-Key.
           schema:

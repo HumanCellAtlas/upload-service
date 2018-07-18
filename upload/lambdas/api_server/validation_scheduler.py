@@ -4,9 +4,7 @@ import re
 import urllib.parse
 import uuid
 import boto3
-import requests
 
-from upload.common.exceptions import UploadException
 from ...common.uploaded_file import UploadedFile
 from ...common.batch import JobDefinition
 from ...common.retry import retry_on_aws_too_many_requests
