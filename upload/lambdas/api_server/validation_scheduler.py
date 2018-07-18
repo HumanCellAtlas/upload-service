@@ -26,9 +26,7 @@ class ValidationScheduler:
         self.config = UploadConfig()
 
     def check_file_can_be_validated(self):
-        if self.file.size >= MAX_FILE_SIZE_IN_BYTES:
-            return False
-        return True
+        return self.file.size < MAX_FILE_SIZE_IN_BYTES
 
     def schedule_validation(self, validator_docker_image: str, environment: dict) -> str:
         validation_id = str(uuid.uuid4())
