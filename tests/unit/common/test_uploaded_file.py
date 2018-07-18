@@ -2,7 +2,9 @@ import uuid
 
 import boto3
 
+from upload.lambdas.api_server.validation_scheduler import ValidationScheduler, MAX_FILE_SIZE_IN_BYTES
 from .. import UploadTestCaseUsingMockAWS
+from unittest.mock import patch
 
 from upload.common.upload_config import UploadConfig
 from upload.common.upload_area import UploadArea
@@ -45,6 +47,23 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
                      content_type="application/octet-stream; dcp-type=data", data="file2_content")
         self.assertEqual("file2_content".encode('utf8'),
                          self.upload_bucket.Object(f"{self.upload_area_id}/file2").get()['Body'].read())
+
+    @patch('upload.common.upload_area.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES + 1)
+    def test_check_file_can_be_validated_returns_false_if_file_is_too_large_for_validation(self):
+        uploaded_file = UploadedFile(upload_area=self.upload_area, name="file2",
+                                     content_type="application/octet-stream; dcp-type=data", data="file2_content")
+        scheduler = ValidationScheduler(uploaded_file)
+        file_validatable = scheduler.check_file_can_be_validated()
+        self.assertEqual(False, file_validatable)
+
+    @patch('upload.common.upload_area.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES - 1)
+    def test_check_file_can_be_validated_returns_true_if_file_is_not_too_large(self):
+        uploaded_file = UploadedFile(upload_area=self.upload_area, name="file2",
+                                     content_type="application/octet-stream; dcp-type=data", data="file2_content")
+        scheduler = ValidationScheduler(uploaded_file)
+
+        file_validatable = scheduler.check_file_can_be_validated()
+        self.assertEqual(True, file_validatable)
 
     def test_info(self):
         # TODO
