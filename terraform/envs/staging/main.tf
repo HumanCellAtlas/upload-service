@@ -48,3 +48,7 @@ module "upload-service" {
   // DCP Ingest
   ingest_amqp_server = "${var.ingest_amqp_server}"
 }
+
+output "upload_csum_lambda_role_arn" {
+  value = "${module.upload-service.upload_csum_lambda_role_arn}"
+}

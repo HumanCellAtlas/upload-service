@@ -23,11 +23,10 @@ module "upload-service" {
   vpc_id = "${var.vpc_id}"
   vpc_default_security_group_id = "${var.vpc_default_security_group_id}"
 
-    // S3
+  // S3
   bucket_name_prefix = "${var.bucket_name_prefix}"
 
   // API Lambda
-
   upload_api_fqdn = "${var.upload_api_fqdn}"
   ingest_api_key = "${var.ingest_api_key}"
 
@@ -48,4 +47,8 @@ module "upload-service" {
 
   // DCP Ingest
   ingest_amqp_server = "${var.ingest_amqp_server}"
+}
+
+output "upload_csum_lambda_role_arn" {
+  value = "${module.upload-service.upload_csum_lambda_role_arn}"
 }

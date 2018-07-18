@@ -1,3 +1,26 @@
+resource "aws_iam_role" "upload_csum_lambda" {
+  name = "upload-checksum-daemon-${var.deployment_stage}"
+  assume_role_policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+POLICY
+}
+
+resource "aws_iam_role_policy" "upload_csum_lambda" {
+  name = "upload-checksum-daemon-${var.deployment_stage}"
+  role = "${aws_iam_role.upload_csum_lambda.name}"
+  policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -35,7 +58,7 @@
         "s3:PutObjectTagging"
       ],
       "Resource": [
-        "arn:aws:s3:::${BUCKET_NAME}/*"
+        "arn:aws:s3:::${local.bucket_name}/*"
       ]
     },
     {
@@ -46,7 +69,7 @@
         "batch:SubmitJob"
       ],
       "Resource": [
-        "arn:aws:batch:*:$account_id:*"
+        "arn:aws:batch:*:${local.account_id}:*"
       ]
     },
     {
@@ -56,8 +79,14 @@
         "secretsmanager:GetSecretValue"
       ],
       "Resource": [
-        "arn:aws:secretsmanager:us-east-1:$account_id:secret:dcp/upload/${DEPLOYMENT_STAGE}/*"
+        "arn:aws:secretsmanager:us-east-1:${local.account_id}:secret:dcp/upload/${var.deployment_stage}/*"
       ]
     }
   ]
+}
+EOF
+}
+
+output "upload_csum_lambda_role_arn" {
+  value = "${aws_iam_role.upload_csum_lambda.arn}"
 }
