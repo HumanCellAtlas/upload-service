@@ -13,7 +13,11 @@ from ...common.upload_config import UploadConfig
 
 batch = boto3.client('batch')
 # 1tb volume limit for staging files from s3 during validation process
-MAX_FILE_SIZE_IN_BYTES = 1000000000000
+KB = 1000
+MB = KB * KB
+GB = MB * KB
+TB = GB * KB
+MAX_FILE_SIZE_IN_BYTES = TB
 
 
 class ValidationScheduler:
