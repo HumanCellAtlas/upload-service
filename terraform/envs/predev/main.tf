@@ -11,7 +11,7 @@ terraform {
 }
 
 provider "aws" {
-  version = ">= 1.16"
+  version = ">= 1.26"
   region = "us-east-1"
   profile = "hca"
 }

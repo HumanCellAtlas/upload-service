@@ -1,8 +1,8 @@
 resource "aws_s3_bucket" "upload_areas_bucket" {
   bucket = "${local.bucket_name}"
-  acl = "private"
-  force_destroy = "false"
-  acceleration_status = "Enabled"
+//  acl = "private"
+//  force_destroy = "false"
+//  acceleration_status = "Enabled"
 }
 
 resource "aws_iam_policy" "upload_areas_submitter_access" {
@@ -35,6 +35,16 @@ resource "aws_iam_policy" "upload_areas_submitter_access" {
     ]
 }
 POLICY
+}
+
+resource "aws_s3_bucket_notification" "bucket_notification" {
+  bucket = "${aws_s3_bucket.upload_areas_bucket.id}"
+
+  queue {
+    queue_arn     = "${aws_sqs_queue.upload_queue.arn}"
+    events        = ["s3:ObjectCreated:*"]
+    filter_suffix = ".log"
+  }
 }
 
 locals {
