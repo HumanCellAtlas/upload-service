@@ -10,6 +10,7 @@ import requests
 from .waitfor import WaitFor
 from .. import fixture_file_path, FIXTURE_DATA_CHECKSUMS
 
+from upload.common.upload_config import UploadConfig
 from upload.common.database_orm import DbUploadArea, DbChecksum, DbValidation, db_session_maker
 
 MINUTE_SEC = 60
@@ -24,7 +25,7 @@ class TestUploadService(unittest.TestCase):
 
     def setUp(self):
         self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
-        self.auth_headers = {'Api-Key': os.environ['INGEST_API_KEY']}
+        self.auth_headers = {'Api-Key': UploadConfig().api_key}
         self.api_url = f"https://{os.environ['API_HOST']}/v1"
         self.verbose = True
 

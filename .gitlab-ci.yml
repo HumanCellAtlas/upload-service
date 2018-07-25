@@ -1,0 +1,26 @@
+image: python:3.6
+
+stages:
+  - unit_tests
+  - functional_tests
+
+before_script:
+  - apt-get -y update
+  - apt-get -y install jq moreutils gettext
+  - pip install -r requirements-dev.txt
+
+unit_tests:
+  stage: unit_tests
+  only:
+    - gitlab
+  script:
+    - source config/environment
+    - make test
+
+functional_tests:
+  stage: functional_tests
+  only:
+    - gitlab
+  script:
+    - source config/environment
+    - make functional-tests
