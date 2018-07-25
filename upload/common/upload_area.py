@@ -57,6 +57,9 @@ class UploadArea:
                                   detail=f"Cannot issue credentials, upload area {self.uuid} is {record['status']}")
 
         sts = boto3.client("sts")
+        # Note that this policy builds on top of the one stored at self.config.upload_submitter_role_arn.
+        # That policy provides access to the entire bucket, and this one narrows it to one upload area.
+        # The assume_role call below merges them.
         policy_json = json.dumps({
             "Version": "2012-10-17",
             "Statement": [
