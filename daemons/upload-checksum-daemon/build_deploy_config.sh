@@ -8,15 +8,15 @@ if [[ $# != 2 ]]; then
 fi
 
 export daemon_name=$1 stage=$2
-export lambda_name="${daemon_name}-${stage}" iam_role_name="${daemon_name}-${stage}"
-export account_id=$(aws sts get-caller-identity | jq -r .Account)
+export lambda_name="${daemon_name}-${stage}"
 config_json=".chalice/config.json"
 deployed_json=".chalice/deployed.json"
-policy_template="${PROJECT_ROOT}/config/iam-policy-templates/${daemon_name}.json"
-policy_json=".chalice/policy.json"
 stage_policy_json=".chalice/policy-${stage}.json"
 
-function update_env_in_config_json() {
+function update_config_json() {
+    upload_csum_lambda_role_arn=`cd ${PROJECT_ROOT}/terraform/envs/${stage} ; terraform output upload_csum_lambda_role_arn`
+    cat "$config_json" | jq ".iam_role_arn = \"${upload_csum_lambda_role_arn}\"" | sponge "$config_json"
+
     for var in ${EXPORT_ENV_VARS_TO_LAMBDA}; do
         cat "$config_json" | jq .stages.${stage}.environment_variables.${var}=env.${var} | sponge "$config_json"
     done
@@ -40,10 +40,10 @@ function detect_existing_deployment() {
 }
 
 function create_policy_document() {
-    cat "$policy_template" | envsubst '$DEPLOYMENT_STAGE $BUCKET_NAME $account_id' > "$policy_json"
-    cp "$policy_json" "$stage_policy_json"
+    # Fake out Domovoi, we are now managing policy with Terraform
+    jq -n .Statement=\"\" > ${stage_policy_json}
 }
 
-update_env_in_config_json
+update_config_json
 detect_existing_deployment
 create_policy_document
