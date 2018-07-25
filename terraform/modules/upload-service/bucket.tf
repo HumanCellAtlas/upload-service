@@ -1,8 +1,9 @@
 resource "aws_s3_bucket" "upload_areas_bucket" {
   bucket = "${local.bucket_name}"
+  //acl default is private -- remove?
 //  acl = "private"
+  //allows terraform to destroy a bucket even if it contains resources. Allow?
 //  force_destroy = "false"
-//  acceleration_status = "Enabled"
 }
 
 resource "aws_iam_policy" "upload_areas_submitter_access" {
@@ -43,7 +44,6 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
   queue {
     queue_arn     = "${aws_sqs_queue.upload_queue.arn}"
     events        = ["s3:ObjectCreated:*"]
-    filter_suffix = ".log"
   }
 }
 

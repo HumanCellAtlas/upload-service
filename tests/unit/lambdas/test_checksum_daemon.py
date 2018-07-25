@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta
 import os
 import sys
@@ -52,13 +53,13 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
         self.daemon = ChecksumDaemon(context)
         # File
         self.content_type = 'text/html'
-        self.filename = 'foo'
+        self.filename = 'small_file'
         self.file_key = f"{self.area_id}/{self.filename}"
         self.file_contents = "exquisite corpse"
         self.object = self.upload_bucket.Object(self.file_key)
         self.object.put(Key=self.file_key, Body=self.file_contents, ContentType=self.content_type)
         # Event
-        self.event = {'Records': [
+        self.json_body = json.dumps({'Records': [
             {'eventVersion': '2.0', 'eventSource': 'aws:s3', 'awsRegion': 'us-east-1',
              'eventTime': '2017-09-15T00:05:10.378Z', 'eventName': 'ObjectCreated:Put',
              'userIdentity': {'principalId': 'AWS:AROAI4WRRXW2K3Y2IFL6Q:upload-api-dev'},
@@ -72,7 +73,29 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
                                'arn': f'arn:aws:s3:::{self.config.bucket_name}'},
                     'object': {'key': self.file_key, 'size': 16,
                                'eTag': 'fea79d4ad9be6cf1c76a219bb735f85a',
-                               'sequencer': '0059BB193641C4EAB0'}}}]}
+                               'sequencer': '0059BB193641C4EAB0'}}}]})
+        self.event = {'Records': [
+            {
+                'messageId': '82478406-83bf-4dcc-a232-1006b4a378ce',
+                'receiptHandle': 'AQEBW91Olkz/ETQnAtsUMiPlNU/Zv0yFnjKi0GtnIRPYpCkjeBjrhcVGEPrUl/rJzHoGL9mX57kdbhT9fbfU'
+                                 'I9kn8Ojj3PJyXArDMfjRgjurZG9IT3wFAukqkPidtrYBPtolgUQVZGUMxxgLjEWn2gEnzD3w31rkbxCJPVUCd'
+                                 '8U58JE1LmRnliMDZ7Qy0RCUmf/+2mrfQLkXKTsxyM8qr5zsDYzY+93Fw90KK0fUnTaQTvE09I2Cr8u6Z0VkUt'
+                                 'AP4i/GQqff++uu+w3QAIAQvlA9ULeLXbkLEGsJJnqzMxR0OlQUaUf8DN08Bey8YUXXMLbP7kSWB/uYFDzNITp'
+                                 'DDPABXsvnPmOyfoCcDd+pVhw2E4lfE6qRgoPi1rNRAUYhmnEfTURqwkBmtebia1I8akFmEA==',
+                'body': self.json_body,
+                'attributes': {
+                      'ApproximateReceiveCount': '4',
+                      'SentTimestamp': '1532975029607',
+                      'SenderId': 'AIDAJVEO32BJMF27H2JKW',
+                      'ApproximateFirstReceiveTimestamp': '1532975029607'},
+                'messageAttributes': {},
+                'md5OfBody': 'a75ed9101c8b058cb02641a4eb3051f6',
+                'eventSource': 'aws:sqs',
+                'eventSourceARN': 'arn:aws:sqs:us-east-1:861229788715:pre_checksum_upload_queue',
+                'awsRegion': 'us-east-1'
+            }
+        ]
+        }
 
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon._checksum_file')
     def test_that_if_the_file_has_not_been_checksummed_it_will_be_checksummed(self, mock_checksum_file):

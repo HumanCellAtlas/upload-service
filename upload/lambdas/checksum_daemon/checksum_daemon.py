@@ -49,16 +49,19 @@ class ChecksumDaemon:
         self.api_host = os.environ["API_HOST"]
 
     def consume_event(self, event):
-        for record in event['Records']:
-            if record['eventName'] not in self.RECOGNIZED_S3_EVENTS:
-                logger.warning(f"Unexpected event: {record['eventName']}")
-                continue
-            file_key = record['s3']['object']['key']
-            self._find_file(file_key)
-            if self._the_file_was_checksummed_more_recently_than_it_was_modified(file_key):
-                logger.debug("Checksum batch job not scheduled.")
-            else:
-                self._checksum_file()
+        for item in event['Records']:
+            body = json.loads(item['body'])
+            for record in body['Records']:
+                logger.debug("eventName: {}".format(record['eventName']))
+                if record['eventName'] not in self.RECOGNIZED_S3_EVENTS:
+                    logger.warning(f"Unexpected event: {record['eventName']}")
+                    continue
+                file_key = record['s3']['object']['key']
+                self._find_file(file_key)
+                if self._the_file_was_checksummed_more_recently_than_it_was_modified(file_key):
+                    logger.debug("Checksum batch job not scheduled.")
+                else:
+                    self._checksum_file()
 
     def _find_file(self, file_key):
         format_logger_with_id(logger, "file_key", file_key)
