@@ -2,11 +2,11 @@ terraform {
   required_version = "=0.11.7"
 
   backend "s3" {
-    bucket  = "org-humancellatlas-dcp-infra"
-    key     = "terraform/upload-service/envs/dev/state.tfstate"
+    bucket  = "org-humancellatlas-upload-infra"
+    key     = "terraform/envs/dev/state.tfstate"
     encrypt = true
     region  = "us-east-1"
-    profile = "hca-id"
+    profile = "hca"
   }
 }
 
