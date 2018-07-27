@@ -54,7 +54,7 @@ class UploadedFileChecksummer:
 
     def _transfer_config(self) -> TransferConfig:
         etag_stride = self._s3_chunk_size(self.uploaded_file.s3obj.content_length)
-        return TransferConfig(multipart_threshold=etag_stride,
+        return TransferConfig(multipart_threshold=(64 * MB) + 1,
                               multipart_chunksize=etag_stride)
 
     @staticmethod
