@@ -17,6 +17,7 @@ before_script:
   - export PATH=$PATH:`pwd`/external_binaries/
   - export DEPLOYMENT_STAGE=$CI_COMMIT_REF_NAME
   - if DEPLOYMENT_STAGE=master; then export DEPLOYMENT_STAGE=dev; fi
+  - if DEPLOYMENT_STAGE=gitlab; then export DEPLOYMENT_STAGE=dev; fi
   - source config/environment
 
 unit_tests:
