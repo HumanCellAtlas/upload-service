@@ -9,10 +9,6 @@ fi
 
 export DEPLOYMENT_STAGE=$1
 
-function load_secrets(){
-    export INGEST_API_KEY=$(aws secretsmanager get-secret-value --secret-id dcp/upload/dev/secrets --profile hca | jq .SecretString | jq fromjson.api_key)
-}
-
 # function tag_deploy(){
 #    TAG=`date -u +"${DEPLOYMENT_STAGE}-%Y%m%dT%H%M%SZ"`
 #    echo "Tagging deploy ${TAG}"
@@ -30,7 +26,6 @@ function load_secrets(){
 
 source config/environment
 echo "Deploying to ${DEPLOYMENT_STAGE}"
-load_secrets
 cd terraform/envs/${DEPLOYMENT_STAGE} && make init && cd ../../..
 alembic -x db=${DEPLOYMENT_STAGE} -c=./config/database.ini upgrade head
 make deploy

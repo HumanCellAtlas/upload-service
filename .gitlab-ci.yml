@@ -19,6 +19,7 @@ before_script:
   - if DEPLOYMENT_STAGE=master; then export DEPLOYMENT_STAGE=dev; fi
   - if DEPLOYMENT_STAGE=gitlab; then export DEPLOYMENT_STAGE=dev; fi
   - source config/environment
+  - export INGEST_API_KEY="$(aws secretsmanager get-secret-value --secret-id dcp/upload/${DEPLOYMENT_STAGE}/secrets | jq .SecretString | jq -r fromjson.api_key)"
 
 unit_tests:
   stage: unit_tests
