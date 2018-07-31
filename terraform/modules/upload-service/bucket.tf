@@ -1,9 +1,8 @@
 resource "aws_s3_bucket" "upload_areas_bucket" {
   bucket = "${local.bucket_name}"
-  //acl default is private -- remove?
-//  acl = "private"
-  //allows terraform to destroy a bucket even if it contains resources. Allow?
-//  force_destroy = "false"
+  acl = "private"
+  force_destroy = "false"
+  acceleration_status = "Enabled"
 }
 
 resource "aws_iam_policy" "upload_areas_submitter_access" {

@@ -20,7 +20,7 @@ resource "aws_sqs_queue" "deadletter_queue" {
 
 }
 
-resource "aws_sqs_queue_policy" "test" {
+resource "aws_sqs_queue_policy" "pre_checksum_upload_queue_access" {
   queue_url = "${aws_sqs_queue.upload_queue.id}"
 
   policy = <<POLICY

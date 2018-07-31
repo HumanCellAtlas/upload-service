@@ -25,6 +25,11 @@ variable "ingest_api_key" {
   type = "string"
 }
 
+// Checksum Lambda
+variable "csum_docker_image" {
+  type = "string"
+}
+
 // Batch
 
 variable "validation_cluster_ec2_key_pair" {

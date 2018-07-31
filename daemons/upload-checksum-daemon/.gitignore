@@ -1,2 +1,6 @@
 .chalice/deployments/
 .chalice/venv/
+target/
+vendor/
+vendor.in/
+checksum_daemon.zip

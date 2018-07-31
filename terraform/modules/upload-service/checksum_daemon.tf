@@ -74,8 +74,8 @@ EOF
 
 resource "aws_lambda_function" "checksum_lambda" {
   function_name    = "checksum-${var.deployment_stage}"
-  s3_bucket        = "test-checksum-lambda"
-  s3_key           = "v1.0.0/checksum_daemon.zip"
+  s3_bucket        = "checksum-lambda"
+  s3_key           = "${var.deployment_stage}/checksum_daemon.zip"
   role             = "arn:aws:iam::${local.account_id}:role/checksum-${var.deployment_stage}"
   handler          = "app.call_checksum_daemon"
   runtime          = "python3.6"
@@ -88,7 +88,7 @@ resource "aws_lambda_function" "checksum_lambda" {
       INGEST_API_KEY = "${var.ingest_api_key}",
       INGEST_AMQP_SERVER = "${var.ingest_amqp_server}",
       API_HOST = "${var.upload_api_fqdn}",
-      CSUM_DOCKER_IMAGE = "humancellatlas/upload-checksummer:2"
+      CSUM_DOCKER_IMAGE = "${var.csum_docker_image}"
     }
   }
 }
