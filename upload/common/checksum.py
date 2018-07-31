@@ -2,6 +2,7 @@ import time
 import boto3
 from boto3.s3.transfer import TransferConfig
 from dcplib.checksumming_io import ChecksummingSink
+from dcplib.s3_multipart import get_s3_multipart_chunk_size, MULTIPART_THRESHOLD
 
 from .logging import get_logger
 from .logging import format_logger_with_id
@@ -53,16 +54,6 @@ class UploadedFileChecksummer:
             self.last_diag_output_time = time.time()
 
     def _transfer_config(self) -> TransferConfig:
-        etag_stride = self._s3_chunk_size(self.uploaded_file.s3obj.content_length)
-        return TransferConfig(multipart_threshold=(64 * MB) + 1,
-                              multipart_chunksize=etag_stride)
-
-    @staticmethod
-    def _s3_chunk_size(file_size: int) -> int:
-        if file_size <= 10000 * 64 * MB:  # 640 GB
-            return 64 * MB
-        else:
-            div = file_size // 10000
-            if div * 10000 < file_size:
-                div += 1
-            return ((div + (MB - 1)) // MB) * MB
+        multipart_chunksize = get_s3_multipart_chunk_size(self.uploaded_file.s3obj.content_length)
+        return TransferConfig(multipart_threshold=MULTIPART_THRESHOLD,
+                              multipart_chunksize=multipart_chunksize)
