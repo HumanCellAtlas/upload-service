@@ -1,5 +1,5 @@
-ifndef TERRAFORM_STATE_BUCKET
-$(error Please export TERRAFORM_STATE_BUCKET to your environment)
+ifndef DEPLOYMENT_STAGE
+$(error Please export DEPLOYMENT_STAGE to your environment)
 endif
 
 default: plan
@@ -8,10 +8,20 @@ init:
 	terraform init
 
 plan:
-	terraform plan
+	make retrieve-vars
+	terraform plan -detailed-exitcode
 
 apply:
+	make retrieve-vars
 	terraform apply --backup=-
+
+retrieve-vars:
+	echo "Deployment stage is: ${DEPLOYMENT_STAGE}"
+	aws s3 cp s3://org-humancellatlas-upload-infra/terraform/envs/${DEPLOYMENT_STAGE}/terraform.tfvars terraform.tfvars
+
+upload-vars:
+	echo "Deployment stage is: ${DEPLOYMENT_STAGE}"
+	aws s3 cp terraform.tfvars s3://org-humancellatlas-upload-infra/terraform/envs/${DEPLOYMENT_STAGE}/terraform.tfvars
 
 import:
 	# These resources are shared between deployments in the same account

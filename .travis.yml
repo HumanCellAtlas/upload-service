@@ -27,28 +27,6 @@ after_script:
   - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-deploy:
-  # deploy master branch to the dev environment
-  - provider: script
-    script: scripts/deploy.sh dev
-    skip_cleanup: true
-    on:
-      branch: master
-      python: 3.6
-  # deploy integration branch to the integration environment
-  - provider: script
-    script: scripts/deploy.sh integration
-    skip_cleanup: true
-    on:
-      branch: integration
-      python: 3.6
-  # deploy staging branch to staging environment
-  - provider: script
-    script: scripts/deploy.sh staging
-    skip_cleanup: true
-    on:
-      branch: staging
-      python: 3.6
 env:
   global:
     - CC_TEST_REPORTER_ID=8673a342bc2822cbdfe151982a7e72743f44fecd030867754d8d34ebf845b130

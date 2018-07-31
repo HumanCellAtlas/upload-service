@@ -13,7 +13,8 @@ resource "aws_secretsmanager_secret_version" "secrets" {
   "validation_job_role_arn": "${aws_iam_role.validation_job_role.arn}",
   "csum_job_q_arn": "${aws_batch_job_queue.csum_job_q.arn}",
   "csum_job_role_arn": "${aws_iam_role.csum_job_role.arn}",
-  "upload_submitter_role_arn": "${aws_iam_role.upload_submitter.arn}"
+  "upload_submitter_role_arn": "${aws_iam_role.upload_submitter.arn}",
+  "api_key": "${var.ingest_api_key}"
 }
 SECRETS_JSON
 }
