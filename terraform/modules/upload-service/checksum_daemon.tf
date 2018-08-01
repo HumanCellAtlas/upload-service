@@ -1,5 +1,5 @@
-resource "aws_iam_role" "checksum_lambda" {
-  name = "checksum-${var.deployment_stage}"
+resource "aws_iam_role" "upload_checksum_lambda" {
+  name = "dcp-upload-csum-${var.deployment_stage}"
   assume_role_policy = <<POLICY
 {
   "Version": "2012-10-17",
@@ -17,9 +17,9 @@ resource "aws_iam_role" "checksum_lambda" {
 POLICY
 }
 
-resource "aws_iam_role_policy" "checksum_lambda" {
-  name = "checksum-${var.deployment_stage}"
-  role = "${aws_iam_role.checksum_lambda.name}"
+resource "aws_iam_role_policy" "upload_checksum_lambda" {
+  name = "dcp-upload-csum-${var.deployment_stage}"
+  role = "${aws_iam_role.upload_checksum_lambda.name}"
 
     policy = <<EOF
 {
@@ -72,11 +72,18 @@ resource "aws_iam_role_policy" "checksum_lambda" {
 EOF
 }
 
-resource "aws_lambda_function" "checksum_lambda" {
-  function_name    = "checksum-${var.deployment_stage}"
-  s3_bucket        = "checksum-lambda"
+resource "aws_s3_bucket" "lambda_area_bucket" {
+  bucket = "${var.bucket_name_prefix}checksum-lambda"
+  acl = "private"
+  force_destroy = "false"
+  acceleration_status = "Enabled"
+}
+
+resource "aws_lambda_function" "upload_checksum_lambda" {
+  function_name    = "dcp-upload-csum-${var.deployment_stage}"
+  s3_bucket        = "${aws_s3_bucket.lambda_area_bucket.id}"
   s3_key           = "${var.deployment_stage}/checksum_daemon.zip"
-  role             = "arn:aws:iam::${local.account_id}:role/checksum-${var.deployment_stage}"
+  role             = "arn:aws:iam::${local.account_id}:role/dcp-upload-csum-${var.deployment_stage}"
   handler          = "app.call_checksum_daemon"
   runtime          = "python3.6"
   memory_size      = 512

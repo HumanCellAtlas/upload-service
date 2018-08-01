@@ -28,6 +28,7 @@ variable "ingest_api_key" {
 // Checksum Lambda
 variable "csum_docker_image" {
   type = "string"
+  default = "humancellatlas/upload-checksummer:2"
 }
 
 // Batch

@@ -32,5 +32,5 @@ build:
 
 .PHONY: deploy
 deploy:
-	aws s3 cp $(ZIP_FILE) s3://checksum-lambda/$(DEPLOYMENT_STAGE)/$(ZIP_FILE)
-	aws lambda update-function-code --function-name checksum-predev --s3-bucket checksum-lambda --s3-key $(DEPLOYMENT_STAGE)/$(ZIP_FILE)
+	aws s3 cp $(ZIP_FILE) s3://org-humancellatlas-upload-checksum-lambda/$(DEPLOYMENT_STAGE)/$(ZIP_FILE)
+	aws lambda update-function-code --function-name dcp-upload-csum-$(DEPLOYMENT_STAGE) --s3-bucket org-humancellatlas-upload-checksum-lambda --s3-key $(DEPLOYMENT_STAGE)/$(ZIP_FILE)
