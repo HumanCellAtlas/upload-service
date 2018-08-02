@@ -1,3 +1,11 @@
+data "external" "validation_desired_vcpus" {
+  program = ["python", "${path.module}/fetch_batch_vcpus.py"]
+
+  query = {
+    compute_environment_name = "dcp-upload-validation-cluster-${var.deployment_stage}"
+  }
+}
+
 resource "aws_batch_compute_environment" "validation_compute_env" {
   compute_environment_name = "dcp-upload-validation-cluster-${var.deployment_stage}"
   type = "MANAGED"
@@ -10,9 +18,8 @@ resource "aws_batch_compute_environment" "validation_compute_env" {
     min_vcpus = "${var.validation_cluster_min_vcpus}"
     // You must set desired_vcpus otherwise you get error: "desiredvCpus should be between minvCpus and maxvCpus"
     // However this is actually not settable in AWS.  It will not let you change it.
-    // So you actually have to find out what the current value is and setit to that!
-    // Here. we try set desired vcpus to min vcpus, as that is the resting state in AWS.
-    desired_vcpus = "${var.validation_cluster_min_vcpus}"
+    // Here we use an external data source to dynamically set the desired vcpus to match current state.
+    desired_vcpus = "${data.external.validation_desired_vcpus.result.desired_vcpus}"
     instance_type = [
       "m4"
     ]
