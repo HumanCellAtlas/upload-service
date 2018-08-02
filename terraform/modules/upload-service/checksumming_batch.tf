@@ -1,3 +1,11 @@
+data "external" "checksum_desired_vcpus" {
+  program = ["python", "${path.module}/fetch_batch_vcpus.py"]
+
+  query = {
+    compute_environment_name = "dcp-upload-csum-cluster-${var.deployment_stage}"
+  }
+}
+
 resource "aws_batch_compute_environment" "csum_compute_env" {
   compute_environment_name = "dcp-upload-csum-cluster-${var.deployment_stage}"
   type = "MANAGED"
@@ -8,9 +16,10 @@ resource "aws_batch_compute_environment" "csum_compute_env" {
     spot_iam_fleet_role = "${aws_iam_role.AmazonEC2SpotFleetRole.arn}"
     max_vcpus = 64
     min_vcpus = "${var.csum_cluster_min_vcpus}"
-    // We set desired vcpus to min vcpus, as that is the resting state in AWS
-    // and otherwise we get a change on every apply.
-    desired_vcpus = "${var.csum_cluster_min_vcpus}"
+    // You must set desired_vcpus otherwise you get error: "desiredvCpus should be between minvCpus and maxvCpus"
+    // However this is actually not settable in AWS.  It will not let you change it.
+    // Here we use an external data source to dynamically set the desired vcpus to match current state.
+    desired_vcpus = "${data.external.checksum_desired_vcpus.result.desired_vcpus}"
     instance_type = [
       "m4"
     ]
