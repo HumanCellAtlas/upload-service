@@ -1,5 +1,5 @@
-boto3
-urllib3
-dcplib
-pika
-requests
+boto3==1.7.69
+urllib3==1.23
+dcplib==1.3.2
+pika==0.12.0
+requests==2.19.1

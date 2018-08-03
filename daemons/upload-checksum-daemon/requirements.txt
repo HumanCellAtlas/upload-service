@@ -1,8 +1,8 @@
-boto3
-crcmod
-pika
-requests
-dcplib
-sqlalchemy
-alembic
-psycopg2-binary
+boto3==1.7.69
+crcmod==1.7
+pika==0.12.0
+requests==2.19.1
+dcplib==1.3.2
+SQLAlchemy==1.2.10
+alembic==1.0.0
+psycopg2-binary==2.7.5

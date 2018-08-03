@@ -22,6 +22,7 @@ class UploadedFileChecksummer:
         self.bytes_checksummed = 0
         self.start_time = None
         self.last_diag_output_time = None
+        self.multipart_chunksize = get_s3_multipart_chunk_size(self.uploaded_file.s3obj.content_length)
         format_logger_with_id(logger, "file_key", self.uploaded_file.s3obj.key)
 
     def has_checksums(self):
@@ -40,7 +41,7 @@ class UploadedFileChecksummer:
         return self.checksums
 
     def _compute_checksums(self, progress_callback=None):
-        with ChecksummingSink() as sink:
+        with ChecksummingSink(self.multipart_chunksize) as sink:
             s3client.download_fileobj(self.uploaded_file.upload_area.bucket_name,
                                       self.uploaded_file.s3obj.key, sink,
                                       Callback=progress_callback,
@@ -54,6 +55,5 @@ class UploadedFileChecksummer:
             self.last_diag_output_time = time.time()
 
     def _transfer_config(self) -> TransferConfig:
-        multipart_chunksize = get_s3_multipart_chunk_size(self.uploaded_file.s3obj.content_length)
         return TransferConfig(multipart_threshold=MULTIPART_THRESHOLD,
-                              multipart_chunksize=multipart_chunksize)
+                              multipart_chunksize=self.multipart_chunksize)
