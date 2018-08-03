@@ -2,6 +2,7 @@ import json
 import os
 import random
 import subprocess
+import time
 import unittest
 
 import boto3
@@ -43,7 +44,6 @@ class TestUploadService(unittest.TestCase):
         large_file_name = '4097MB_file'
         self._copy_file_directly_to_upload_area(large_file_name)
         self._verify_file_is_checksummed_via_batch(large_file_name)
-
         self._validate_file(small_file_name)
 
         self._forget_upload_area()
@@ -71,7 +71,7 @@ class TestUploadService(unittest.TestCase):
     def _verify_file_was_checksummed_inline(self, filename):
         print("VERIFY FILE WAS CHECKSUMMED INLINE...")
         WaitFor(self._checksum_record_status, filename)\
-            .to_return_value('CHECKSUMMED', timeout_seconds=30)
+            .to_return_value('CHECKSUMMED', timeout_seconds=300)
 
         # Inline checksums get no job_id
         checksum_record = self._checksum_record(filename)

@@ -3,7 +3,7 @@ from datetime import datetime
 
 import requests
 from sqlalchemy import create_engine, MetaData
-from sqlalchemy.exc import OperationalError, IntegrityError
+from sqlalchemy.exc import OperationalError, IntegrityError, DatabaseError
 
 from .exceptions import UploadException
 from .upload_config import UploadConfig
@@ -73,7 +73,7 @@ def get_pg_record(record_type, record_id):
 def _run_query(query):
     try:
         results = engine.execute(query)
-    except OperationalError as e:
+    except (OperationalError, DatabaseError) as e:
         engine.dispose()
         results = engine.execute(query)
     return results
@@ -82,7 +82,7 @@ def _run_query(query):
 def run_query_with_params(query, params):
     try:
         results = engine.execute(query, params)
-    except OperationalError as e:
+    except (OperationalError, DatabaseError) as e:
         engine.dispose()
         results = engine.execute(query, params)
     return results
