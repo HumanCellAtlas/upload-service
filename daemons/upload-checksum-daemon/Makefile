@@ -21,6 +21,8 @@ build:
 
 	cp -R ../../upload target/
 	cp -R *.py target/
+	# build.zip contains the psycopg2-3.6 package downloaded from https://github.com/jkehler/awslambda-psycopg2
+	# and renamed psycopg2
 	unzip build.zip
 	cp -R build/ target/
 	rm -rf build
@@ -32,5 +34,5 @@ build:
 
 .PHONY: deploy
 deploy:
-	aws s3 cp $(ZIP_FILE) s3://org-humancellatlas-upload-checksum-lambda/$(DEPLOYMENT_STAGE)/$(ZIP_FILE)
-	aws lambda update-function-code --function-name dcp-upload-csum-$(DEPLOYMENT_STAGE) --s3-bucket org-humancellatlas-upload-checksum-lambda --s3-key $(DEPLOYMENT_STAGE)/$(ZIP_FILE)
+	aws s3 cp $(ZIP_FILE) s3://org-humancellatlas-upload-checksum-lambda-deployment/$(DEPLOYMENT_STAGE)/$(ZIP_FILE)
+	aws lambda update-function-code --function-name dcp-upload-csum-$(DEPLOYMENT_STAGE) --s3-bucket org-humancellatlas-upload-checksum-lambda-deployment --s3-key $(DEPLOYMENT_STAGE)/$(ZIP_FILE)

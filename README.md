@@ -21,11 +21,11 @@ The API is defined using an OpenAPI 2.0 Specification (Swagger) in `config/uploa
 
 ### upload-queue
 
-A SQS that recieves messages on S3 ObjectCreated events and then triggers the upload checksum lambda function
+A SQS that receives messages on S3 ObjectCreated events and then triggers the upload checksum lambda function
 
 ### upload-checksum-daemon
 
-Is an lambda function triggered by SQS events that computes checksums for uploaded files.
+Is a lambda function triggered by SQS events that computes checksums for uploaded files.
 
 ### Validation Batch Service
 

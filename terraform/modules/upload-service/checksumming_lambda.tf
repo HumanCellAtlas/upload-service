@@ -105,7 +105,7 @@ output "upload_csum_lambda_role_arn" {
 
 
 resource "aws_s3_bucket" "lambda_area_bucket" {
-  bucket = "${var.bucket_name_prefix}checksum-lambda"
+  bucket = "${var.bucket_name_prefix}checksum-lambda-deployment"
   acl = "private"
   force_destroy = "false"
   acceleration_status = "Enabled"
