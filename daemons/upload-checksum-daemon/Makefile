@@ -1,3 +1,4 @@
+include ../../common.mk
 
 ZIP_FILE := checksum_daemon.zip
 TARGET := target/$(ZIP_FILE)
@@ -28,7 +29,6 @@ build:
 	shopt -s nullglob; for wheel in vendor.in/*/*.whl; do unzip -q -o -d vendor $$wheel; done
 
 	cp -R vendor/* target/
-
 	cd target && zip -r ../$(ZIP_FILE) *
 
 .PHONY: deploy
