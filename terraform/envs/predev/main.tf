@@ -11,7 +11,7 @@ terraform {
 }
 
 provider "aws" {
-  version = ">= 1.16"
+  version = ">= 1.26"
   region = "us-east-1"
   profile = "hca"
 }
@@ -29,6 +29,9 @@ module "upload-service" {
   // API Lambda
   upload_api_fqdn = "${var.upload_api_fqdn}"
   ingest_api_key = "${var.ingest_api_key}"
+
+  // Checksum lambda
+  csum_docker_image = "${var.csum_docker_image}"
 
   // Validation Batch infrastructure.
   validation_cluster_ec2_key_pair = "${var.validation_cluster_ec2_key_pair}"

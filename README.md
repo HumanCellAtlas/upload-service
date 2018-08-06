@@ -19,9 +19,13 @@ The validation service runs Docker images against files.
 Is a Lambda Chalice/Connexion/Flask app that presents the Upload Service REST API.
 The API is defined using an OpenAPI 2.0 Specification (Swagger) in `config/upload-api.yml`.
 
+### upload-queue
+
+A SQS that receives messages on S3 ObjectCreated events and then triggers the upload checksum lambda function
+
 ### upload-checksum-daemon
 
-Is a Lambda Domovoi app triggered by S3 ObjectCreated events that computes checksums for uploaded files.
+Is a lambda function triggered by SQS events that computes checksums for uploaded files.
 
 ### Validation Batch Service
 

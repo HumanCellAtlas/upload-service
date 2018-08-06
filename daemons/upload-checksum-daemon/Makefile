@@ -1,26 +1,38 @@
-include ../../common.mk
 
-export EXPORT_ENV_VARS_TO_LAMBDA=DEPLOYMENT_STAGE \
-			INGEST_AMQP_SERVER \
-			CSUM_DOCKER_IMAGE \
-			API_HOST
+ZIP_FILE := checksum_daemon.zip
+TARGET := target/$(ZIP_FILE)
 
-clean:
-	git clean -df .
+default: build
 
-clobber: clean
-	git checkout .chalice/*.json
+.PHONY: install
+install:
+	virtualenv -p python3 venv
+	. venv/bin/activate && pip install -r requirements.txt --upgrade
 
+
+.PHONY: build
 build:
-	mkdir -p domovoilib/upload/common domovoilib/upload/lambdas
-	cp -R ../../upload/__init__.py \
-		  ../../upload/common \
-		domovoilib/upload
-	cp -R ../../upload/lambdas/__init__.py \
-		  ../../upload/lambdas/checksum_daemon \
-		domovoilib/upload/lambdas
+	rm -rf target
+	mkdir target
+	virtualenv -p python3 venv
+	. venv/bin/activate && pip install -r requirements.txt -t target/ --upgrade
+
+	cp -R vendor.in/* target/
+
+	cp -R ../../upload target/
+	cp -R *.py target/
+	# build.zip contains the psycopg2-3.6 package downloaded from https://github.com/jkehler/awslambda-psycopg2
+	# and renamed psycopg2
+	unzip build.zip
+	cp -R build/ target/
+	rm -rf build
 	shopt -s nullglob; for wheel in vendor.in/*/*.whl; do unzip -q -o -d vendor $$wheel; done
 
-deploy: build
-	./build_deploy_config.sh upload-checksum-daemon $(DEPLOYMENT_STAGE)
-	domovoi deploy --stage $(DEPLOYMENT_STAGE)
+	cp -R vendor/* target/
+
+	cd target && zip -r ../$(ZIP_FILE) *
+
+.PHONY: deploy
+deploy:
+	aws s3 cp $(ZIP_FILE) s3://org-humancellatlas-upload-checksum-lambda-deployment/$(DEPLOYMENT_STAGE)/$(ZIP_FILE)
+	aws lambda update-function-code --function-name dcp-upload-csum-$(DEPLOYMENT_STAGE) --s3-bucket org-humancellatlas-upload-checksum-lambda-deployment --s3-key $(DEPLOYMENT_STAGE)/$(ZIP_FILE)

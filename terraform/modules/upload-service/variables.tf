@@ -25,6 +25,12 @@ variable "ingest_api_key" {
   type = "string"
 }
 
+// Checksum Lambda
+variable "csum_docker_image" {
+  type = "string"
+  default = "humancellatlas/upload-checksummer:2"
+}
+
 // Batch
 
 variable "validation_cluster_ec2_key_pair" {
