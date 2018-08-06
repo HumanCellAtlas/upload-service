@@ -33,6 +33,6 @@ build:
 	cd target && zip -r ../$(ZIP_FILE) *
 
 .PHONY: deploy
-deploy:
+deploy: build
 	aws s3 cp $(ZIP_FILE) s3://org-humancellatlas-upload-checksum-lambda-deployment/$(DEPLOYMENT_STAGE)/$(ZIP_FILE)
 	aws lambda update-function-code --function-name dcp-upload-csum-$(DEPLOYMENT_STAGE) --s3-bucket org-humancellatlas-upload-checksum-lambda-deployment --s3-key $(DEPLOYMENT_STAGE)/$(ZIP_FILE)
