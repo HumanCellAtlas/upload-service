@@ -14,8 +14,7 @@ install:
 build:
 	rm -rf target
 	mkdir target
-	virtualenv -p python3 venv
-	. venv/bin/activate && pip install -r requirements.txt -t target/ --upgrade
+	pip install -r requirements.txt -t target/ --upgrade
 
 	cp -R vendor.in/* target/
 
