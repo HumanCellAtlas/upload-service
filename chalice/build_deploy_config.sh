@@ -69,6 +69,8 @@ export lambda_name="${app_name}-${stage}"
 export region_name=$(aws configure get region)
 export account_id=$(aws sts get-caller-identity | jq -r .Account)
 export lambda_arn=$(aws lambda list-functions | jq -r '.Functions[] | select(.FunctionName==env.lambda_name) | .FunctionArn')
+export UPLOAD_SERVICE_VERSION=$(git describe --tags --always)
+echo "UPLOAD_SERVICE_VERSION=${UPLOAD_SERVICE_VERSION}"
 echo "app_name=${app_name}"
 echo "lambda_name=${lambda_name}"
 echo "lambda_arn=${lambda_arn}"

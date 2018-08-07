@@ -2,16 +2,21 @@ import os, sys, re, logging, collections
 
 import chalice
 
+
 pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), 'chalicelib')) # noqa
 sys.path.insert(0, pkg_root) # noqa
 
 from upload.lambdas.api_server import create_app
+
 
 def get_chalice_app(flask_app):
     app = chalice.Chalice(app_name=flask_app.name)
     flask_app.debug = True
     app.debug = flask_app.debug
     app.log.setLevel(logging.DEBUG)
+    UPLOAD_SERVICE_VERSION = os.getenv('UPLOAD_SERVICE_VERSION')
+
+    print("UPLOAD_SERVICE_VERSION: {}".format(UPLOAD_SERVICE_VERSION))
 
     def dispatch(*args, **kwargs):
         uri_params = app.current_request.uri_params or {}
@@ -46,6 +51,19 @@ def get_chalice_app(flask_app):
         return chalice.Response(status_code=200,
                                 headers={"Content-Type": "text/html"},
                                 body=swagger_ui_html)
+
+    @app.route("/version")
+    def version():
+        data = {
+            'version_info': {
+                'version': UPLOAD_SERVICE_VERSION
+            }
+        }
+        return chalice.Response(
+            status_code=200,
+            headers={"Content-Type": "application/json"},
+            body=data
+        )
 
     return app
 
