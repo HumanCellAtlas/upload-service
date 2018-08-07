@@ -1,4 +1,5 @@
 import json
+import os
 import urllib.parse
 import connexion
 import requests
@@ -12,6 +13,13 @@ from ....common.ingest_notifier import IngestNotifier
 from ....common.logging import get_logger
 
 logger = get_logger(__name__)
+
+UPLOAD_SERVICE_VERSION = os.getenv('UPLOAD_SERVICE_VERSION')
+
+
+@return_exceptions_as_http_errors
+def version():
+    return {'upload_service_version': UPLOAD_SERVICE_VERSION}, requests.codes.ok
 
 
 @return_exceptions_as_http_errors

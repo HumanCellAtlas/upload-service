@@ -20,6 +20,15 @@ securityDefinitions:
     in: header
 
 paths:
+  /version:
+
+    get:
+      summary: Get the current version (git tag) of the upload service
+      operationId: upload.lambdas.api_server.v1.area.version
+      responses:
+        200:
+          description: Here's the version
+
   /v1/area/{upload_area_id}:
 
     post:

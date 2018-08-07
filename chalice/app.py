@@ -14,9 +14,6 @@ def get_chalice_app(flask_app):
     flask_app.debug = True
     app.debug = flask_app.debug
     app.log.setLevel(logging.DEBUG)
-    UPLOAD_SERVICE_VERSION = os.getenv('UPLOAD_SERVICE_VERSION')
-
-    print("UPLOAD_SERVICE_VERSION: {}".format(UPLOAD_SERVICE_VERSION))
 
     def dispatch(*args, **kwargs):
         uri_params = app.current_request.uri_params or {}
@@ -52,18 +49,6 @@ def get_chalice_app(flask_app):
                                 headers={"Content-Type": "text/html"},
                                 body=swagger_ui_html)
 
-    @app.route("/version")
-    def version():
-        data = {
-            'version_info': {
-                'version': UPLOAD_SERVICE_VERSION
-            }
-        }
-        return chalice.Response(
-            status_code=200,
-            headers={"Content-Type": "application/json"},
-            body=data
-        )
 
     return app
 

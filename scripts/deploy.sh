@@ -26,6 +26,8 @@ export DEPLOYMENT_STAGE=$1
 
 source config/environment
 echo "Deploying to ${DEPLOYMENT_STAGE}"
+export UPLOAD_SERVICE_VERSION=$(git describe --tags --always)
+echo "UPLOAD_SERVICE_VERSION=${UPLOAD_SERVICE_VERSION}"
 cd terraform/envs/${DEPLOYMENT_STAGE} && make init && cd ../../..
 alembic -x db=${DEPLOYMENT_STAGE} -c=./config/database.ini upgrade head
 make deploy
