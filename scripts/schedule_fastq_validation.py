@@ -6,13 +6,15 @@ This script schedules fastq validation for all files in an upload area id
 import argparse
 import os
 import requests
+import urllib.parse
 
 
 def main(args):
     data_dir_path = "/data/{0}".format(args.dataset_name)
     for file in os.listdir(data_dir_path):
         if "fastq" in file:
-            upload_url = "https://upload.{0}.data.humancellatlas.org/v1/area/{1}/{2}/validate".format(args.environment, args.upload_area_id, file)
+            filename = urllib.parse.quote(file)
+            upload_url = "https://upload.{0}.data.humancellatlas.org/v1/area/{1}/{2}/validate".format(args.environment, args.upload_area_id, filename)
             headers = {'Api-Key': args.api_key}
             message = {"validator_image": "quay.io/humancellatlas/fastq_utils:master"}
             response = requests.put(upload_url, headers=headers, json=message)
