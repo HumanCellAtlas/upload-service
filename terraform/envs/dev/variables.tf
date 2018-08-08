@@ -8,6 +8,10 @@ variable "vpc_default_security_group_id" {
   type = "string"
 }
 
+variable "upload_service_version" {
+  type = "string"
+}
+
 // S3
 
 variable "bucket_name_prefix" {

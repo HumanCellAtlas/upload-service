@@ -20,6 +20,8 @@ module "upload-service" {
   source = "../../modules/upload-service"
   deployment_stage = "${var.deployment_stage}"
 
+  upload_service_version = "${var.upload_service_version}"
+
   vpc_id = "${var.vpc_id}"
   vpc_default_security_group_id = "${var.vpc_default_security_group_id}"
 

@@ -39,6 +39,7 @@ class ChecksumDaemon:
         logger.debug("Ahm ahliiivvve!")
         self.config = UploadConfig()
         self._read_environment()
+        logger.debug("UPLOAD_SERVICE_VERSION: {}".format(self.upload_service_version))
         self.upload_area = None
         self.uploaded_file = None
 
@@ -47,6 +48,7 @@ class ChecksumDaemon:
         self.docker_image = os.environ['CSUM_DOCKER_IMAGE']
         self.ingest_amqp_server = os.environ['INGEST_AMQP_SERVER']
         self.api_host = os.environ["API_HOST"]
+        self.upload_service_version = os.environ["UPLOAD_SERVICE_VERSION"]
 
     def consume_event(self, event):
         for record in event['Records']:

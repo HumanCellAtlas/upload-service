@@ -35,3 +35,6 @@ build:
 deploy: build
 	aws s3 cp $(ZIP_FILE) s3://org-humancellatlas-upload-checksum-lambda-deployment/$(DEPLOYMENT_STAGE)/$(ZIP_FILE)
 	aws lambda update-function-code --function-name dcp-upload-csum-$(DEPLOYMENT_STAGE) --s3-bucket org-humancellatlas-upload-checksum-lambda-deployment --s3-key $(DEPLOYMENT_STAGE)/$(ZIP_FILE)
+	# update lambda env vars without calling terraform apply
+	./set_env_vars.py --function-name dcp-upload-csum-${DEPLOYMENT_STAGE} --upload-service-version ${UPLOAD_SERVICE_VERSION}
+

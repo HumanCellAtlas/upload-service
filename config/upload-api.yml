@@ -28,6 +28,10 @@ paths:
       responses:
         200:
           description: Here's the version
+        401:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
 
   /v1/area/{upload_area_id}:
 

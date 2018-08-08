@@ -10,6 +10,10 @@ variable "deployment_stage" {
   type = "string"
 }
 
+variable "upload_service_version" {
+  type = "string"
+}
+
 // S3
 
 variable "bucket_name_prefix" {
