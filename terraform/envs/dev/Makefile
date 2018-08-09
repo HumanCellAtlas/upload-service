@@ -1,7 +1,3 @@
-ifndef DEPLOYMENT_STAGE
-$(error Please export DEPLOYMENT_STAGE to your environment)
-endif
-
 default: plan
 
 init:
@@ -16,12 +12,10 @@ apply:
 	terraform apply --backup=-
 
 retrieve-vars:
-	echo "Deployment stage is: ${DEPLOYMENT_STAGE}"
-	aws s3 cp s3://org-humancellatlas-upload-infra/terraform/envs/${DEPLOYMENT_STAGE}/terraform.tfvars terraform.tfvars
+	aws s3 cp s3://org-humancellatlas-upload-infra/terraform/envs/dev/terraform.tfvars terraform.tfvars
 
 upload-vars:
-	echo "Deployment stage is: ${DEPLOYMENT_STAGE}"
-	aws s3 cp terraform.tfvars s3://org-humancellatlas-upload-infra/terraform/envs/${DEPLOYMENT_STAGE}/terraform.tfvars
+	aws s3 cp terraform.tfvars s3://org-humancellatlas-upload-infra/terraform/envs/dev/terraform.tfvars
 
 import:
 	# These resources are shared between deployments in the same account
