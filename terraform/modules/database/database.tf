@@ -26,7 +26,7 @@ resource "aws_rds_cluster" "upload" {
   preferred_maintenance_window = "sat:09:08-sat:09:38"
   storage_encrypted       = "true"
   skip_final_snapshot     = "true"
-  vpc_security_group_ids  = ["${var.vpc_rds_security_group_id}"]
+  vpc_security_group_ids  = ["${aws_security_group.rds-postgres.id}"]
   db_subnet_group_name    = "default"
   db_cluster_parameter_group_name = "default.aurora-postgresql9.6"
 }

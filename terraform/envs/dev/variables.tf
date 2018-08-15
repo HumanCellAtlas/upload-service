@@ -48,9 +48,6 @@ variable "csum_cluster_min_vcpus" {
 
 // RDS
 
-variable "vpc_rds_security_group_id" {
-  type = "string"
-}
 variable "db_username" {
   type = "string"
 }
