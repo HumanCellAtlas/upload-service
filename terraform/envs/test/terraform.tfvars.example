@@ -1,5 +1,4 @@
 // Database
-vpc_rds_security_group_id = "sg-xxxxxxxx"
 db_username = "xxxxxxxx"
 db_password = "xxxxxxxxxxxxxx"
 vpc_id = "vpc-xxxxxxxx"

@@ -64,7 +64,7 @@ resource "aws_ecs_service" "pgbouncer" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    security_groups = ["${var.vpc_rds_security_group_id}"]
+    security_groups = ["${aws_security_group.rds-postgres.id}"]
     subnets         = ["${var.pgbouncer_subnet_id}"]
     assign_public_ip = true
   }
