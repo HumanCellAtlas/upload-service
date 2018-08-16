@@ -44,7 +44,7 @@ class ChecksumDaemon:
         self.uploaded_file = None
 
     def _read_environment(self):
-        self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
+        self.deployment_stage = os.environ["DEPLOYMENT_STAGE"]
         self.docker_image = os.environ['CSUM_DOCKER_IMAGE']
         self.ingest_amqp_server = os.environ['INGEST_AMQP_SERVER']
         self.api_host = os.environ["API_HOST"]
