@@ -13,7 +13,7 @@ from ...common.logging import get_logger
 from ...common.logging import format_logger_with_id
 from ...common.retry import retry_on_aws_too_many_requests
 from ...common.upload_area import UploadArea
-from ...common.upload_config import UploadConfig
+from ...common.upload_config import UploadConfig, UploadVersion
 
 logger = get_logger(__name__)
 
@@ -38,6 +38,8 @@ class ChecksumDaemon:
         format_logger_with_id(logger, "request_id", self.request_id)
         logger.debug("Ahm ahliiivvve!")
         self.config = UploadConfig()
+        self.upload_service_version = UploadVersion().upload_service_version
+        logger.debug("UPLOAD_SERVICE_VERSION: {}".format(self.upload_service_version))
         self._read_environment()
         self.upload_area = None
         self.uploaded_file = None
