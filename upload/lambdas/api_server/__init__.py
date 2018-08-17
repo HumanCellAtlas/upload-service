@@ -9,7 +9,6 @@ import requests
 from connexion.resolver import RestyResolver
 from connexion.lifecycle import ConnexionResponse
 
-from upload.common.upload_config import UploadVersion
 from ...common.exceptions import UploadException
 from ...common.logging import get_logger
 from ...common.logging import format_logger_with_id
@@ -26,8 +25,6 @@ def create_app():
     resolver = RestyResolver("upload.api_server", collection_endpoint_name="list")
     swagger_spec_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'config', 'upload-api.yml')
     app.add_api(swagger_spec_path, resolver=resolver, validate_responses=True)
-    upload_service_version = UploadVersion().upload_service_version
-    logger.warning("UPLOAD_SERVICE_VERSION: {}".format(upload_service_version))
     return app
 
 
