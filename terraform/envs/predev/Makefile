@@ -5,11 +5,11 @@ init:
 
 plan:
 	make retrieve-vars
-	terraform plan -var upload_service_version=`(git describe --tags --always)` -detailed-exitcode
+	terraform plan -detailed-exitcode
 
 apply:
 	make retrieve-vars
-	terraform apply -var upload_service_version=`(git describe --tags --always)` --backup=-
+	terraform apply --backup=-
 
 retrieve-vars:
 	aws s3 cp s3://org-humancellatlas-upload-infra/terraform/envs/predev/terraform.tfvars terraform.tfvars

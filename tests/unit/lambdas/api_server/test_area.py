@@ -23,21 +23,6 @@ if __name__ == '__main__':
     sys.path.insert(0, pkg_root)  # noqa
 
 
-class TestVersionEndpoint(UploadTestCaseUsingMockAWS):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.client = client_for_test_api_server()
-
-    def test_get_version(self):
-        response = self.client.get(f"/version")
-
-        self.assertEqual(200, response.status_code)
-        data1 = json.loads(response.data)
-
-        self.assertEquals(os.environ['UPLOAD_SERVICE_VERSION'], data1['upload_service_version'])
-
-
 class TestApiAuthenticationErrors(UploadTestCaseUsingMockAWS):
 
     def __init__(self, *args, **kwargs):
@@ -74,6 +59,7 @@ class TestApiAuthenticationErrors(UploadTestCaseUsingMockAWS):
         response = self.client.post(f"/v1/area/{str(uuid.uuid4())}", headers={'Api-Key': 'I-HAXX0RED-U'})
 
         self.assertEqual(401, response.status_code)
+
 
 class TestAreaApi(UploadTestCaseUsingMockAWS):
 

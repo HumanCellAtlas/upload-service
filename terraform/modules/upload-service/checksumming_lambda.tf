@@ -127,8 +127,7 @@ resource "aws_lambda_function" "upload_checksum_lambda" {
       INGEST_API_KEY = "${var.ingest_api_key}",
       INGEST_AMQP_SERVER = "${var.ingest_amqp_server}",
       API_HOST = "${var.upload_api_fqdn}",
-      CSUM_DOCKER_IMAGE = "${var.csum_docker_image}",
-      UPLOAD_SERVICE_VERSION = "${var.upload_service_version}"
+      CSUM_DOCKER_IMAGE = "${var.csum_docker_image}"
     }
   }
 }

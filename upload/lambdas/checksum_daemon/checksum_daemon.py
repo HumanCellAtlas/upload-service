@@ -13,7 +13,7 @@ from ...common.logging import get_logger
 from ...common.logging import format_logger_with_id
 from ...common.retry import retry_on_aws_too_many_requests
 from ...common.upload_area import UploadArea
-from ...common.upload_config import UploadConfig
+from ...common.upload_config import UploadConfig, UploadVersion
 
 logger = get_logger(__name__)
 
@@ -38,17 +38,17 @@ class ChecksumDaemon:
         format_logger_with_id(logger, "request_id", self.request_id)
         logger.debug("Ahm ahliiivvve!")
         self.config = UploadConfig()
-        self._read_environment()
+        self.upload_service_version = UploadVersion().upload_service_version
         logger.debug("UPLOAD_SERVICE_VERSION: {}".format(self.upload_service_version))
+        self._read_environment()
         self.upload_area = None
         self.uploaded_file = None
 
     def _read_environment(self):
-        self.deployment_stage = os.environ["DEPLOYMENT_STAGE"]
+        self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
         self.docker_image = os.environ['CSUM_DOCKER_IMAGE']
         self.ingest_amqp_server = os.environ['INGEST_AMQP_SERVER']
         self.api_host = os.environ["API_HOST"]
-        self.upload_service_version = os.environ["UPLOAD_SERVICE_VERSION"]
 
     def consume_event(self, event):
         for record in event['Records']:
