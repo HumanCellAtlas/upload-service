@@ -1,17 +1,16 @@
 include ../../common.mk
+.PHONY: install build stage deploy
 
-ZIP_FILE := checksum_daemon.zip
-TARGET := target/$(ZIP_FILE)
+ZIP_FILE=checksum_daemon.zip
+BUCKET=$(BUCKET_NAME_PREFIX)checksum-lambda-deployment
+STAGED_FILE_KEY=$(DEPLOYMENT_STAGE)/$(ZIP_FILE)
 
 default: build
 
-.PHONY: install
 install:
 	virtualenv -p python3 venv
 	. venv/bin/activate && pip install -r requirements.txt --upgrade
 
-
-.PHONY: build
 build:
 	rm -rf target
 	mkdir target
@@ -31,7 +30,8 @@ build:
 	cp -R vendor/* target/
 	cd target && zip -r ../$(ZIP_FILE) *
 
-.PHONY: deploy
-deploy: build
-	aws s3 cp $(ZIP_FILE) s3://org-humancellatlas-upload-checksum-lambda-deployment/$(DEPLOYMENT_STAGE)/$(ZIP_FILE)
-	aws lambda update-function-code --function-name dcp-upload-csum-$(DEPLOYMENT_STAGE) --s3-bucket org-humancellatlas-upload-checksum-lambda-deployment --s3-key $(DEPLOYMENT_STAGE)/$(ZIP_FILE)
+stage: build
+	aws s3 cp $(ZIP_FILE) s3://$(BUCKET)/$(STAGED_FILE_KEY)
+
+deploy: stage
+	aws lambda update-function-code --function-name dcp-upload-csum-$(DEPLOYMENT_STAGE) --s3-bucket $(BUCKET) --s3-key $(STAGED_FILE_KEY)
