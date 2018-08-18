@@ -1,3 +1,7 @@
+DEPLOYMENT_STAGE=dev
+TF_STATE_BUCKET=org-humancellatlas-upload-infra
+S3_TFVARS_FILE=s3://$(TF_STATE_BUCKET)/terraform/envs/$(DEPLOYMENT_STAGE)/terraform.tfvars
+
 default: plan
 
 init:
@@ -12,10 +16,10 @@ apply:
 	terraform apply --backup=-
 
 retrieve-vars:
-	aws s3 cp s3://org-humancellatlas-upload-infra/terraform/envs/dev/terraform.tfvars terraform.tfvars
+	aws s3 cp $(S3_TFVARS_FILE) terraform.tfvars
 
 upload-vars:
-	aws s3 cp terraform.tfvars s3://org-humancellatlas-upload-infra/terraform/envs/dev/terraform.tfvars
+	aws s3 cp terraform.tfvars $(S3_TFVARS_FILE)
 
 import:
 	# These resources are shared between deployments in the same account
