@@ -75,6 +75,8 @@ variable "ingest_amqp_server" {
 
 data "aws_caller_identity" "current" {}
 
+data "aws_region" "current" {}
+
 data "aws_subnet_ids" "vpc" {
   vpc_id = "${var.vpc_id}"
 }

@@ -79,7 +79,7 @@ resource "aws_iam_role_policy" "upload_csum_lambda" {
         "secretsmanager:GetSecretValue"
       ],
       "Resource": [
-        "arn:aws:secretsmanager:us-east-1:${local.account_id}:secret:dcp/upload/${var.deployment_stage}/*"
+        "arn:aws:secretsmanager:${local.aws_region}:${local.account_id}:secret:dcp/upload/${var.deployment_stage}/*"
       ]
     },
     {
