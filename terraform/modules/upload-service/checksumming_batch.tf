@@ -65,6 +65,16 @@ resource "aws_iam_policy" "csum_job_policy" {
             "Resource": [
                 "arn:aws:s3:::${aws_s3_bucket.upload_areas_bucket.bucket}/*"
             ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "secretsmanager:DescribeSecret",
+                "secretsmanager:GetSecretValue"
+            ],
+            "Resource": [
+                "arn:aws:secretsmanager:${local.aws_region}:${local.account_id}:secret:dcp/upload/${var.deployment_stage}/*"
+            ]
         }
     ]
 }
