@@ -23,7 +23,7 @@ def update_event(event, file_payload, client=requests):
             }
     upload_area_id = file_payload["upload_area_id"]
     event_id = event.id
-    api_url = f"http://{url}/{api_version}/area/{upload_area_id}/{action}/{event_id}"
+    api_url = f"https://{url}/{api_version}/area/{upload_area_id}/{action}/{event_id}"
     logger.debug(f"update_event: sending to {api_url}: {data}")
     response = client.post(api_url, headers=header, data=json.dumps(data))
     return response
