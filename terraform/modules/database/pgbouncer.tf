@@ -76,7 +76,7 @@ resource "aws_ecs_service" "pgbouncer" {
   }
 
   depends_on = [
-    "aws_lb_listener.front_end", "aws_ecs_task_definition.pgbouncer"
+    "aws_lb_listener.front_end", "aws_rds_cluster_instance.cluster_instances"
   ]
 }
 
