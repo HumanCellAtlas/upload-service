@@ -8,6 +8,9 @@ RUN pip install /tmp/crcmod==1.7/crcmod-1.7-cp36-cp36m-linux_x86_64.whl
 RUN pip install --requirement /tmp/requirements.txt
 
 ADD code /
+
+ENV AWS_DEFAULT_REGION='us-east-1'
+
 RUN chmod +x /checksummer.py
 
 CMD ["/checksummer.py"]
