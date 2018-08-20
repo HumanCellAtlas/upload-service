@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, Column, Integer, String, DateTime, Foreign
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
-from upload.common.upload_config import UploadConfig
+from upload.common.upload_config import UploadDbConfig
 
 
 Base = declarative_base()
@@ -65,7 +65,7 @@ DbUploadArea.files = relationship('DbFile', order_by=DbFile.id, back_populates='
 DbFile.checksums = relationship('DbChecksum', order_by=DbChecksum.created_at, back_populates='file')
 DbFile.validations = relationship('DbValidation', order_by=DbValidation.created_at, back_populates='file')
 
-engine = create_engine(UploadConfig().database_uri)
+engine = create_engine(UploadDbConfig().database_uri)
 Base.metadata.bind = engine
 db_session_maker = sessionmaker()
 db_session_maker.bind = engine

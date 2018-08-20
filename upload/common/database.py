@@ -6,9 +6,9 @@ from sqlalchemy import create_engine, MetaData
 from sqlalchemy.exc import OperationalError, IntegrityError, DatabaseError
 
 from .exceptions import UploadException
-from .upload_config import UploadConfig
+from .upload_config import UploadDbConfig
 
-config = UploadConfig()
+config = UploadDbConfig()
 engine = create_engine(config.pgbouncer_uri, pool_size=1)
 meta = MetaData(engine, reflect=True)
 record_type_table_map = {

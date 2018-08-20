@@ -6,7 +6,7 @@ import os
 import sys
 pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
 sys.path.insert(0, pkg_root)  # noqa
-from upload.common.upload_config import UploadConfig
+from upload.common.upload_config import UploadDbConfig
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -71,8 +71,7 @@ def run_migrations_online():
     if os.environ["DEPLOYMENT_STAGE"] != db_name:
         raise Exception("Deployment stage os environ var and target db arg are different")
 
-    upload_config = UploadConfig()
-    alembic_config["sqlalchemy.url"] = upload_config.database_uri
+    alembic_config["sqlalchemy.url"] = UploadDbConfig().database_uri
 
     engine = engine_from_config(
         alembic_config,
