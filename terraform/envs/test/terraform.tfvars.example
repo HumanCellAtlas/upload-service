@@ -1,5 +1,6 @@
+// VPC
+vpc_cidr_block = "xxx.xxx.xxx.xxx/xx"
 // Database
 db_username = "xxxxxxxx"
 db_password = "xxxxxxxxxxxxxx"
-vpc_id = "vpc-xxxxxxxx"
 db_instance_count = 1

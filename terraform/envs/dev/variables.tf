@@ -1,10 +1,10 @@
 variable "deployment_stage" {
   type = "string"
 }
-variable "vpc_id" {
-  type = "string"
-}
-variable "vpc_default_security_group_id" {
+
+// VPC
+
+variable "vpc_cidr_block" {
   type = "string"
 }
 
@@ -24,6 +24,7 @@ variable "ingest_api_key" {
 }
 
 // Checksum Lambda
+
 variable "csum_docker_image" {
   type = "string"
 }
