@@ -1,12 +1,10 @@
-variable "vpc_id" {
-  type = "string"
-}
-
-variable "vpc_default_security_group_id" {
-  type = "string"
-}
-
 variable "deployment_stage" {
+  type = "string"
+}
+
+// VPC
+
+variable "vpc_cidr_block" {
   type = "string"
 }
 
@@ -77,11 +75,6 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
-data "aws_subnet_ids" "vpc" {
-  vpc_id = "${var.vpc_id}"
-}
-
-data "aws_subnet" "vpc" {
-  count = "${length(data.aws_subnet_ids.vpc.ids)}"
-  id = "${data.aws_subnet_ids.vpc.ids[count.index]}"
+data "aws_subnet_ids" "upload_vpc" {
+  vpc_id = "${module.upload-vpc.vpc_id}"
 }

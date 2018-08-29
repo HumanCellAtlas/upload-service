@@ -19,9 +19,7 @@ provider "aws" {
 module "upload-service" {
   source = "../../modules/upload-service"
   deployment_stage = "${var.deployment_stage}"
-
-  vpc_id = "${var.vpc_id}"
-  vpc_default_security_group_id = "${var.vpc_default_security_group_id}"
+  vpc_cidr_block = "${var.vpc_cidr_block}"
 
   // S3
   bucket_name_prefix = "${var.bucket_name_prefix}"

@@ -25,10 +25,10 @@ resource "aws_batch_compute_environment" "validation_compute_env" {
     ]
     image_id = "${var.validation_cluster_ami_id}"
     subnets = [
-      "${data.aws_subnet.vpc.*.id}"
+      "${data.aws_subnet_ids.upload_vpc.ids}"
     ]
     security_group_ids = [
-      "${var.vpc_default_security_group_id}"
+      "${module.upload-vpc.vpc_default_security_group_id}"
     ]
     ec2_key_pair = "${var.validation_cluster_ec2_key_pair}"
     instance_role = "${aws_iam_instance_profile.ecsInstanceRole.arn}"
