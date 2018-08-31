@@ -25,6 +25,8 @@ paths:
     get:
       summary: Get the current version (git tag) of the upload service
       operationId: upload.lambdas.api_server.version.version
+      tags:
+        - All
       responses:
         200:
           description: Here's the version
