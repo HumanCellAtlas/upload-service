@@ -59,6 +59,7 @@ class ChecksumDaemon:
             self._find_file(file_key)
             if self._the_file_was_checksummed_more_recently_than_it_was_modified(file_key):
                 logger.debug("Checksum batch job not scheduled.")
+                self._notify_ingest()
             else:
                 self._checksum_file()
 
