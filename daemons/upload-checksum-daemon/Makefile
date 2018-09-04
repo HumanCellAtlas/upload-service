@@ -1,5 +1,5 @@
 include ../../common.mk
-.PHONY: install build stage deploy
+.PHONY: install build stage deploy clobber
 
 ZIP_FILE=checksum_daemon.zip
 BUCKET=$(BUCKET_NAME_PREFIX)checksum-lambda-deployment
@@ -35,3 +35,5 @@ stage: build
 
 deploy: stage
 	aws lambda update-function-code --function-name dcp-upload-csum-$(DEPLOYMENT_STAGE) --s3-bucket $(BUCKET) --s3-key $(STAGED_FILE_KEY)
+
+clobber: ;

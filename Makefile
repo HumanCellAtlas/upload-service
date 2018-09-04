@@ -17,6 +17,7 @@ functional-tests:
 
 clean clobber build deploy:
 	$(MAKE) -C chalice $@
+	$(MAKE) -C daemons $@
 
 run: build
 	scripts/upload-api
