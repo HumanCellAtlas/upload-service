@@ -121,7 +121,37 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_update_file_checksum(self, mock_format_and_send_notification, mock_connect):
+    def test_unscheduled_status_file_checksum(self, mock_format_and_send_notification, mock_connect):
+        area_id = self._create_area()
+        s3obj = self._mock_upload_file(area_id, 'foo.json')
+        upload_area = UploadArea(area_id)
+        uploaded_file = UploadedFile(upload_area, s3object=s3obj)
+        uploaded_file.create_record()
+        response = self.client.get(f"/v1/area/{area_id}/foo.json/checksum")
+        checksum_status = response.get_json()['checksum_status']
+        self.assertEqual(checksum_status, "UNSCHEDULED")
+
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
+    def test_scheduled_status_file_checksum(self, mock_format_and_send_notification, mock_connect):
+        checksum_id = str(uuid.uuid4())
+        area_id = self._create_area()
+        s3obj = self._mock_upload_file(area_id, 'foo.json')
+        upload_area = UploadArea(area_id)
+        uploaded_file = UploadedFile(upload_area, s3object=s3obj)
+        uploaded_file.create_record()
+        checksum_event = UploadedFileChecksumEvent(file_id=s3obj.key,
+                                                   checksum_id=checksum_id,
+                                                   job_id='12345',
+                                                   status="SCHEDULED")
+        checksum_event.create_record()
+        response = self.client.get(f"/v1/area/{area_id}/foo.json/checksum")
+        checksum_status = response.get_json()['checksum_status']
+        self.assertEqual(checksum_status, "SCHEDULED")
+
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
+    def test_checksumming_status_file_checksum(self, mock_format_and_send_notification, mock_connect):
         checksum_id = str(uuid.uuid4())
         area_id = self._create_area()
         s3obj = self._mock_upload_file(area_id, 'foo.json')
@@ -143,11 +173,24 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
                                     headers=self.authentication_header,
                                     data=json.dumps(data))
         self.assertEqual(204, response.status_code)
-        record = get_pg_record("checksum", checksum_id)
-        self.assertEqual("CHECKSUMMING", record["status"])
-        self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("checksum_started_at"))))
-        self.assertEqual(None, record["checksum_ended_at"])
-        mock_format_and_send_notification.assert_not_called()
+        response = self.client.get(f"/v1/area/{area_id}/foo.json/checksum")
+        checksum_status = response.get_json()['checksum_status']
+        self.assertEqual(checksum_status, "CHECKSUMMING")
+
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
+    def test_checksummed_status_file_checksum(self, mock_format_and_send_notification, mock_connect):
+        checksum_id = str(uuid.uuid4())
+        area_id = self._create_area()
+        s3obj = self._mock_upload_file(area_id, 'foo.json')
+        upload_area = UploadArea(area_id)
+        uploaded_file = UploadedFile(upload_area, s3object=s3obj)
+        uploaded_file.create_record()
+        checksum_event = UploadedFileChecksumEvent(file_id=s3obj.key,
+                                                   checksum_id=checksum_id,
+                                                   job_id='12345',
+                                                   status="SCHEDULED")
+        checksum_event.create_record()
 
         data = {
             "status": "CHECKSUMMED",
@@ -158,19 +201,9 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
                                     headers=self.authentication_header,
                                     data=json.dumps(data))
         self.assertEqual(204, response.status_code)
-        mock_format_and_send_notification.assert_called_once_with({
-            'upload_area_id': area_id,
-            'name': 'foo.json',
-            'size': 3,
-            'last_modified': s3obj.last_modified.isoformat(),
-            'content_type': "application/json",
-            'url': f"s3://{self.config.bucket_name}/{area_id}/foo.json",
-            'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
-        })
-        record = get_pg_record("checksum", checksum_id)
-        self.assertEqual("CHECKSUMMED", record["status"])
-        self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("checksum_started_at"))))
-        self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("checksum_ended_at"))))
+        response = self.client.get(f"/v1/area/{area_id}/foo.json/checksum")
+        checksum_status = response.get_json()['checksum_status']
+        self.assertEqual(checksum_status, "CHECKSUMMED")
 
     @patch('upload.common.uploaded_file.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES + 1)
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
@@ -231,7 +264,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
         uploaded_file.create_record()
-        response = self.client.get(f"/v1/area/{area_id}/foo.json/validate", headers=self.authentication_header)
+        response = self.client.get(f"/v1/area/{area_id}/foo.json/validate")
         validation_status = response.get_json()['validation_status']
         self.assertEqual(validation_status, "UNSCHEDULED")
 
@@ -249,7 +282,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
                                                        job_id='12345',
                                                        status="SCHEDULED")
         validation_event.create_record()
-        response = self.client.get(f"/v1/area/{area_id}/foo.json/validate", headers=self.authentication_header)
+        response = self.client.get(f"/v1/area/{area_id}/foo.json/validate")
         validation_status = response.get_json()['validation_status']
         self.assertEqual(validation_status, "SCHEDULED")
 
@@ -281,7 +314,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("validation_started_at"))))
         self.assertEqual(None, record["validation_ended_at"])
         self.assertEqual(None, record.get("results"))
-        response = self.client.get(f"/v1/area/{area_id}/foo.json/validate", headers=self.authentication_header)
+        response = self.client.get(f"/v1/area/{area_id}/foo.json/validate")
         validation_status = response.get_json()['validation_status']
         self.assertEqual(validation_status, "VALIDATING")
         mock_format_and_send_notification.assert_not_called()
@@ -331,7 +364,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("validation_started_at"))))
         self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("validation_ended_at"))))
         self.assertEqual(uploaded_file.info(), record.get("results"))
-        response = self.client.get(f"/v1/area/{area_id}/foo.json/validate", headers=self.authentication_header)
+        response = self.client.get(f"/v1/area/{area_id}/foo.json/validate")
         validation_status = response.get_json()['validation_status']
         self.assertEqual(validation_status, "VALIDATED")
 
