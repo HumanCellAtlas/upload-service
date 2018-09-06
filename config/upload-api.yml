@@ -313,6 +313,44 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+  /v1/area/{upload_area_id}/{filename}/checksum:
+
+    get:
+      summary: Get status and results of latest checksum job for a file
+      operationId: upload.lambdas.api_server.v1.area.retrieve_checksum_status_and_values
+      description: |
+        Get status and results of latest checksum job for a file.
+      tags:
+        - All
+      parameters:
+        - name: upload_area_id
+          in: path
+          description: A RFC4122-compliant ID for the upload area.
+          required: true
+          type: string
+        - name: filename
+          in: path
+          description: Name of file.  Must exist in the upload area.
+          required: true
+          type: string
+      responses:
+        200:
+          description: Checksum status
+          schema:
+            type: object
+            properties:
+              validation_status:
+                type: string
+                description: A status for the checksum job.
+        401:
+          description: Unrecognized Api-Key.
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
   /v1/area/{upload_area_id}/{filename}/validate:
 
     put:
@@ -389,15 +427,8 @@ paths:
       description: |
         Get status and results of latest validation job for a file.
       tags:
-        - For Ingestion Service Use Only
-      security:
-        - api_key: []
+        - All
       parameters:
-        - name: Api-Key
-          in: header
-          description: An authentication token provided by the service provider.
-          required: true
-          type: string
         - name: upload_area_id
           in: path
           description: A RFC4122-compliant ID for the upload area.

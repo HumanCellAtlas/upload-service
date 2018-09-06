@@ -134,3 +134,14 @@ class UploadedFile:
             status = rows[0][0]
             results = rows[0][1]
         return status, results
+
+    def retrieve_latest_file_checksum_status_and_values(self):
+        status = "UNSCHEDULED"
+        checksums = None
+        query_results = run_query_with_params("SELECT status, checksums FROM checksum \
+            WHERE file_id = %s order by created_at desc limit 1;", (self.s3obj.key,))
+        rows = query_results.fetchall()
+        if len(rows) > 0:
+            status = rows[0][0]
+            checksums = rows[0][1]
+        return status, checksums
