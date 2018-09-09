@@ -61,7 +61,7 @@ class TestUploadService(unittest.TestCase):
 
     def _upload_file_using_cli(self, file_path):
         self._run("SELECT UPLOAD AREA", ['hca', 'upload', 'select', self.uri])
-        self._run("UPLOAD FILE USING CLI", ['hca', 'upload', 'file', file_path])
+        self._run("UPLOAD FILE USING CLI", ['hca', 'upload', 'files', file_path])
 
     def _copy_file_directly_to_upload_area(self, filename):
         source_url = f"s3://org-humancellatlas-dcp-test-data/upload_service/{filename}"
