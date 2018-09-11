@@ -337,11 +337,7 @@ paths:
         200:
           description: Checksum status
           schema:
-            type: object
-            properties:
-              validation_status:
-                type: string
-                description: A status for the checksum job.
+            $ref: '#/definitions/ChecksumInfo'
         401:
           description: Unrecognized Api-Key.
           schema:
@@ -443,11 +439,7 @@ paths:
         200:
           description: Validation status
           schema:
-            type: object
-            properties:
-              validation_status:
-                type: string
-                description: A status for the validation event.
+            $ref: '#/definitions/ValidationInfo'
         401:
           description: Unrecognized Api-Key.
           schema:
@@ -681,3 +673,43 @@ definitions:
           crc32c:
             type: string
             description: CRC32C
+
+  ChecksumInfo:
+    type: object
+    properties:
+      checksum_status:
+        type: string
+        description: status of checksumming process
+      checksums:
+        type: object
+        properties:
+          s3_etag:
+            type: string
+            description: S3 ETag
+          sha1:
+            type: string
+            description: SHA1
+          sha256:
+            type: string
+            description: SHA256
+          crc32c:
+            type: string
+            description: CRC32C
+
+  ValidationInfo:
+    type: object
+    properties:
+      validation_results:
+        type: object
+        properties:
+          validation_state:
+            type: string
+            description: validation state
+          validation_errors:
+            type: array
+            items:
+              type: string
+              description: list of validation errors
+      validation_status:
+        type: string
+        description: status of validation process
