@@ -439,11 +439,7 @@ paths:
         200:
           description: Validation status
           schema:
-            type: object
-            properties:
-              validation_status:
-                type: string
-                description: A status for the validation event.
+            $ref: '#/definitions/ValidationInfo'
         401:
           description: Unrecognized Api-Key.
           schema:
@@ -699,3 +695,21 @@ definitions:
           crc32c:
             type: string
             description: CRC32C
+
+  ValidationInfo:
+    type: object
+    properties:
+      validation_results:
+        type: object
+        properties:
+          validation_state:
+            type: string
+            description: validation state
+          validation_errors:
+            type: array
+            items:
+              type: string
+              description: list of validation errors
+      validation_status:
+        type: string
+        description: status of validation process
