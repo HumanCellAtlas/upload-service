@@ -713,3 +713,4 @@ definitions:
       validation_status:
         type: string
         description: status of validation process
+
