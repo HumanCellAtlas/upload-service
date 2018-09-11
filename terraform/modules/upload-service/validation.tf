@@ -14,7 +14,7 @@ resource "aws_batch_compute_environment" "validation_compute_env" {
     type = "SPOT"
     bid_percentage = 100
     spot_iam_fleet_role = "${aws_iam_role.AmazonEC2SpotFleetRole.arn}"
-    max_vcpus = 256
+    max_vcpus = 512
     min_vcpus = "${var.validation_cluster_min_vcpus}"
     // You must set desired_vcpus otherwise you get error: "desiredvCpus should be between minvCpus and maxvCpus"
     // However this is actually not settable in AWS.  It will not let you change it.

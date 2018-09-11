@@ -8,6 +8,7 @@ SERVICE_NAME='upload'
 DCP_DNS_DOMAIN='data.humancellatlas.org'
 DEPLOYMENT_STAGE="${DEPLOYMENT_STAGE:-dev}"
 UPLOAD_SERVICE_VERSION=`(git describe --tags --always)`
+INGEST_API_KEY="$(aws secretsmanager get-secret-value --secret-id dcp/upload/${DEPLOYMENT_STAGE}/secrets | jq .SecretString | jq -r fromjson.api_key)"
 if [[ ${DEPLOYMENT_STAGE} = prod ]] ; then
     API_HOST=${SERVICE_NAME}.${DCP_DNS_DOMAIN}
     INGEST_AMQP_SERVER="amqp.ingest.${DCP_DNS_DOMAIN}"
