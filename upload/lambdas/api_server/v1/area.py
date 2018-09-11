@@ -92,6 +92,21 @@ def retrieve_checksum_status_and_values(upload_area_id: str, filename: str):
 
 
 @return_exceptions_as_http_errors
+def retrieve_validation_status_count(upload_area_id: str):
+    upload_area = _load_upload_area(upload_area_id)
+    status_count = upload_area.retrieve_file_validation_statuses_for_upload_area()
+
+    return status_count, requests.codes.ok
+
+
+@return_exceptions_as_http_errors
+def retrieve_checksum_status_count(upload_area_id: str):
+    upload_area = _load_upload_area(upload_area_id)
+    status_count = upload_area.retrieve_file_checksum_statuses_for_upload_area()
+    return status_count, requests.codes.ok
+
+
+@return_exceptions_as_http_errors
 def update_checksum_event(upload_area_id: str, checksum_id: str, body: str):
     _load_upload_area(upload_area_id)
     body = json.loads(body)
