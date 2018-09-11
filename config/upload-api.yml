@@ -337,11 +337,7 @@ paths:
         200:
           description: Checksum status
           schema:
-            type: object
-            properties:
-              validation_status:
-                type: string
-                description: A status for the checksum job.
+            $ref: '#/definitions/ChecksumInfo'
         401:
           description: Unrecognized Api-Key.
           schema:
@@ -666,6 +662,28 @@ definitions:
       url:
         type: string
         description: URL of storage location of file.
+      checksums:
+        type: object
+        properties:
+          s3_etag:
+            type: string
+            description: S3 ETag
+          sha1:
+            type: string
+            description: SHA1
+          sha256:
+            type: string
+            description: SHA256
+          crc32c:
+            type: string
+            description: CRC32C
+
+  ChecksumInfo:
+    type: object
+    properties:
+      checksum_status:
+        type: string
+        description: status of checksumming process
       checksums:
         type: object
         properties:
