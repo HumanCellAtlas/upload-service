@@ -700,16 +700,8 @@ definitions:
     type: object
     properties:
       validation_results:
-        type: object
-        properties:
-          validation_state:
-            type: string
-            description: validation state
-          validation_errors:
-            type: array
-            items:
-              type: string
-              description: list of validation errors
+        type: string
+        description: validation state and errors
       validation_status:
         type: string
         description: status of validation process
