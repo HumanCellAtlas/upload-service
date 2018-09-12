@@ -27,12 +27,14 @@ class UploadedFile:
         return cls(upload_area, s3object=s3object)
 
     def __init__(self, upload_area, name=None, content_type=None, data=None, s3object=None):
+        self.content_size = None
         self.upload_area = upload_area
         self.s3obj = None
         self.name = name
         self.content_type = content_type
         self.checksums = {}
         if name and data and content_type:
+            self.content_size = len(data)
             self._create(data)
         elif s3object:
             self._load_s3_object(s3object)
@@ -41,8 +43,8 @@ class UploadedFile:
 
     def _create(self, data):
         self.s3obj = self.upload_area.s3_object_for_file(self.name)
-        self.s3obj.put(Body=data, ContentType=self.content_type)
         self.fetch_or_create_db_record()
+        self.s3obj.put(Body=data, ContentType=self.content_type)
 
     def _load_s3_object(self, s3object):
         self.s3obj = s3object
@@ -72,7 +74,10 @@ class UploadedFile:
 
     @property
     def size(self):
-        return self.s3obj.content_length
+        if self.content_size:
+            return self.content_size
+        else:
+            return self.s3obj.content_length
 
     def save_tags(self):
         tags = {f"hca-dss-{csum}": self.checksums[csum] for csum in self.checksums.keys()}
