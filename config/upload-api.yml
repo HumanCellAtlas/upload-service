@@ -238,7 +238,7 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /v1/area/{upload_area_id}/validation_statuses:
+  /v1/area/{upload_area_id}/validations:
 
     get:
       summary: Get count of validation statuses for all files in upload_area
@@ -248,10 +248,17 @@ paths:
         that are validating, scheduled for validation and validated
       tags:
         - All
+      parameters:
+        - name: upload_area_id
+          in: path
+          description: A RFC4122-compliant ID for the upload area.
+          required: true
+          type: string
       responses:
         200:
           description: Here is the file status count
-          type: object
+          schema:
+            type: object
             properties:
               VALIDATING:
                 type: integer
@@ -264,20 +271,27 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /v1/area/{upload_area_id}/checksum_statuses:
+  /v1/area/{upload_area_id}/checksums:
 
     get:
       summary: Get count of checksum statuses for all files in upload_area
-      operationId: upload.lambdas.api_server.v1.area.retrieve_validation_status_count
+      operationId: upload.lambdas.api_server.v1.area.retrieve_checksum_status_count
       description:  |
-        Provide a JSON object with number of files in a particular upload area
-        that are validating, scheduled for validation and validated
+        Provide a JSON object with number of files that are in a particular upload area,
+        scheduled for checksumming, checksumming, checksummed, and unescheduled.
       tags:
         - All
+      parameters:
+        - name: upload_area_id
+          in: path
+          description: A RFC4122-compliant ID for the upload area.
+          required: true
+          type: string
       responses:
         200:
           description: Here is the file status count
-          type: object
+          schema:
+            type: object
             properties:
               CHECKSUMMING:
                 type: integer

@@ -181,7 +181,7 @@ class UploadArea:
         update_pg_record("upload_area", prop_vals_dict)
 
     def retrieve_file_checksum_statuses_for_upload_area(self):
-        checksum_status_dict = {
+        checksum_status = {
             'TOTAL_NUM_FILES': self.retrieve_file_count_for_upload_area(),
             'CHECKSUMMING': 0,
             'CHECKSUMMED': 0,
@@ -193,10 +193,10 @@ class UploadArea:
         checksumming_file_count = 0
         if len(results) > 0:
             for status in results:
-                checksum_status_dict[status[0]] = status[1]
+                checksum_status[status[0]] = status[1]
                 checksumming_file_count += status[1]
-        checksum_status_dict['CHECKSUMMING_UNSCHEDULED'] = checksum_status_dict['TOTAL_NUM_FILES'] - checksumming_file_count
-        return checksum_status_dict
+        checksum_status['CHECKSUMMING_UNSCHEDULED'] = checksum_status['TOTAL_NUM_FILES'] - checksumming_file_count
+        return checksum_status
 
     def retrieve_file_validation_statuses_for_upload_area(self):
         query_result = run_query_with_params("SELECT status, COUNT(DISTINCT validation.file_id) FROM validation "
@@ -216,4 +216,3 @@ class UploadArea:
         query_result = run_query_with_params("SELECT COUNT(DISTINCT name) FROM file WHERE upload_area_id=%s", self.uuid)
         results = query_result.fetchall()
         return results[0][0]
-
