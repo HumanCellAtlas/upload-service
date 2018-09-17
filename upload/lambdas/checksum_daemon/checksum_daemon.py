@@ -57,9 +57,13 @@ class ChecksumDaemon:
                 continue
             file_key = record['s3']['object']['key']
             self._find_file(file_key)
-            if self._the_file_was_checksummed_more_recently_than_it_was_modified(file_key):
+            checksum_status = self._find_checksum_status_of_event_newer_than_file_last_modified(file_key)
+            if checksum_status:
                 logger.debug("Checksum batch job not scheduled.")
-                self._notify_ingest()
+                if checksum_status == "CHECKSUMMED":
+                    # Only notify ingest if the file has been checksummed.
+                    # If the checksum event is in progress, let the other process notify ingest.
+                    self._notify_ingest()
             else:
                 self._checksum_file()
 
@@ -87,15 +91,20 @@ class ChecksumDaemon:
         status = IngestNotifier('file_uploaded').format_and_send_notification(file_info)
         logger.info(f"Notified Ingest: file_info={file_info}, status={status}")
 
-    def _the_file_was_checksummed_more_recently_than_it_was_modified(self, file_key):
+    def _find_checksum_status_of_event_newer_than_file_last_modified(self, file_key):
+        checksum_status = None
         db_session = db_session_maker()
         checksums = db_session.query(DbChecksum).filter(DbChecksum.file_id == file_key).all()
         for csum in checksums:
-            if csum.updated_at >= self.uploaded_file.s3obj.last_modified:
-                logger.debug(f"Found a checksum ({csum.id}) which is newer ({csum.updated_at}) than "
+            if csum.status == "CHECKSUMMED" and csum.updated_at >= self.uploaded_file.s3obj.last_modified:
+                logger.debug(f"Found a completed checksum ({csum.id}) which is newer ({csum.updated_at}) than "
                              f"the file data ({self.uploaded_file.s3obj.last_modified})")
-                return True
-        return False
+                checksum_status = "CHECKSUMMED"
+            elif csum.status == "CHECKSUMMING" and csum.updated_at >= self.uploaded_file.s3obj.last_modified:
+                logger.debug(f"Found an in progress checksum event ({csum.id}) which is newer ({csum.updated_at}) than "
+                             f"the file data ({self.uploaded_file.s3obj.last_modified})")
+                checksum_status = "CHECKSUMMING"
+        return checksum_status
 
     def _checksum_file_now(self):
         checksum_event = UploadedFileChecksumEvent(checksum_id=str(uuid.uuid4()),
