@@ -14,7 +14,7 @@ from .upload_config import UploadConfig
 from .logging import get_logger
 
 if not os.environ.get("CONTAINER"):
-    from .database import get_pg_record, create_pg_record, update_pg_record
+    from .database import get_pg_record, create_pg_record, update_pg_record, run_query_with_params
 
 logger = get_logger(__name__)
 
@@ -179,3 +179,40 @@ class UploadArea:
     def _update_record(self):
         prop_vals_dict = self._format_prop_vals_dict()
         update_pg_record("upload_area", prop_vals_dict)
+
+    def retrieve_file_checksum_statuses_for_upload_area(self):
+        checksum_status = {
+            'TOTAL_NUM_FILES': self.retrieve_file_count_for_upload_area(),
+            'CHECKSUMMING': 0,
+            'CHECKSUMMED': 0,
+            'CHECKSUMMING_UNSCHEDULED': 0
+        }
+        query_result = run_query_with_params("SELECT status, COUNT(DISTINCT checksum.file_id) FROM checksum "
+                                             "WHERE file_id LIKE %s GROUP BY  status;", (f"{self.uuid}/%",))
+        results = query_result.fetchall()
+        checksumming_file_count = 0
+        if len(results) > 0:
+            for status in results:
+                checksum_status[status[0]] = status[1]
+                checksumming_file_count += status[1]
+        checksum_status['CHECKSUMMING_UNSCHEDULED'] = checksum_status['TOTAL_NUM_FILES'] - checksumming_file_count
+        return checksum_status
+
+    def retrieve_file_validation_statuses_for_upload_area(self):
+        query_result = run_query_with_params("SELECT status, COUNT(DISTINCT validation.file_id) FROM validation "
+                                             "WHERE file_id LIKE %s GROUP BY  status;", (f"{self.uuid}/%",))
+        results = query_result.fetchall()
+        validation_status_dict = {
+            'VALIDATING': 0,
+            'VALIDATED': 0,
+            'SCHEDULED': 0
+        }
+        if len(results) > 0:
+            for status in results:
+                validation_status_dict[status[0]] = status[1]
+        return validation_status_dict
+
+    def retrieve_file_count_for_upload_area(self):
+        query_result = run_query_with_params("SELECT COUNT(DISTINCT name) FROM file WHERE upload_area_id=%s", self.uuid)
+        results = query_result.fetchall()
+        return results[0][0]

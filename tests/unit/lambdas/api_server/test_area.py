@@ -205,6 +205,113 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         checksum_status = response.get_json()['checksum_status']
         self.assertEqual(checksum_status, "CHECKSUMMED")
 
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
+    def test_checksum_statuses_for_upload_area(self, mock_format_and_send_notification, mock_connect):
+        area_id = self._create_area()
+        upload_area = UploadArea(area_id)
+
+        checksum1_id = str(uuid.uuid4())
+        checksum2_id = str(uuid.uuid4())
+        checksum3_id = str(uuid.uuid4())
+
+        s3obj1 = self._mock_upload_file(area_id, 'foo1.json')
+        s3obj2 = self._mock_upload_file(area_id, 'foo2.json')
+        s3obj3 = self._mock_upload_file(area_id, 'foo3.json')
+        s3obj4 = self._mock_upload_file(area_id, 'foo4.json')
+        s3obj5 = self._mock_upload_file(area_id, 'foo5.json')
+
+        uploaded_file1 = UploadedFile(upload_area, s3object=s3obj1)
+        uploaded_file2 = UploadedFile(upload_area, s3object=s3obj2)
+        uploaded_file3 = UploadedFile(upload_area, s3object=s3obj3)
+        uploaded_file4 = UploadedFile(upload_area, s3object=s3obj4)
+        uploaded_file5 = UploadedFile(upload_area, s3object=s3obj5)
+
+        uploaded_file1.create_record()
+        uploaded_file2.create_record()
+        uploaded_file3.create_record()
+        uploaded_file4.create_record()
+        uploaded_file5.create_record()
+
+        checksum1_event = UploadedFileChecksumEvent(file_id=s3obj1.key,
+                                                    checksum_id=checksum1_id,
+                                                    job_id='12345',
+                                                    status="SCHEDULED")
+        checksum2_event = UploadedFileChecksumEvent(file_id=s3obj2.key,
+                                                    checksum_id=checksum2_id,
+                                                    job_id='23456',
+                                                    status="CHECKSUMMING")
+        checksum3_event = UploadedFileChecksumEvent(file_id=s3obj3.key,
+                                                    checksum_id=checksum3_id,
+                                                    job_id='34567',
+                                                    status="CHECKSUMMED")
+        checksum1_event.create_record()
+        checksum2_event.create_record()
+        checksum3_event.create_record()
+
+        response = self.client.get(f"/v1/area/{area_id}/checksums")
+        expected_data = {
+            'CHECKSUMMED': 1,
+            'CHECKSUMMING': 1,
+            'CHECKSUMMING_UNSCHEDULED': 2,
+            'SCHEDULED': 1,
+            'TOTAL_NUM_FILES': 5
+        }
+
+        assert response.get_json() == expected_data
+
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
+    def test_validation_statuses_for_upload_area(self, mock_format_and_send_notification, mock_connect):
+        area_id = self._create_area()
+        upload_area = UploadArea(area_id)
+
+        validation1_id = str(uuid.uuid4())
+        validation2_id = str(uuid.uuid4())
+        validation3_id = str(uuid.uuid4())
+        validation4_id = str(uuid.uuid4())
+
+        s3obj1 = self._mock_upload_file(area_id, 'foo1.json')
+        s3obj2 = self._mock_upload_file(area_id, 'foo2.json')
+        s3obj3 = self._mock_upload_file(area_id, 'foo3.json')
+        s3obj4 = self._mock_upload_file(area_id, 'foo4.json')
+
+        uploaded_file1 = UploadedFile(upload_area, s3object=s3obj1)
+        uploaded_file2 = UploadedFile(upload_area, s3object=s3obj2)
+        uploaded_file3 = UploadedFile(upload_area, s3object=s3obj3)
+        uploaded_file4 = UploadedFile(upload_area, s3object=s3obj4)
+
+        uploaded_file1.create_record()
+        uploaded_file2.create_record()
+        uploaded_file3.create_record()
+        uploaded_file4.create_record()
+
+        validation_event1 = UploadedFileValidationEvent(file_id=s3obj1.key,
+                                                        validation_id=validation1_id,
+                                                        job_id='12345',
+                                                        status="SCHEDULED")
+        validation_event2 = UploadedFileValidationEvent(file_id=s3obj2.key,
+                                                        validation_id=validation2_id,
+                                                        job_id='23456',
+                                                        status="VALIDATING")
+        validation_event3 = UploadedFileValidationEvent(file_id=s3obj3.key,
+                                                        validation_id=validation3_id,
+                                                        job_id='34567',
+                                                        status="VALIDATED")
+        validation_event4 = UploadedFileValidationEvent(file_id=s3obj4.key,
+                                                        validation_id=validation4_id,
+                                                        job_id='45678',
+                                                        status="VALIDATING")
+        validation_event3.results = 'VALID'
+        validation_event1.create_record()
+        validation_event2.create_record()
+        validation_event3.create_record()
+        validation_event4.create_record()
+
+        response = self.client.get(f"/v1/area/{area_id}/validations")
+        expected_data = {'SCHEDULED': 1, 'VALIDATED': 1, 'VALIDATING': 2}
+        assert response.get_json() == expected_data
+
     @patch('upload.common.uploaded_file.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES + 1)
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')

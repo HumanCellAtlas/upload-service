@@ -238,6 +238,78 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+  /v1/area/{upload_area_id}/validations:
+
+    get:
+      summary: Get count of validation statuses for all files in upload_area
+      operationId: upload.lambdas.api_server.v1.area.retrieve_validation_status_count
+      description:  |
+        Provide a JSON object with number of files in a particular upload area
+        that are validating, scheduled for validation and validated
+      tags:
+        - All
+      parameters:
+        - name: upload_area_id
+          in: path
+          description: A RFC4122-compliant ID for the upload area.
+          required: true
+          type: string
+      responses:
+        200:
+          description: Here is the file status count
+          schema:
+            type: object
+            properties:
+              VALIDATING:
+                type: integer
+              VALIDATED:
+                type: integer
+              SCHEDULED:
+                type: integer
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /v1/area/{upload_area_id}/checksums:
+
+    get:
+      summary: Get count of checksum statuses for all files in upload_area
+      operationId: upload.lambdas.api_server.v1.area.retrieve_checksum_status_count
+      description:  |
+        Provide a JSON object with number of files that are in a particular upload area,
+        scheduled for checksumming, checksumming, checksummed, and unescheduled.
+      tags:
+        - All
+      parameters:
+        - name: upload_area_id
+          in: path
+          description: A RFC4122-compliant ID for the upload area.
+          required: true
+          type: string
+      responses:
+        200:
+          description: Here is the file status count
+          schema:
+            type: object
+            properties:
+              CHECKSUMMING:
+                type: integer
+              CHECKSUMMED:
+                type: integer
+              SCHEDULED:
+                type: integer
+              UNSCHEDULED:
+                type: integer
+              TOTAL_NUM_FILES:
+                type: integer
+
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+
   /v1/area/{upload_area_id}/{filename}:
 
     put:
