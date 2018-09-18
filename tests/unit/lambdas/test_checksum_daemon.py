@@ -138,6 +138,29 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon._checksum_file')
+    def test_if_the_file_is_checksumming_since_last_change_it_is_not_summed_again(self, mock_checksum_file,
+                                                                                  mock_format_and_send_notification,
+                                                                                  mock_connect):
+        session = db_session_maker()
+        file = DbFile(id=self.file_key, upload_area_id=self.upload_area.uuid, name=self.filename, size=123)
+        checksum_time = datetime.utcnow() + timedelta(minutes=5)
+        checksum = DbChecksum(id=str(uuid.uuid4()), file_id=self.file_key, status='CHECKSUMMING',
+                              checksum_started_at=checksum_time, checksum_ended_at=checksum_time,
+                              updated_at=checksum_time)
+        session.add(file)
+        session.add(checksum)
+        session.commit()
+
+        self.daemon.consume_event(self.event)
+
+        mock_checksum_file.assert_not_called()
+
+        self.assertFalse(mock_format_and_send_notification.called,
+                         'IngestNotifier.file_was_uploaded should not have been called')
+
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon._checksum_file')
     def test_if_the_file_has_been_summed_since_last_change_it_is_not_summed_again(self, mock_checksum_file,
                                                                                   mock_format_and_send_notification,
                                                                                   mock_connect):
