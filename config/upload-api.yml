@@ -37,6 +37,26 @@ paths:
 
   /v1/area/{upload_area_id}:
 
+    head:
+      summary: Check if an upload area exists
+      operationId: upload.lambdas.api_server.v1.area.head_upload_area
+      description: |
+        Check if an upload area exists.
+      tags:
+        - For Ingestion Service Use Only
+      parameters:
+        - name: upload_area_id
+          in: path
+          description: A RFC4122-compliant ID for the upload area.
+          required: true
+          type: string
+          pattern: "[A-Za-z0-9]{8}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{12}"
+      responses:
+        200:
+          description: Upload area exists.
+        404:
+          description: Upload area does not exist.
+
     post:
       summary: Create an Upload Area
       operationId: upload.lambdas.api_server.v1.area.create
