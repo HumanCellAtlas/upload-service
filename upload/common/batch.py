@@ -55,7 +55,7 @@ class JobDefinition:
             parameters={},
             containerProperties={
                 'image': self.docker_image,
-                'vcpus': 2,
+                'vcpus': 4,
                 'memory': 2048,
                 'command': [],
                 'jobRoleArn': job_role_arn,
