@@ -119,6 +119,16 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         })
         return s3obj
 
+    def test_head_upload_area_does_not_exist(self):
+        area_id = str(uuid.uuid4())
+        response = self.client.head(f"/v1/area/{area_id}")
+        self.assertEqual(response.status_code, 404)
+
+    def test_head_upload_area_does_exist(self):
+        area_id = self._create_area()
+        response = self.client.head(f"/v1/area/{area_id}")
+        self.assertEqual(response.status_code, 200)
+
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_unscheduled_status_file_checksum(self, mock_format_and_send_notification, mock_connect):
