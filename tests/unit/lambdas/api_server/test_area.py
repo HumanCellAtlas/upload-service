@@ -119,6 +119,37 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         })
         return s3obj
 
+    def test_update_area_owners(self):
+        area_id = self._create_area()
+        data = {
+            "owner_emails": ["test1@gmail.com", "test2@gmail.com"],
+        }
+        response = self.client.post(f"/v1/area/{area_id}/owner_emails",
+                                    headers=self.authentication_header,
+                                    data=json.dumps(data))
+        self.assertEqual(response.status_code, 204)
+        record = get_pg_record("upload_area", area_id)
+        self.assertEqual(record['owner_emails'], data)
+        data2 = {
+            "owner_emails": ["test2@gmail.com", "test3@gmail.com"],
+        }
+        response = self.client.post(f"/v1/area/{area_id}/owner_emails",
+                                    headers=self.authentication_header,
+                                    data=json.dumps(data2))
+        self.assertEqual(response.status_code, 204)
+        record = get_pg_record("upload_area", area_id)
+        self.assertEqual(record['owner_emails'], data2)
+
+    def test_head_upload_area_does_not_exist(self):
+        area_id = str(uuid.uuid4())
+        response = self.client.head(f"/v1/area/{area_id}")
+        self.assertEqual(response.status_code, 404)
+
+    def test_head_upload_area_does_exist(self):
+        area_id = self._create_area()
+        response = self.client.head(f"/v1/area/{area_id}")
+        self.assertEqual(response.status_code, 200)
+
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_unscheduled_status_file_checksum(self, mock_format_and_send_notification, mock_connect):

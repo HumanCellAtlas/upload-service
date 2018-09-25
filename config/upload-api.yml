@@ -37,6 +37,26 @@ paths:
 
   /v1/area/{upload_area_id}:
 
+    head:
+      summary: Check if an upload area exists
+      operationId: upload.lambdas.api_server.v1.area.head_upload_area
+      description: |
+        Check if an upload area exists.
+      tags:
+        - For Ingestion Service Use Only
+      parameters:
+        - name: upload_area_id
+          in: path
+          description: A RFC4122-compliant ID for the upload area.
+          required: true
+          type: string
+          pattern: "[A-Za-z0-9]{8}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{12}"
+      responses:
+        200:
+          description: Upload area exists.
+        404:
+          description: Upload area does not exist.
+
     post:
       summary: Create an Upload Area
       operationId: upload.lambdas.api_server.v1.area.create
@@ -138,6 +158,55 @@ paths:
                   $ref: "#/definitions/FileInfo"
             required:
               - files
+        404:
+          description: Could not find an upload area with that ID.
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /v1/area/{upload_area_id}/owner_emails:
+
+    post:
+      summary: Update owners of an upload area
+      operationId: upload.lambdas.api_server.v1.area.update_area_owners
+      description: |
+        Add owner emails for an upload area
+      tags:
+        - For Ingestion Service Use Only
+      parameters:
+        - name: upload_area_id
+          in: path
+          description: A RFC4122-compliant ID for the upload area.
+          required: true
+          type: string
+        - name: Api-Key
+          in: header
+          description: An authentication token provided by the service provider.
+          required: true
+          type: string
+        - name: json_request_body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              owner_emails:
+                description: List of emails of owners of upload area
+                type: array
+                items:
+                  type: string
+            required:
+              - owner_emails
+      responses:
+        204:
+          description: Owners were successfully attached to the upload area.
+        401:
+          description: Unrecognized Api-Key.
+          schema:
+            $ref: '#/definitions/Error'
         404:
           description: Could not find an upload area with that ID.
           schema:

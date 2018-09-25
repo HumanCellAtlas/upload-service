@@ -23,6 +23,23 @@ def create(upload_area_id: str):
 
 
 @return_exceptions_as_http_errors
+@require_authenticated
+def update_area_owners(upload_area_id: str, json_request_body: str):
+    upload_area = _load_upload_area(upload_area_id)
+    body = json.loads(json_request_body)
+    owner_emails = body["owner_emails"]
+    upload_area.update_owner_emails(owner_emails)
+    return None, requests.codes.no_content
+
+
+def head_upload_area(upload_area_id: str):
+    upload_area = UploadArea(upload_area_id)
+    if not upload_area.is_extant():
+        return None, requests.codes.not_found
+    return None, requests.codes.ok
+
+
+@return_exceptions_as_http_errors
 def credentials(upload_area_id: str):
     upload_area = _load_upload_area(upload_area_id)
     return upload_area.credentials(), requests.codes.created

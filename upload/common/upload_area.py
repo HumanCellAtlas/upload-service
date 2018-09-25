@@ -26,6 +26,7 @@ class UploadArea:
     def __init__(self, uuid):
         self.uuid = uuid
         self.status = None
+        self.owner_emails = None
         self.config = UploadConfig()
         self.key_prefix = f"{self.uuid}/"
         self.key_prefix_length = len(self.key_prefix)
@@ -139,7 +140,7 @@ class UploadArea:
         return UploadedFile.from_s3_key(self, key)
 
     def is_extant(self) -> bool:
-        record = get_pg_record('upload_area', self.uuid)
+        record = self._db_record()
         if record and record['status'] != 'DELETED':
             return True
         else:
@@ -166,11 +167,16 @@ class UploadArea:
         return {
             "id": self.uuid,
             "bucket_name": self.bucket_name,
-            "status": self.status
+            "status": self.status,
+            "owner_emails": self.owner_emails
         }
 
     def _db_record(self):
-        return get_pg_record('upload_area', self.uuid)
+        record = get_pg_record('upload_area', self.uuid)
+        if record:
+            self.status = record['status']
+            self.owner_emails = record['owner_emails']
+        return record
 
     def _create_record(self):
         prop_vals_dict = self._format_prop_vals_dict()
@@ -179,6 +185,10 @@ class UploadArea:
     def _update_record(self):
         prop_vals_dict = self._format_prop_vals_dict()
         update_pg_record("upload_area", prop_vals_dict)
+
+    def update_owner_emails(self, owner_emails):
+        self.owner_emails = {"owner_emails": owner_emails}
+        self._update_record()
 
     def retrieve_file_checksum_statuses_for_upload_area(self):
         checksum_status = {
