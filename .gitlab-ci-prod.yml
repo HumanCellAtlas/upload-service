@@ -1,14 +1,13 @@
 image: python:3.6
 
 stages:
-  - unit_tests
   - terraform
   - deploy
   - functional_tests
 
 before_script:
   - apt-get -y update
-  - apt-get -y install jq moreutils gettext unzip
+  - apt-get -y install jq moreutils gettext unzip zip
   - pip install -r requirements-dev.txt
   - mkdir ./external_binaries
   - curl https://releases.hashicorp.com/terraform/0.11.7/terraform_0.11.7_linux_amd64.zip -o /tmp/terraform.zip
@@ -19,15 +18,6 @@ before_script:
   - if [ "$DEPLOYMENT_STAGE" == "master" ]; then export DEPLOYMENT_STAGE=dev; fi
   - source config/environment
   - export INGEST_API_KEY="$(aws secretsmanager get-secret-value --secret-id dcp/upload/${DEPLOYMENT_STAGE}/secrets | jq .SecretString | jq -r fromjson.api_key)"
-
-unit_tests:
-  stage: unit_tests
-  except:
-    - schedules
-  only:
-    - prod
-  script:
-    - make test
 
 functional_tests:
   stage: functional_tests
