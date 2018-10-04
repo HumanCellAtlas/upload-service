@@ -62,6 +62,16 @@ resource "aws_iam_role_policy" "upload_health_check_lambda" {
       ]
     },
     {
+      "Sid": "CloudWatchAccess",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:*"
+      ],
+      "Resource": [
+        "arn:aws:cloudwatch:::"
+      ]
+    },
+    {
       "Effect": "Allow",
       "Action": [
         "secretsmanager:DescribeSecret",
@@ -96,7 +106,7 @@ resource "aws_lambda_function" "upload_health_check_lambda" {
   function_name    = "dcp-upload-health-check-${var.deployment_stage}"
   s3_bucket        = "${aws_s3_bucket.lambda_deployments.id}"
   s3_key           = "health-check/health_check_daemon.zip"
-  role             = "arn:aws:iam::${local.account_id}:role/upload-checksum-daemon-${var.deployment_stage}"
+  role             = "arn:aws:iam::${local.account_id}:role/upload-health-check-${var.deployment_stage}"
   handler          = "app.health_check"
   runtime          = "python3.6"
   memory_size      = 960

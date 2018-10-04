@@ -16,8 +16,17 @@ build:
 	mkdir target
 	pip install -r requirements.txt -t target/ --upgrade
 	cp -R ../../upload target/
+	cp -R vendor.in/* target/
 
 	cp -R *.py target/
+	# build.zip contains the psycopg2-3.6 package downloaded from https://github.com/jkehler/awslambda-psycopg2
+	# and renamed psycopg2
+	unzip build.zip
+	cp -R build/ target/
+	rm -rf build
+	shopt -s nullglob; for wheel in vendor.in/*/*.whl; do unzip -q -o -d vendor $$wheel; done
+
+	cp -R vendor/* target/
 
 	cd target && zip -r ../$(ZIP_FILE) *
 
