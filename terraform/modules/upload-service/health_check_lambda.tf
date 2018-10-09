@@ -50,25 +50,13 @@ resource "aws_iam_role_policy" "upload_health_check_lambda" {
       "Effect": "Allow"
     },
     {
-      "Sid": "S3Access",
-      "Effect": "Allow",
-      "Action": [
-        "s3:GetObject",
-        "s3:GetObjectTagging",
-        "s3:PutObjectTagging"
-      ],
-      "Resource": [
-        "arn:aws:s3:::${local.bucket_name}/*"
-      ]
-    },
-    {
       "Sid": "CloudWatchAccess",
       "Effect": "Allow",
       "Action": [
-        "cloudwatch:*"
+        "cloudwatch:GetMetricData"
       ],
       "Resource": [
-        "arn:aws:cloudwatch:::"
+        "*"
       ]
     },
     {
@@ -79,15 +67,6 @@ resource "aws_iam_role_policy" "upload_health_check_lambda" {
       ],
       "Resource": [
         "arn:aws:secretsmanager:${local.aws_region}:${local.account_id}:secret:dcp/upload/${var.deployment_stage}/*"
-      ]
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "sqs:GetQueueAttributes"
-      ],
-      "Resource": [
-        "arn:aws:sqs:*:*:${aws_sqs_queue.upload_queue.name}"
       ]
     }
   ]
@@ -117,4 +96,24 @@ resource "aws_lambda_function" "upload_health_check_lambda" {
       DEPLOYMENT_STAGE = "${var.deployment_stage}",
     }
   }
+}
+
+resource "aws_cloudwatch_event_rule" "daily" {
+    name = "every-day"
+    description = "Fires every day at 14:00 UTC"
+    schedule_expression = "cron(0 14 * * ? *)"
+}
+
+resource "aws_cloudwatch_event_target" "daily_health_check" {
+    rule = "${aws_cloudwatch_event_rule.daily.name}"
+    target_id = "upload_health_check_lambda"
+    arn = "${aws_lambda_function.upload_health_check_lambda.arn}"
+}
+
+resource "aws_lambda_permission" "allow_cloudwatch_to_call_health_check" {
+    statement_id = "AllowExecutionFromCloudWatch"
+    action = "lambda:InvokeFunction"
+    function_name = "${aws_lambda_function.upload_health_check_lambda.function_name}"
+    principal = "events.amazonaws.com"
+    source_arn = "${aws_cloudwatch_event_rule.daily.arn}"
 }

@@ -6,25 +6,23 @@ from mock import patch, Mock
 from botocore.stub import Stubber
 
 from tests.unit import UploadTestCaseUsingMockAWS, EnvironmentSetup
+from upload.common.upload_config import UploadConfig
 from upload.lambdas.health_check.health_check import HealthCheck
 
 
 class TestHealthCheckDaemon(UploadTestCaseUsingMockAWS):
     def setUp(self):
         super().setUp()
+        self.config = UploadConfig()
+        self.config.set({
+            'slack_webhook': 'slack_url'
+        })
         # Environment
-        # self.environment = {
-        #     'DEPLOYMENT_STAGE': 'test'
-        # }
+        self.environment = {
+            'DEPLOYMENT_STAGE': 'test'
+        }
         self.environmentor = EnvironmentSetup(self.environment)
         self.health_check = HealthCheck()
-
-    def tearDown(self):
-        super().tearDown()
-        self.environmentor.exit()
-
-    def test_health_check_cron_job(self):
-        pass
 
     @patch('upload.lambdas.health_check.health_check.HealthCheck.get_deadletter_count')
     @patch('upload.lambdas.health_check.health_check.HealthCheck.parse_and_query_db')
@@ -37,7 +35,7 @@ class TestHealthCheckDaemon(UploadTestCaseUsingMockAWS):
         mock_parse_and_query_db.return_value = 2
         mock_get_deadletter_count.return_value = {'ApproximateNumberOfMessagesVisible': 5,
                                                   'NumberOfMessagesReceived': 3}
-        webhook = 'https://hooks.slack.com/services/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'
+        webhook = 'slack_url'
         mock_attachment = {'attachments': [
             {'title': 'Health Check Report for test:',
              'color': 'good',
@@ -139,6 +137,6 @@ class TestHealthCheckDaemon(UploadTestCaseUsingMockAWS):
         mock_run_query.assert_called_once_with("SELECT COUNT(*) FROM checksum ")
 
 
-class MockIt():
+class MockIt:
     def fetchall(self):
         return [[1]]

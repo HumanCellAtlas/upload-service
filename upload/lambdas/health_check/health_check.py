@@ -7,6 +7,7 @@ import requests
 
 from upload.common.database import _run_query
 from upload.common.logging import get_logger
+from upload.common.upload_config import UploadConfig
 
 logger = get_logger(__name__)
 
@@ -17,8 +18,8 @@ class HealthCheck:
     def __init__(self):
         self.env = os.environ['DEPLOYMENT_STAGE']
         logger.debug(f"Running a health check for {self.env}. Results will be posted in #upload-service")
-        self.test_webhook = "https://hooks.slack.com/services/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"
-        self.webhook = "https://hooks.slack.com/services/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"
+        self.webhook = UploadConfig().slack_webhook
+
         self.checksumming_areas_count_query = "SELECT COUNT(*) FROM checksum " \
                                               "WHERE status='CHECKSUMMING' " \
                                               "AND created_at > CURRENT_DATE - interval '4 weeks' " \
@@ -37,8 +38,8 @@ class HealthCheck:
         undeleted_upload_area_count = self.parse_and_query_db(self.undeleted_areas_count_query)
         checksumming_areas = self.parse_and_query_db(self.checksumming_areas_count_query)
         validating_areas = self.parse_and_query_db(self.validation_areas_count_query)
-        status_info = f"DEADLETTER QUEUE: {deadletter_results['ApproximateNumberOfMessagesVisible']} in queue, " \
-                      f"{deadletter_results['NumberOfMessagesReceived']} added in past 24 hrs\n" \
+        status_info = f"DEADLETTER_QUEUE: {int(deadletter_results['ApproximateNumberOfMessagesVisible'])} in queue, " \
+                      f"{int(deadletter_results['NumberOfMessagesReceived'])} added in past 24 hrs\n" \
                       f"UPLOAD_AREAS: {undeleted_upload_area_count} undeleted areas, {checksumming_areas} stuck in " \
                       f"checksumming, {validating_areas} stuck in validation"
 
@@ -48,7 +49,7 @@ class HealthCheck:
             "text": status_info
         }]
 
-        self.post_message_to_url(self.test_webhook, {"attachments": attachments})
+        self.post_message_to_url(self.webhook, {"attachments": attachments})
 
     def post_message_to_url(self, url, message):
         body = json.dumps(message)
