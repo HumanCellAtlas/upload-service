@@ -75,7 +75,7 @@ EOF
 }
 
 resource "aws_s3_bucket" "lambda_deployments" {
-  bucket = "${var.bucket_name_prefix}lambda-deployment-${var.deployment_stage}"
+  bucket = "${var.bucket_name_prefix}lambda-healthcheck-deployment-${var.deployment_stage}"
   acl = "private"
   force_destroy = "false"
   acceleration_status = "Enabled"
@@ -88,7 +88,7 @@ resource "aws_lambda_function" "upload_health_check_lambda" {
   role             = "arn:aws:iam::${local.account_id}:role/upload-health-check-${var.deployment_stage}"
   handler          = "app.health_check"
   runtime          = "python3.6"
-  memory_size      = 960
+  memory_size      = 128
   timeout          = 300
 
   environment {
@@ -100,8 +100,8 @@ resource "aws_lambda_function" "upload_health_check_lambda" {
 
 resource "aws_cloudwatch_event_rule" "daily" {
     name = "every-day"
-    description = "Fires every day at 14:00 UTC"
-    schedule_expression = "cron(0 14 * * ? *)"
+    description = "Fires every day at 13:00 UTC"
+    schedule_expression = "cron(0 13 * * ? *)"
 }
 
 resource "aws_cloudwatch_event_target" "daily_health_check" {

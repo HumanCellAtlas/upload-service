@@ -5,4 +5,4 @@ logger = get_logger(__name__)
 
 
 def health_check(event, context):
-    HealthCheck().health_check()
+    HealthCheck().run_upload_service_health_check()
