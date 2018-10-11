@@ -31,7 +31,7 @@ class ChecksumDaemon:
         'ObjectCreated:CompleteMultipartUpload',
         'ObjectCreated:Copy'
     )
-    USE_BATCH_IF_FILE_LARGER_THAN = 4 * GB
+    USE_BATCH_IF_FILE_LARGER_THAN = 10 * GB
 
     def __init__(self, context):
         self.request_id = context.aws_request_id

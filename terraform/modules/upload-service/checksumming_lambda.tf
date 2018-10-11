@@ -112,7 +112,7 @@ resource "aws_lambda_function" "upload_checksum_lambda" {
   handler          = "app.call_checksum_daemon"
   runtime          = "python3.6"
   memory_size      = 960
-  timeout          = 300
+  timeout          = 900
 
   environment {
     variables = {
