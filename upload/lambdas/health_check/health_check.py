@@ -148,8 +148,8 @@ class HealthCheck:
 
         upload_area_status = f"UPLOAD_AREAS: {undeleted_upload_area_count} undeleted areas, {stale_checksumming_areas}"\
                              f" stuck in checksumming, {stale_validating_areas} stuck in validation \n" \
-                             f"{scheduled_checksum_areas} areas scheduled for checksumming, " \
-                             f"{scheduled_validation_areas} areas scheduled for validation (for over 2 hours)\n"
+                             f"{scheduled_checksum_areas} files scheduled for checksumming, " \
+                             f"{scheduled_validation_areas} files scheduled for validation (for over 2 hours)\n"
         return upload_area_status
 
     def post_message_to_url(self, url, message):

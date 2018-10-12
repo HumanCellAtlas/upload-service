@@ -159,7 +159,7 @@ class TestHealthCheckDaemon(UploadTestCaseUsingMockAWS):
         assert mock_query_db.call_count == 5
 
         assert upload_area_status == "UPLOAD_AREAS: 5 undeleted areas, 4 stuck in checksumming, 3 stuck in " \
-                                     "validation \n2 areas scheduled for checksumming, 1 areas scheduled for " \
+                                     "validation \n2 files scheduled for checksumming, 1 files scheduled for " \
                                      "validation (for over 2 hours)\n"
 
     @patch('upload.lambdas.health_check.health_check.datetime')
