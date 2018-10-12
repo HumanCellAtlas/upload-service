@@ -1,9 +1,10 @@
 include ../../common.mk
 .PHONY: install build stage deploy clobber
 
-ZIP_FILE=health_check_daemon.zip
-BUCKET=$(BUCKET_NAME_PREFIX)lambda-healthcheck-deployment-$(DEPLOYMENT_STAGE)
-STAGED_FILE_KEY=health-check/$(ZIP_FILE)
+LAMBDA_NAME=health_check_daemon
+ZIP_FILE=$(LAMBDA_NAME).zip
+BUCKET=$(BUCKET_NAME_PREFIX)lambda-deployment-$(DEPLOYMENT_STAGE)
+STAGED_FILE_KEY=$(LAMBDA_NAME)/$(ZIP_FILE)
 
 default: build
 

@@ -74,13 +74,6 @@ resource "aws_iam_role_policy" "upload_health_check_lambda" {
 EOF
 }
 
-resource "aws_s3_bucket" "lambda_deployments" {
-  bucket = "${var.bucket_name_prefix}lambda-healthcheck-deployment-${var.deployment_stage}"
-  acl = "private"
-  force_destroy = "false"
-  acceleration_status = "Enabled"
-}
-
 resource "aws_lambda_function" "upload_health_check_lambda" {
   function_name    = "dcp-upload-health-check-${var.deployment_stage}"
   s3_bucket        = "${aws_s3_bucket.lambda_deployments.id}"

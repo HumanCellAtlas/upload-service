@@ -1,9 +1,10 @@
 include ../../common.mk
 .PHONY: install build stage deploy clobber
 
-ZIP_FILE=checksum_daemon.zip
-BUCKET=$(BUCKET_NAME_PREFIX)csum-lambda-deployment-$(DEPLOYMENT_STAGE)
-STAGED_FILE_KEY=$(ZIP_FILE)
+LAMBDA_NAME=checksum_daemon
+ZIP_FILE=$(LAMBDA_NAME).zip
+BUCKET=$(BUCKET_NAME_PREFIX)lambda-deployment-$(DEPLOYMENT_STAGE)
+STAGED_FILE_KEY=$(LAMBDA_NAME)/$(ZIP_FILE)
 
 default: build
 
