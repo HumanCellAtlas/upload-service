@@ -77,7 +77,7 @@ EOF
 resource "aws_lambda_function" "upload_health_check_lambda" {
   function_name    = "dcp-upload-health-check-${var.deployment_stage}"
   s3_bucket        = "${aws_s3_bucket.lambda_deployments.id}"
-  s3_key           = "health-check/health_check_daemon.zip"
+  s3_key           = "health_check_daemon/health_check_daemon.zip"
   role             = "arn:aws:iam::${local.account_id}:role/upload-health-check-${var.deployment_stage}"
   handler          = "app.health_check"
   runtime          = "python3.6"

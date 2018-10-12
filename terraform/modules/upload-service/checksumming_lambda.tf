@@ -107,7 +107,7 @@ output "upload_csum_lambda_role_arn" {
 resource "aws_lambda_function" "upload_checksum_lambda" {
   function_name    = "dcp-upload-csum-${var.deployment_stage}"
   s3_bucket        = "${aws_s3_bucket.lambda_deployments.id}"
-  s3_key           = "checksum/checksum_daemon.zip"
+  s3_key           = "checksum_daemon/checksum_daemon.zip"
   role             = "arn:aws:iam::${local.account_id}:role/upload-checksum-daemon-${var.deployment_stage}"
   handler          = "app.call_checksum_daemon"
   runtime          = "python3.6"
