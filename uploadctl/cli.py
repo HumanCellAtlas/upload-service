@@ -12,6 +12,7 @@ import os
 
 # from .cleanup import CleanupCLI
 from .diagnostics import DiagnosticsCLI
+from .runlevel import RunLevelCLI
 from .test import TestCLI
 
 
@@ -32,7 +33,10 @@ class UploadctlCLI:
 
         self._check_deployment(args)
 
-        if args.command == 'test':
+        if args.command == 'runlevel':
+            RunLevelCLI().run(args)
+
+        elif args.command == 'test':
             TestCLI.run(args)
 
         # elif args.command == 'cleanup':
@@ -48,6 +52,7 @@ class UploadctlCLI:
                             help="operate on this deployment")
         subparsers = parser.add_subparsers()
 
+        RunLevelCLI.configure(subparsers)
         # CleanupCLI.configure(subparsers)
         DiagnosticsCLI.configure(subparsers)
         TestCLI.configure(subparsers)
