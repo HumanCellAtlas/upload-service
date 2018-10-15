@@ -9,3 +9,9 @@ class InfraMgr:
 
     def status(self):
         raise NotImplementedError()
+
+    def stop(self):
+        raise NotImplementedError()
+
+    def start(self):
+        raise NotImplementedError()
