@@ -10,7 +10,7 @@ Upload Service Administration Tool
 import argparse
 import os
 
-from .cleanup import CleanupCLI
+# from .cleanup import CleanupCLI
 from .diagnostics import DiagnosticsCLI
 from .test import TestCLI
 
@@ -35,8 +35,8 @@ class UploadctlCLI:
         if args.command == 'test':
             TestCLI.run(args)
 
-        elif args.command == 'cleanup':
-            CleanupCLI.run(args)
+        # elif args.command == 'cleanup':
+        #     CleanupCLI.run(args)
 
         exit(0)
 
@@ -48,7 +48,7 @@ class UploadctlCLI:
                             help="operate on this deployment")
         subparsers = parser.add_subparsers()
 
-        CleanupCLI.configure(subparsers)
+        # CleanupCLI.configure(subparsers)
         DiagnosticsCLI.configure(subparsers)
         TestCLI.configure(subparsers)
         return parser
