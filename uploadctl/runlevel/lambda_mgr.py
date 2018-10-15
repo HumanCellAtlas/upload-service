@@ -31,3 +31,16 @@ class LambdaMgr(InfraMgr):
         else:
             state = 'UP'
         return "%-40s %s" % (lambda_info['Configuration']['FunctionName'], state)
+
+    def stop(self):
+        self._aws_lambda.put_function_concurrency(
+            FunctionName=self._lambda_name,
+            ReservedConcurrentExecutions=0
+        )
+        return self.status()
+
+    def start(self):
+        self._aws_lambda.delete_function_concurrency(
+            FunctionName=self._lambda_name
+        )
+        return self.status()
