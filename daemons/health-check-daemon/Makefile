@@ -17,10 +17,10 @@ build:
 	mkdir target
 	pip install -r requirements.txt -t target/ --upgrade
 
-	cp -R ../../upload target/
 	cp -R vendor.in/* target/
-	cp -R *.py target/
 
+	cp -R ../../upload target/
+	cp -R *.py target/
 	# build.zip contains the psycopg2-3.6 package downloaded from https://github.com/jkehler/awslambda-psycopg2
 	# and renamed psycopg2
 	unzip build.zip
