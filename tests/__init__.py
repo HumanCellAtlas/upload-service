@@ -29,18 +29,18 @@ FIXTURE_DATA_CHECKSUMS = {
             {'Key': "hca-dss-crc32c", 'Value': "C80D954E"}
         ]
     },
-    '4097MB_file': {
+    '10241MB_file': {
         'checksums': {
-            "s3_etag": "d87ac6ddedb0d2befaeb43d88738aae1-65",
-            "sha1": "77fbc4153b43e90d872c83aef8614bf06ddd577b",
-            "sha256": "c99de3d018e7bfbb81b8e1fd1c3c581b364abe03fb42440a115fbbcbef3c85d2",
-            "crc32c": "5215CEF6"
+            "s3_etag": "db6ab9e24571a6e710acd7a724a32f44-161",
+            "sha1": "667b2330e0fbb7ec838aff4b29fb4f52e708ba89",
+            "sha256": "f9212050708ba0513663538eb98dc2a4687d63821d3956f07fb6db0a4d061027",
+            "crc32c": "68AF9466"
         },
         's3_tagset': [
-            {'Key': "hca-dss-s3_etag", 'Value': "d87ac6ddedb0d2befaeb43d88738aae1-65"},
-            {'Key': "hca-dss-sha1", 'Value': "77fbc4153b43e90d872c83aef8614bf06ddd577b"},
-            {'Key': "hca-dss-sha256", 'Value': "c99de3d018e7bfbb81b8e1fd1c3c581b364abe03fb42440a115fbbcbef3c85d2"},
-            {'Key': "hca-dss-crc32c", 'Value': "5215CEF6"}
+            {'Key': "hca-dss-s3_etag", 'Value': "db6ab9e24571a6e710acd7a724a32f44-161"},
+            {'Key': "hca-dss-sha1", 'Value': "667b2330e0fbb7ec838aff4b29fb4f52e708ba89"},
+            {'Key': "hca-dss-sha256", 'Value': "f9212050708ba0513663538eb98dc2a4687d63821d3956f07fb6db0a4d061027"},
+            {'Key': "hca-dss-crc32c", 'Value': "68AF9466"}
         ]
     }
 }
