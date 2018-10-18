@@ -74,6 +74,28 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         file_validatable = scheduler.check_file_can_be_validated()
         self.assertEqual(True, file_validatable)
 
+    def test_refresh_picks_up_changed_content_type(self):
+        s3 = boto3.resource('s3')
+        filename = "file3"
+        # create S3 object
+        old_content_type = "application/octet-stream"  # missing dcp-type
+        s3_key = f"{self.upload_area_id}/{filename}"
+        s3object = s3.Bucket(self.config.bucket_name).Object(s3_key)
+        s3object.put(Body="file1_body", ContentType=old_content_type)
+        # create UploadedFile
+        uf = UploadedFile.from_s3_key(upload_area=self.upload_area, s3_key=s3_key)
+        # Change media type on S3 object
+        new_content_type = "application/octet-stream; dcp-type=data"
+        s3object.copy_from(CopySource={'Bucket': self.config.bucket_name, 'Key': s3_key},
+                           MetadataDirective="REPLACE",
+                           ContentType=new_content_type)
+
+        self.assertEqual(old_content_type, uf.content_type)
+
+        uf.refresh()
+
+        self.assertEqual(new_content_type, uf.content_type)
+
     def test_info(self):
         # TODO
         pass

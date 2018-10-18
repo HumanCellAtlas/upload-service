@@ -63,6 +63,10 @@ class UploadedFile:
             'last_modified': self.s3obj.last_modified.isoformat()
         }
 
+    def refresh(self):
+        self.s3obj.reload()
+        self.content_type = self.s3obj.content_type
+
     @property
     def s3url(self):
         return f"s3://{self.upload_area.bucket_name}/{self.upload_area.uuid}/{self.name}"
