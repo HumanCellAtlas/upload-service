@@ -68,8 +68,12 @@ class UploadedFile:
         self.content_type = self.s3obj.content_type
 
     @property
+    def s3key(self):
+        return f"{self.upload_area.uuid}/{self.name}"
+
+    @property
     def s3url(self):
-        return f"s3://{self.upload_area.bucket_name}/{self.upload_area.uuid}/{self.name}"
+        return f"s3://{self.upload_area.bucket_name}/{self.s3key}"
 
     @property
     def size(self):
