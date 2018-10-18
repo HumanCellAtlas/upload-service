@@ -81,6 +81,7 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
 
         mock_checksum_file.assert_called()
 
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.CHECK_CONTENT_TYPE_TIMES', 0)
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     def test_that_if_a_small_file_has_not_been_checksummed_it_is_checksummed_inline(self,
@@ -98,6 +99,7 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
             db_checksum = session.query(DbChecksum).filter(DbChecksum.file_id == self.file_key).one()
             self.assertEqual(FIXTURE_DATA_CHECKSUMS[self.file_contents]['checksums'], db_checksum.checksums)
 
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.CHECK_CONTENT_TYPE_TIMES', 0)
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     def test_when_a_small_is_checksummed_inline_ingest_is_notified(self,
@@ -135,6 +137,7 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
 
         mock_schedule_checksumming.assert_called()
 
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.CHECK_CONTENT_TYPE_TIMES', 0)
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon._checksum_file')
@@ -158,6 +161,7 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
         self.assertFalse(mock_format_and_send_notification.called,
                          'IngestNotifier.file_was_uploaded should not have been called')
 
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.CHECK_CONTENT_TYPE_TIMES', 0)
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon._checksum_file')
