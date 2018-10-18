@@ -59,7 +59,7 @@ class ChecksumDaemon:
             self._find_file(file_key)
             checksum_status = self._find_checksum_status_of_event_newer_than_file_last_modified(file_key)
             if checksum_status:
-                logger.debug("Checksum batch job not scheduled.")
+                logger.debug("File already (being) checksummed and has not changed.")
                 if checksum_status == "CHECKSUMMED":
                     # Only notify ingest if the file has been checksummed.
                     # If the checksum event is in progress, let the other process notify ingest.
