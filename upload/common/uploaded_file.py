@@ -49,13 +49,8 @@ class UploadedFile:
     def _load_s3_object(self, s3object):
         self.s3obj = s3object
         self.name = s3object.key[self.upload_area.key_prefix_length:]  # cut off upload-area-id/
-        tags = self._dcp_tags_of_file()
-        if 'content-type' in tags:
-            self.content_type = tags['content-type']
-            del tags['content-type']
-        else:
-            self.content_type = self.s3obj.content_type
-        self.checksums = tags
+        self.checksums = self._dcp_tags_of_file()
+        self.content_type = self.s3obj.content_type
 
     def info(self):
         return {
