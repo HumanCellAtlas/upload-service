@@ -19,7 +19,8 @@ provider "aws" {
 module "upload-service" {
   source = "../../modules/upload-service"
   deployment_stage = "${var.deployment_stage}"
-  slack_webhook = "${var.slack_webhook}"
+
+  // VPC
   vpc_cidr_block = "${var.vpc_cidr_block}"
 
   // S3
@@ -48,6 +49,9 @@ module "upload-service" {
 
   // DCP Ingest
   ingest_amqp_server = "${var.ingest_amqp_server}"
+
+  // Slack
+  slack_webhook = "${var.slack_webhook}"
 }
 
 output "upload_csum_lambda_role_arn" {
