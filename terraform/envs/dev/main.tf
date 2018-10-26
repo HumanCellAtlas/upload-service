@@ -19,6 +19,7 @@ provider "aws" {
 module "upload-service" {
   source = "../../modules/upload-service"
   deployment_stage = "${var.deployment_stage}"
+  slack_webhook = "${var.slack_webhook}"
   vpc_cidr_block = "${var.vpc_cidr_block}"
 
   // S3

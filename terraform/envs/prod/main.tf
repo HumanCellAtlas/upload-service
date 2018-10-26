@@ -20,6 +20,7 @@ module "upload-service" {
   source = "../../modules/upload-service"
   deployment_stage = "${var.deployment_stage}"
   vpc_cidr_block = "${var.vpc_cidr_block}"
+  slack_webhook = "${var.slack_webhook}"
 
   // S3
   bucket_name_prefix = "${var.bucket_name_prefix}"
