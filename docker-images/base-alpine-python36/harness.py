@@ -25,8 +25,8 @@ class ValidatorHarness:
 
     def __init__(self):
         self.version = self._find_version()
-        self.validation_id = os.environ['AWS_BATCH_JOB_ID']
-        self.id = os.environ['VALIDATION_ID']
+        self.job_id = os.environ['AWS_BATCH_JOB_ID']
+        self.validation_id = os.environ['VALIDATION_ID']
         self._parse_args()
         key_parts = self.s3_object_key.split('/')
         upload_area_id = key_parts.pop(0)
@@ -36,8 +36,8 @@ class ValidatorHarness:
             version=self.version, attempt=os.environ['AWS_BATCH_JOB_ATTEMPT'], argv=sys.argv))
         self._stage_file_to_be_validated()
         validation_event = UploadedFileValidationEvent(file_id=self.s3_object_key,
-                                                       validation_id=self.id,
-                                                       job_id=self.validation_id,
+                                                       validation_id=self.validation_id,
+                                                       job_id=self.job_id,
                                                        status="VALIDATING")
         if not self.args.test:
             update_event(validation_event, {"upload_area_id": upload_area_id, "name": file_name})
@@ -119,7 +119,7 @@ class ValidatorHarness:
         os.remove(self.staged_file_path)
 
     def _log(self, message):
-        logger.info("[{id}]: ".format(id=self.validation_id) + str(message))
+        logger.info("[{id}]: ".format(id=self.job_id) + str(message))
 
 
 if __name__ == '__main__':

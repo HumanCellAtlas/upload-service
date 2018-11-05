@@ -33,28 +33,28 @@ class ValidationScheduler:
         return self.file.size < MAX_FILE_SIZE_IN_BYTES
 
     def schedule_validation(self, validator_docker_image: str, environment: dict) -> str:
-        validation_event_id = str(uuid.uuid4())
+        validation_id = str(uuid.uuid4())
         job_defn = self._find_or_create_job_definition_for_image(validator_docker_image)
         environment['DEPLOYMENT_STAGE'] = os.environ['DEPLOYMENT_STAGE']
         environment['INGEST_AMQP_SERVER'] = os.environ['INGEST_AMQP_SERVER']
         environment['INGEST_API_KEY'] = os.environ['INGEST_API_KEY']
         environment['API_HOST'] = os.environ['API_HOST']
         environment['CONTAINER'] = 'DOCKER'
-        environment['VALIDATION_ID'] = validation_event_id
+        environment['VALIDATION_ID'] = validation_id
         url_safe_file_key = urllib.parse.quote(self.file_key)
         file_s3loc = "s3://{bucket}/{file_key}".format(
             bucket=self.file.upload_area.bucket_name,
             file_key=url_safe_file_key
         )
         command = ['/validator', file_s3loc]
-        self.validation_batch_id = self._enqueue_batch_job(job_defn, command, environment)
-        self._create_scheduled_validation_event(validation_event_id)
-        return self.validation_batch_id
+        self.batch_job_id = self._enqueue_batch_job(job_defn, command, environment)
+        self._create_scheduled_validation_event(validation_id)
+        return self.batch_job_id
 
-    def _create_scheduled_validation_event(self, validation_event_id):
+    def _create_scheduled_validation_event(self, validation_id):
         validation_event = UploadedFileValidationEvent(file_id=self.file_key,
-                                                       validation_id=validation_event_id,
-                                                       job_id=self.validation_batch_id,
+                                                       validation_id=validation_id,
+                                                       job_id=self.batch_job_id,
                                                        status="SCHEDULED")
         validation_event.create_record()
         return validation_event
