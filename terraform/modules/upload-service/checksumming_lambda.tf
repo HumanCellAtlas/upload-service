@@ -69,7 +69,7 @@ resource "aws_iam_role_policy" "upload_csum_lambda" {
         "batch:SubmitJob"
       ],
       "Resource": [
-        "arn:aws:batch:*:${local.account_id}:*"
+        "*"
       ]
     },
     {
