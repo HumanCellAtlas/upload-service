@@ -32,4 +32,15 @@ bump_version:
 	expr `cat VERSION` + 1 > VERSION
 	$(eval VERSION=$(shell cat VERSION))
 
-.phony: build bump_version examine promote push
+test:
+	docker run -it --rm -v ~/.aws:/root/.aws \
+	--env CONTAINER=true \
+	--env DEPLOYMENT_STAGE=test \
+	--env AWS_PROFILE=hca \
+	--env API_HOST=upload.predev.data.humancellatlas.org \
+	--env AWS_BATCH_JOB_ID=1 \
+	--env VALIDATION_ID=2 \
+	--env AWS_BATCH_JOB_ATTEMPT=1 \
+	$(IMAGE):$(VERSION) /validator s3://org-humancellatlas-sam/even
+
+.phony: build bump_version examine promote push test

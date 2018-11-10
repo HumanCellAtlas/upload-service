@@ -14,8 +14,9 @@ VERSION=$(shell cat VERSION)
 #	promote that latest version to "latest"
 
 build:
-	mkdir -p code/upload
+	mkdir -p code/upload code/upload/docker_images
 	cp -R ../../upload/__init__.py ../../upload/common code/upload
+	cp -R ../../upload/docker_images/validator code/upload/docker_images
 	docker build -t $(IMAGE):$(VERSION) .
 
 examine:
