@@ -84,7 +84,7 @@ resource "aws_iam_role_policy" "upload_api_lambda" {
         "batch:SubmitJob"
       ],
       "Resource": [
-        "arn:aws:batch:*:${local.account_id}:*"
+        "*"
       ]
     },
     {

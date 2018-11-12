@@ -3,7 +3,6 @@
 """
 Upload Service Administration Tool
 
-    uploadctl setup|check|teardown   Manage cloud infrastructure
     uploadctl cleanup                Remove old upload areas
     uploadctl test                   Test Upload Service, run uploadctl test -h for more details
 """
@@ -11,9 +10,9 @@ Upload Service Administration Tool
 import argparse
 import os
 
-from .cleanup import CleanupCLI
+# from .cleanup import CleanupCLI
 from .diagnostics import DiagnosticsCLI
-from .setup import SetupCLI
+from .runlevel import RunLevelCLI
 from .test import TestCLI
 
 
@@ -34,14 +33,14 @@ class UploadctlCLI:
 
         self._check_deployment(args)
 
-        if args.command in ['setup', 'check', 'teardown']:
-            SetupCLI.run(args)
+        if args.command == 'runlevel':
+            RunLevelCLI().run(args)
 
         elif args.command == 'test':
             TestCLI.run(args)
 
-        elif args.command == 'cleanup':
-            CleanupCLI.run(args)
+        # elif args.command == 'cleanup':
+        #     CleanupCLI.run(args)
 
         exit(0)
 
@@ -53,9 +52,9 @@ class UploadctlCLI:
                             help="operate on this deployment")
         subparsers = parser.add_subparsers()
 
-        CleanupCLI.configure(subparsers)
+        RunLevelCLI.configure(subparsers)
+        # CleanupCLI.configure(subparsers)
         DiagnosticsCLI.configure(subparsers)
-        SetupCLI.configure(subparsers)
         TestCLI.configure(subparsers)
         return parser
 

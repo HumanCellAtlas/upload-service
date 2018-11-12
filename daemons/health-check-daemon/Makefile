@@ -1,7 +1,7 @@
 include ../../common.mk
 .PHONY: install build stage deploy clobber
 
-LAMBDA_NAME=checksum_daemon
+LAMBDA_NAME=health_check_daemon
 ZIP_FILE=$(LAMBDA_NAME).zip
 BUCKET=$(BUCKET_NAME_PREFIX)lambda-deployment-$(DEPLOYMENT_STAGE)
 STAGED_FILE_KEY=$(LAMBDA_NAME)/$(ZIP_FILE)
@@ -29,12 +29,13 @@ build:
 	shopt -s nullglob; for wheel in vendor.in/*/*.whl; do unzip -q -o -d vendor $$wheel; done
 
 	cp -R vendor/* target/
+
 	cd target && zip -r ../$(ZIP_FILE) *
 
 stage: build
 	aws s3 cp $(ZIP_FILE) s3://$(BUCKET)/$(STAGED_FILE_KEY)
 
 deploy: stage
-	aws lambda update-function-code --function-name dcp-upload-csum-$(DEPLOYMENT_STAGE) --s3-bucket $(BUCKET) --s3-key $(STAGED_FILE_KEY)
+	aws lambda update-function-code --function-name dcp-upload-health-check-$(DEPLOYMENT_STAGE) --s3-bucket $(BUCKET) --s3-key $(STAGED_FILE_KEY)
 
 clobber: ;

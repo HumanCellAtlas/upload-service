@@ -1,9 +1,12 @@
 import json
 import os
 import re
+import time
 import uuid
+
 import boto3
 from six.moves import urllib
+
 from ...common.batch import JobDefinition
 from ...common.checksum import UploadedFileChecksummer
 from ...common.checksum_event import UploadedFileChecksumEvent
@@ -31,7 +34,7 @@ class ChecksumDaemon:
         'ObjectCreated:CompleteMultipartUpload',
         'ObjectCreated:Copy'
     )
-    USE_BATCH_IF_FILE_LARGER_THAN = 4 * GB
+    USE_BATCH_IF_FILE_LARGER_THAN = 10 * GB
 
     def __init__(self, context):
         self.request_id = context.aws_request_id
@@ -59,7 +62,7 @@ class ChecksumDaemon:
             self._find_file(file_key)
             checksum_status = self._find_checksum_status_of_event_newer_than_file_last_modified(file_key)
             if checksum_status:
-                logger.debug("Checksum batch job not scheduled.")
+                logger.debug("File already (being) checksummed and has not changed.")
                 if checksum_status == "CHECKSUMMED":
                     # Only notify ingest if the file has been checksummed.
                     # If the checksum event is in progress, let the other process notify ingest.
@@ -87,9 +90,29 @@ class ChecksumDaemon:
             self._checksum_file_now()
 
     def _notify_ingest(self):
+        self._check_content_type()
         file_info = self.uploaded_file.info()
         status = IngestNotifier('file_uploaded').format_and_send_notification(file_info)
         logger.info(f"Notified Ingest: file_info={file_info}, status={status}")
+
+    CHECK_CONTENT_TYPE_INTERVAL = 6
+    CHECK_CONTENT_TYPE_TIMES = 5
+
+    """
+    If the file's content_type doesn't have a 'dcp-type' suffix, refresh it a few times
+    to see if it acquires one.  Due to AWSCLI/S3 failing to correctly apply content_type,
+    we occasionally have to add it after the fact.  If it doesn't appear, proceed anyway.
+    """
+    def _check_content_type(self):
+        naps_left = self.CHECK_CONTENT_TYPE_TIMES
+        while naps_left > 0 and '; dcp-type=' not in self.uploaded_file.content_type:
+            logger.debug(f"No dcp-type in content_type of file {self.uploaded_file.s3key},"
+                         f" checking {naps_left} more times")
+            time.sleep(self.CHECK_CONTENT_TYPE_INTERVAL)
+            naps_left -= 1
+            self.uploaded_file.refresh()
+        if '; dcp-type=' not in self.uploaded_file.content_type:
+            logger.warning(f"Still no dcp-type in content_type of file {self.uploaded_file.s3key} after 30s")
 
     def _find_checksum_status_of_event_newer_than_file_last_modified(self, file_key):
         checksum_status = None

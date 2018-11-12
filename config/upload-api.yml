@@ -592,7 +592,7 @@ paths:
       description: |
         Notify upload of checksummed file. DB checksum record is updated and ingest is notified.
       tags:
-        - For Checksum Docker Image use only
+        - Upload Service Internal Use Only
       security:
         - api_key: []
       parameters:
@@ -645,7 +645,7 @@ paths:
       description: |
         Notify upload of validated file. DB validation record is updated and ingest is notified.
       tags:
-        - For Validation Docker Image use only
+        - Upload Service Internal Use Only
       security:
         - api_key: []
       parameters:

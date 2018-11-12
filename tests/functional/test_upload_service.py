@@ -41,7 +41,7 @@ class TestUploadService(unittest.TestCase):
         self._upload_file_using_cli(small_file_path)
         self._verify_file_was_checksummed_inline(small_file_name)
 
-        large_file_name = '4097MB_file'
+        large_file_name = '10241MB_file'
         self._copy_file_directly_to_upload_area(large_file_name)
         self._verify_file_is_checksummed_via_batch(large_file_name)
         self._validate_file(small_file_name)

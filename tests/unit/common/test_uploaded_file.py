@@ -60,9 +60,9 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         uploaded_file = UploadedFile(upload_area=self.upload_area, name="file2#",
                                      content_type="application/octet-stream; dcp-type=data", data="file2_content")
         scheduler = ValidationScheduler(uploaded_file)
-        scheduler.validation_batch_id = "123456"
-        validation_event_id = str(uuid.uuid4())
-        validation_event = scheduler._create_scheduled_validation_event(validation_event_id)
+        scheduler.batch_job_id = "123456"
+        validation_id = str(uuid.uuid4())
+        validation_event = scheduler._create_scheduled_validation_event(validation_id)
         self.assertEqual(validation_event.job_id, "123456")
 
     @patch('upload.common.upload_area.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES - 1)
@@ -73,6 +73,28 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
 
         file_validatable = scheduler.check_file_can_be_validated()
         self.assertEqual(True, file_validatable)
+
+    def test_refresh_picks_up_changed_content_type(self):
+        s3 = boto3.resource('s3')
+        filename = "file3"
+        # create S3 object
+        old_content_type = "application/octet-stream"  # missing dcp-type
+        s3_key = f"{self.upload_area_id}/{filename}"
+        s3object = s3.Bucket(self.config.bucket_name).Object(s3_key)
+        s3object.put(Body="file1_body", ContentType=old_content_type)
+        # create UploadedFile
+        uf = UploadedFile.from_s3_key(upload_area=self.upload_area, s3_key=s3_key)
+        # Change media type on S3 object
+        new_content_type = "application/octet-stream; dcp-type=data"
+        s3object.copy_from(CopySource={'Bucket': self.config.bucket_name, 'Key': s3_key},
+                           MetadataDirective="REPLACE",
+                           ContentType=new_content_type)
+
+        self.assertEqual(old_content_type, uf.content_type)
+
+        uf.refresh()
+
+        self.assertEqual(new_content_type, uf.content_type)
 
     def test_info(self):
         # TODO

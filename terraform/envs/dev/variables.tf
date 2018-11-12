@@ -2,6 +2,10 @@ variable "deployment_stage" {
   type = "string"
 }
 
+variable "slack_webhook" {
+  type = "string"
+}
+
 // VPC
 
 variable "vpc_cidr_block" {

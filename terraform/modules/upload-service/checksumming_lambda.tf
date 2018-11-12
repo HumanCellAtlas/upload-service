@@ -69,7 +69,7 @@ resource "aws_iam_role_policy" "upload_csum_lambda" {
         "batch:SubmitJob"
       ],
       "Resource": [
-        "arn:aws:batch:*:${local.account_id}:*"
+        "*"
       ]
     },
     {
@@ -104,22 +104,15 @@ output "upload_csum_lambda_role_arn" {
 }
 
 
-resource "aws_s3_bucket" "lambda_area_bucket" {
-  bucket = "${var.bucket_name_prefix}csum-lambda-deployment-${var.deployment_stage}"
-  acl = "private"
-  force_destroy = "false"
-  acceleration_status = "Enabled"
-}
-
 resource "aws_lambda_function" "upload_checksum_lambda" {
   function_name    = "dcp-upload-csum-${var.deployment_stage}"
-  s3_bucket        = "${aws_s3_bucket.lambda_area_bucket.id}"
-  s3_key           = "checksum_daemon.zip"
+  s3_bucket        = "${aws_s3_bucket.lambda_deployments.id}"
+  s3_key           = "checksum_daemon/checksum_daemon.zip"
   role             = "arn:aws:iam::${local.account_id}:role/upload-checksum-daemon-${var.deployment_stage}"
   handler          = "app.call_checksum_daemon"
   runtime          = "python3.6"
   memory_size      = 960
-  timeout          = 300
+  timeout          = 900
 
   environment {
     variables = {

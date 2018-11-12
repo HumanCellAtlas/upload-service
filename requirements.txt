@@ -3,9 +3,8 @@ botocore<1.11.0
 connexion==1.5.2
 crcmod==1.7
 pika==0.12.0
-requests==2.19.1
+requests==2.20.0
 dcplib==1.4.0
-proforma==0.2.1
 alembic==1.0.0
 psycopg2-binary==2.7.5
 SQLAlchemy==1.2.10
