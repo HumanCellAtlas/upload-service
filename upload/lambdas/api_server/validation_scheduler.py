@@ -49,7 +49,7 @@ class ValidationScheduler:
         command = ['/validator', file_s3loc]
         self.batch_job_id = self._enqueue_batch_job(job_defn, command, environment)
         self._create_scheduled_validation_event(validation_id)
-        return self.batch_job_id
+        return validation_id
 
     def _create_scheduled_validation_event(self, validation_id):
         validation_event = UploadedFileValidationEvent(file_id=self.file_key,
