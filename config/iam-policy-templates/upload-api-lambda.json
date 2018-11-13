@@ -60,7 +60,7 @@
         "batch:SubmitJob"
       ],
       "Resource": [
-        "arn:aws:batch:*:$account_id:*"
+        "*"
       ]
     },
     {
