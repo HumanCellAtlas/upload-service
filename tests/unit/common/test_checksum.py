@@ -14,9 +14,6 @@ class TestUploadedFileChecksummer(UploadTestCaseUsingMockAWS):
     def setUp(self):
         super().setUp()
 
-        self.upload_bucket = boto3.resource('s3').Bucket(self.upload_config.bucket_name)
-        self.upload_bucket.create()
-
         self.upload_area_id = str(uuid.uuid4())
         self.upload_area = UploadArea(self.upload_area_id)
         self.upload_area.update_or_create()

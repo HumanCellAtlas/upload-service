@@ -34,9 +34,6 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
         }
         self.environmentor = EnvironmentSetup(self.environment)
         self.environmentor.enter()
-        # Setup upload bucket
-        self.upload_bucket = boto3.resource('s3').Bucket(self.upload_config.bucket_name)
-        self.upload_bucket.create()
         # Setup authentication
         self.authentication_header = {'Api-Key': self.api_key}
         # Setup app

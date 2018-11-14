@@ -31,9 +31,6 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
         }
         self.environmentor = EnvironmentSetup(self.environment)
         self.environmentor.enter()
-        # Setup upload bucket
-        self.upload_bucket = boto3.resource('s3').Bucket(self.upload_bucket_name)
-        self.upload_bucket.create()
         self.upload_area_id = str(uuid.uuid4())
         self.upload_area = UploadArea(self.upload_area_id)
         self.upload_area.update_or_create()

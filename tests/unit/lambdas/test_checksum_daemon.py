@@ -31,9 +31,6 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
         self.environmentor = EnvironmentSetup(self.environment)
         self.environmentor.enter()
 
-        # Staging bucket
-        self.upload_bucket = boto3.resource('s3').Bucket(self.upload_config.bucket_name)
-        self.upload_bucket.create()
         # Upload area
         self.area_id = str(uuid.uuid4())
         self.upload_area = UploadArea(self.area_id)
