@@ -93,8 +93,11 @@ class BatchWatcher:
             self.invoke_checksum_lambda(file_id)
         elif table_name == "validation":
             docker_image = row["docker_image"]
+            # Multiple validation attempts on a file should point to the same original validation id
             original_validation_id = row["original_validation_id"]
             if not original_validation_id:
+                # If there is no original_validation_id,
+                # set the db id of first validation attempt as original_validation_id.
                 original_validation_id = db_id
             self.schedule_validation_job(upload_area_id, file_name, docker_image, original_validation_id)
         logger.info(f"Marking {table_name} record id {db_id} for file {file_id} as failed.")

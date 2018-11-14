@@ -41,6 +41,9 @@ class ValidationScheduler:
         environment['API_HOST'] = os.environ['API_HOST']
         environment['CONTAINER'] = 'DOCKER'
         if orig_val_id:
+            # If there is an original validation id for a scheduled validation, we pass the original validation id
+            # rather than the new validation db id into the environment variables.
+            # This allows ingest to correlate results for this file with the original validation id.
             environment['VALIDATION_ID'] = orig_val_id
         else:
             environment['VALIDATION_ID'] = validation_id

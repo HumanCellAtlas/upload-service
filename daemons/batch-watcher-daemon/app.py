@@ -1,4 +1,3 @@
-from upload.common.logging import get_logger
 from upload.lambdas.batch_watcher.batch_watcher import BatchWatcher
 
 
