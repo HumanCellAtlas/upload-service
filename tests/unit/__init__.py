@@ -1,6 +1,7 @@
 import os
 import unittest
 
+import boto3
 from moto import mock_iam, mock_s3, mock_sts
 
 from upload.common.upload_config import UploadConfig
@@ -77,6 +78,9 @@ class UploadTestCaseUsingMockAWS(unittest.TestCase):
         }
         self.common_environmentor = EnvironmentSetup(self.environment)
         self.common_environmentor.enter()
+        # Upload Bucket
+        self.upload_bucket = boto3.resource('s3').Bucket(self.upload_config.bucket_name)
+        self.upload_bucket.create()
 
     def tearDown(self):
         self.s3_mock.stop()
