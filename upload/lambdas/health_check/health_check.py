@@ -5,7 +5,7 @@ import os
 import boto3
 import requests
 
-from upload.common.database import _run_query
+from upload.common.database import run_query
 from upload.common.logging import get_logger
 from upload.common.upload_config import UploadConfig
 
@@ -39,6 +39,12 @@ class HealthCheck:
         self.undeleted_areas_count_query = "SELECT COUNT(*) FROM upload_area " \
                                            "WHERE created_at > CURRENT_DATE - interval '4 weeks' " \
                                            "AND status != 'DELETED'"
+        self.failed_checksum_count_query = "SELECT COUNT(*) FROM checksum " \
+                                           "WHERE status='FAILED' " \
+                                           "AND updated_at >= NOW() - '1 day'::INTERVAL"
+        self.failed_validation_count_query = "SELECT COUNT(*) FROM validation " \
+                                             "WHERE status='FAILED' " \
+                                             "AND updated_at >= NOW() - '1 day'::INTERVAL"
         self.deadletter_metric_queries = [
             {
                 'Id': 'visible_messages',
@@ -145,11 +151,15 @@ class HealthCheck:
         stale_validating_areas = self._query_db_and_return_first_row(self.stale_validation_job_count_query)
         scheduled_checksum_areas = self._query_db_and_return_first_row(self.scheduled_checksum_job_count_query)
         scheduled_validation_areas = self._query_db_and_return_first_row(self.scheduled_validation_job_count_query)
+        failed_checksum_count = self._query_db_and_return_first_row(self.failed_checksum_count_query)
+        failed_validation_count = self._query_db_and_return_first_row(self.failed_validation_count_query)
 
         upload_area_status = f"UPLOAD_AREAS: {undeleted_upload_area_count} undeleted areas, {stale_checksumming_areas}"\
                              f" stuck in checksumming, {stale_validating_areas} stuck in validation \n" \
                              f"{scheduled_checksum_areas} files scheduled for checksumming, " \
-                             f"{scheduled_validation_areas} files scheduled for validation (for over 2 hours)\n"
+                             f"{scheduled_validation_areas} files scheduled for validation (for over 2 hours)\n" \
+                             f"{failed_checksum_count} files failed batch checksumming in last day\n" \
+                             f"{failed_validation_count} files failed batch validation in last day"
         return upload_area_status
 
     def post_message_to_url(self, url, message):
@@ -170,7 +180,7 @@ class HealthCheck:
         return results
 
     def _query_db_and_return_first_row(self, query):
-        query_result = _run_query(query)
+        query_result = run_query(query)
         rows = query_result.fetchall()
         if len(rows) > 0:
             results = rows[0][0]

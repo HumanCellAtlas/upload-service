@@ -154,13 +154,15 @@ class TestHealthCheckDaemon(UploadTestCaseUsingMockAWS):
 
     @patch('upload.lambdas.health_check.health_check.HealthCheck._query_db_and_return_first_row')
     def test_gen_upload_area_status_queries_db_and_formats_string(self, mock_query_db):
-        mock_query_db.side_effect = [5, 4, 3, 2, 1]
+        mock_query_db.side_effect = [5, 4, 3, 2, 1, 2, 3]
         upload_area_status = self.health_check.generate_upload_area_status()
-        assert mock_query_db.call_count == 5
+        assert mock_query_db.call_count == 7
 
         assert upload_area_status == "UPLOAD_AREAS: 5 undeleted areas, 4 stuck in checksumming, 3 stuck in " \
                                      "validation \n2 files scheduled for checksumming, 1 files scheduled for " \
-                                     "validation (for over 2 hours)\n"
+                                     "validation (for over 2 hours)\n" \
+                                     "2 files failed batch checksumming in last day\n" \
+                                     "3 files failed batch validation in last day"
 
     @patch('upload.lambdas.health_check.health_check.datetime')
     def test_query_cloudwatch_metrics_calls_boto3_client(self, mock_datetime):
@@ -314,7 +316,7 @@ class TestHealthCheckDaemon(UploadTestCaseUsingMockAWS):
         assert deadletter_dict == {'visible_messages': 'no value returned', 'received_messages': 'no value returned'}
         stubber.deactivate()
 
-    @patch('upload.lambdas.health_check.health_check._run_query')
+    @patch('upload.lambdas.health_check.health_check.run_query')
     def test_query_db_and_return_first_row_queries_db_and_handles_expected_db_response(self, mock_run_query):
         mock_run_query.return_value = MockIt()
         area_count = self.health_check._query_db_and_return_first_row("SELECT COUNT(*) FROM checksum ")

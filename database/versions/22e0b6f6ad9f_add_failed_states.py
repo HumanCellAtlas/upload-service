@@ -1,4 +1,4 @@
-"""add FAILED states and parent_job ids to checksum and validation
+"""add FAILED states to checksum and validation
 
 Revision ID: 22e0b6f6ad9f
 Revises: 2c6910ed8cf6
@@ -20,12 +20,10 @@ def upgrade():
     op.execute('COMMIT')
     op.execute("ALTER TYPE checksumming_status_enum ADD VALUE 'FAILED';")
     op.execute("ALTER TYPE validation_event_status_enum ADD VALUE 'FAILED';")
-    op.add_column('checksum', sa.Column('original_attempt_job_id', sa.String, nullable=True))
-    op.add_column('validation', sa.Column('original_attempt_job_id', sa.String, nullable=True))
-    op.create_index("validation_original_attempt_job_id_index", "validation", ["original_attempt_job_id"])
-    op.create_index("checksum_original_attempt_job_id_index", "checksum", ["original_attempt_job_id"])
     op.execute("UPDATE validation SET status = 'FAILED' WHERE status = 'SCHEDULED';")
     op.execute("UPDATE validation SET status = 'FAILED' WHERE status = 'VALIDATING';")
+    op.execute("UPDATE checksum SET status = 'FAILED' WHERE status = 'SCHEDULED';")
+    op.execute("UPDATE checksum SET status = 'FAILED' WHERE status = 'CHECKSUMMING';")
 
 
 def downgrade():

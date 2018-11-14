@@ -46,6 +46,25 @@ resource "aws_iam_role_policy" "batch_watcher_lambda" {
       "Resource": [
         "arn:aws:secretsmanager:${local.aws_region}:${local.account_id}:secret:dcp/upload/${var.deployment_stage}/*"
       ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "batch:Describe*"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "ec2:TerminateInstances"
+      ],
+      "Resource": [
+        "*"
+      ]
     }
   ]
 }
@@ -56,23 +75,15 @@ output "batch_watcher_lambda_role_arn" {
   value = "${aws_iam_role.batch_watcher_lambda.arn}"
 }
 
-
-resource "aws_s3_bucket" "batch_watcher_lambda_area_bucket" {
-  bucket = "${var.bucket_name_prefix}batch-watcher-deployment-${var.deployment_stage}"
-  acl = "private"
-  force_destroy = "false"
-  acceleration_status = "Enabled"
-}
-
 resource "aws_lambda_function" "batch_watcher_lambda" {
   function_name    = "dcp-upload-batch-watcher-${var.deployment_stage}"
-  s3_bucket        = "${aws_s3_bucket.batch_watcher_lambda_area_bucket.id}"
+  s3_bucket        = "${aws_s3_bucket.lambda_deployments.id}"
   s3_key           = "batch_watcher_daemon.zip"
   role             = "arn:aws:iam::${local.account_id}:role/dcp-upload-batch-watcher-daemon-${var.deployment_stage}"
   handler          = "app.batch_watcher_handler"
   runtime          = "python3.6"
   memory_size      = 512
-  timeout          = 300
+  timeout          = 900
 
   environment {
     variables = {
