@@ -97,7 +97,9 @@ class TestUploadService(unittest.TestCase):
                                       expected_status=200,
                                       headers=self.auth_headers,
                                       json={"validator_image": "humancellatlas/upload-validator-example"})
-        validation_job_id = json.loads(response)['validation_id']
+        validation_id = json.loads(response)['validation_id']
+
+        validation_job_id = self._validation_record_job_id(validation_id)
 
         WaitFor(self._batch_job_status, validation_job_id)\
             .to_return_value('SUCCEEDED', timeout_seconds=20 * MINUTE_SEC)
@@ -126,8 +128,12 @@ class TestUploadService(unittest.TestCase):
         record = self._checksum_record(filename)
         return record.status if record else None
 
-    def _validation_record_status(self, validation_job_id):
-        record = self._validation_record(validation_job_id)
+    def _validation_record_job_id(self, validation_id):
+        record = self._validation_record(validation_id)
+        return record.job_id if record else None
+
+    def _validation_record_status(self, validation_id):
+        record = self._validation_record(validation_id)
         return record.status if record else None
 
     def _upload_area_record(self):
@@ -140,9 +146,9 @@ class TestUploadService(unittest.TestCase):
         record = db.query(DbChecksum).filter(DbChecksum.file_id == file_id).one_or_none()
         return record
 
-    def _validation_record(self, validation_job_id):
+    def _validation_record(self, validation_id):
         db = db_session_maker()
-        return db.query(DbValidation).filter(DbValidation.job_id == validation_job_id).one_or_none()
+        return db.query(DbValidation).filter(DbValidation.id == validation_id).one_or_none()
 
     def _batch_job_status(self, job_id):
         response = self.batch.describe_jobs(jobs=[job_id])
