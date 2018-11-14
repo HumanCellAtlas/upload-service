@@ -6,7 +6,6 @@ from upload.lambdas.api_server.validation_scheduler import ValidationScheduler, 
 from .. import UploadTestCaseUsingMockAWS
 from unittest.mock import patch
 
-from upload.common.upload_config import UploadConfig
 from upload.common.upload_area import UploadArea
 from upload.common.uploaded_file import UploadedFile
 
@@ -15,12 +14,7 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
 
     def setUp(self):
         super().setUp()
-        # Config
-        self.config = UploadConfig()
-        self.config.set({
-            'bucket_name': 'bogobucket'
-        })
-        self.upload_bucket = boto3.resource('s3').Bucket(self.config.bucket_name)
+        self.upload_bucket = boto3.resource('s3').Bucket(self.upload_config.bucket_name)
         self.upload_bucket.create()
 
         self.upload_area_id = str(uuid.uuid4())
@@ -36,7 +30,7 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         filename = "file1"
         content_type = "application/octet-stream; dcp-type=data"
         s3_key = f"{self.upload_area_id}/{filename}"
-        s3object = s3.Bucket(self.config.bucket_name).Object(s3_key)
+        s3object = s3.Bucket(self.upload_config.bucket_name).Object(s3_key)
         s3object.put(Body="file1_body", ContentType=content_type)
 
         uf = UploadedFile.from_s3_key(upload_area=self.upload_area, s3_key=s3_key)
@@ -80,13 +74,13 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         # create S3 object
         old_content_type = "application/octet-stream"  # missing dcp-type
         s3_key = f"{self.upload_area_id}/{filename}"
-        s3object = s3.Bucket(self.config.bucket_name).Object(s3_key)
+        s3object = s3.Bucket(self.upload_config.bucket_name).Object(s3_key)
         s3object.put(Body="file1_body", ContentType=old_content_type)
         # create UploadedFile
         uf = UploadedFile.from_s3_key(upload_area=self.upload_area, s3_key=s3_key)
         # Change media type on S3 object
         new_content_type = "application/octet-stream; dcp-type=data"
-        s3object.copy_from(CopySource={'Bucket': self.config.bucket_name, 'Key': s3_key},
+        s3object.copy_from(CopySource={'Bucket': self.upload_config.bucket_name, 'Key': s3_key},
                            MetadataDirective="REPLACE",
                            ContentType=new_content_type)
 

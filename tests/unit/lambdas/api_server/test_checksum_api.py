@@ -5,7 +5,6 @@ from unittest.mock import patch
 import boto3
 
 from upload.common.upload_area import UploadArea
-from upload.common.upload_config import UploadConfig
 from upload.common.uploaded_file import UploadedFile
 from upload.common.checksum_event import UploadedFileChecksumEvent
 
@@ -17,14 +16,6 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
 
     def setUp(self):
         super().setUp()
-        # Config
-        self.config = UploadConfig()
-        self.config.set({
-            'bucket_name': 'bogobucket',
-            'csum_job_q_arn': 'bogo_arn',
-            'csum_job_role_arn': 'bogo_role_arn',
-            'upload_submitter_role_arn': 'bogo_submitter_role_arn',
-        })
         # Environment
         self.deployment_stage = 'test'
         self.api_key = "foo"
@@ -38,7 +29,7 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         self.environmentor.enter()
 
         # Setup upload bucket
-        self.upload_bucket = boto3.resource('s3').Bucket(self.config.bucket_name)
+        self.upload_bucket = boto3.resource('s3').Bucket(self.upload_config.bucket_name)
         self.upload_bucket.create()
         # Authentication
         self.authentication_header = {'Api-Key': self.api_key}
@@ -60,7 +51,7 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         file1_key = f"{area_id}/{filename}"
         s3obj = self.upload_bucket.Object(file1_key)
         s3obj.put(Body=contents, ContentType=content_type)
-        boto3.client('s3').put_object_tagging(Bucket=self.config.bucket_name, Key=file1_key, Tagging={
+        boto3.client('s3').put_object_tagging(Bucket=self.upload_config.bucket_name, Key=file1_key, Tagging={
             'TagSet': [
                 {'Key': 'hca-dss-content-type', 'Value': content_type},
                 {'Key': 'hca-dss-s3_etag', 'Value': checksums['s3_etag']},

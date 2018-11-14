@@ -14,13 +14,10 @@ class TestValidatorHarness(UploadTestCaseUsingMockAWS):
 
     def setUp(self):
         super().setUp()
-        self.upload_bucket_name = "bogobucket"
-        self.upload_bucket = boto3.resource('s3').Bucket(self.upload_bucket_name)
-        self.upload_bucket.create()
 
         self.validation_id = '123'
         self.environment = {
-            'BUCKET_NAME': self.upload_bucket_name,
+            'BUCKET_NAME': self.upload_config.bucket_name,
             'AWS_BATCH_JOB_ID': '1',
             'AWS_BATCH_JOB_ATTEMPT': '1',
             'VALIDATION_ID': str(self.validation_id)
@@ -35,7 +32,7 @@ class TestValidatorHarness(UploadTestCaseUsingMockAWS):
         self.s3_object_key = f"{self.upload_area_id}/{self.filename}"
         s3obj = self.upload_bucket.Object(self.s3_object_key)
         s3obj.put(Body=self.file_contents)
-        self.s3_url = f"s3://{self.upload_bucket_name}/{self.s3_object_key}"
+        self.s3_url = f"s3://{self.upload_config.bucket_name}/{self.s3_object_key}"
 
     def tearDown(self):
         super().tearDown()
@@ -94,7 +91,7 @@ class TestValidatorHarness(UploadTestCaseUsingMockAWS):
 
     def test__run_validator__runs_binary_and_catches_exit_code_and_stderr_for_validation_with_errors(self):
         filename = "a_file_that_does_not_exist"
-        s3_url = f"s3://{self.upload_bucket_name}/{self.upload_area_id}/{filename}"
+        s3_url = f"s3://{self.upload_config.bucket_name}/{self.upload_area_id}/{filename}"
 
         with TemporaryDirectory() as staging_dir:
 
