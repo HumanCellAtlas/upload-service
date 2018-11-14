@@ -87,3 +87,20 @@ class UploadTestCaseUsingMockAWS(unittest.TestCase):
         self.iam_mock.stop()
         self.sts_mock.stop()
         self.common_environmentor.exit()
+
+    """
+    Simulate a file that has been uploaded to the S3 upload bucket by the HCA CLI,
+    and (optionally) checksummed by the Upload Service (provide checksums={} to disable).
+    """
+    def mock_upload_file(self, area_id, filename, contents="foo", content_type="application/json", checksums=None):
+        if checksums is None:
+            checksums = {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
+        file1_key = f"{area_id}/{filename}"
+        s3obj = self.upload_bucket.Object(file1_key)
+        s3obj.put(Body=contents, ContentType=content_type)
+        tag_set = [{'Key': f"hca-dss-{csum_type}", 'Value': csum_value} for csum_type, csum_value in checksums.items()]
+        if tag_set:
+            boto3.client('s3').put_object_tagging(Bucket=self.upload_config.bucket_name,
+                                                  Key=file1_key,
+                                                  Tagging={'TagSet': tag_set})
+        return s3obj
