@@ -65,6 +65,16 @@ resource "aws_iam_role_policy" "batch_watcher_lambda" {
       "Resource": [
         "*"
       ]
+    },
+    {
+      "Sid": "CloudWatchAccess",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:GetMetricData"
+      ],
+      "Resource": [
+        "*"
+      ]
     }
   ]
 }
@@ -92,4 +102,24 @@ resource "aws_lambda_function" "batch_watcher_lambda" {
       API_HOST = "${var.upload_api_fqdn}"
     }
   }
+}
+
+resource "aws_cloudwatch_event_rule" "hourly" {
+    name = "every-hour-${var.deployment_stage}"
+    description = "Fires every hour"
+    schedule_expression = "cron(0 * * * *)"
+}
+
+resource "aws_cloudwatch_event_target" "hourly_batch_watcher" {
+    rule = "${aws_cloudwatch_event_rule.hourly.name}"
+    target_id = "batch_watcher_lambda"
+    arn = "${aws_lambda_function.batch_watcher_lambda.arn}"
+}
+
+resource "aws_lambda_permission" "allow_cloudwatch_to_call_batch_watcher" {
+    statement_id = "AllowExecutionFromCloudWatch"
+    action = "lambda:InvokeFunction"
+    function_name = "${aws_lambda_function.batch_watcher_lambda.function_name}"
+    principal = "events.amazonaws.com"
+    source_arn = "${aws_cloudwatch_event_rule.hourly.arn}"
 }

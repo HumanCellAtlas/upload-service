@@ -20,6 +20,8 @@ def upgrade():
     op.execute('COMMIT')
     op.execute("ALTER TYPE checksumming_status_enum ADD VALUE 'FAILED';")
     op.execute("ALTER TYPE validation_event_status_enum ADD VALUE 'FAILED';")
+    op.add_column('validation', sa.Column('docker_image', sa.String(), nullable=True))
+    op.add_column('validation', sa.Column('original_validation_id', sa.String(), nullable=True))
     op.execute("UPDATE validation SET status = 'FAILED' WHERE status = 'SCHEDULED';")
     op.execute("UPDATE validation SET status = 'FAILED' WHERE status = 'VALIDATING';")
     op.execute("UPDATE checksum SET status = 'FAILED' WHERE status = 'SCHEDULED';")

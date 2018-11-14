@@ -92,15 +92,22 @@ class BatchWatcher:
         if table_name == "checksum":
             self.invoke_checksum_lambda(file_id)
         elif table_name == "validation":
-            self.schedule_validation_job(upload_area_id, file_name)
+            docker_image = row["docker_image"]
+            original_validation_id = row["original_validation_id"]
+            if not original_validation_id:
+                original_validation_id = db_id
+            self.schedule_validation_job(upload_area_id, file_name, docker_image, original_validation_id)
         logger.info(f"Marking {table_name} record id {db_id} for file {file_id} as failed.")
         run_query_with_params(f"UPDATE {table_name} SET status = 'FAILED' \
             WHERE id = %s;", (db_id))
 
-    def schedule_validation_job(self, upload_area_id, file_name):
+    def schedule_validation_job(self, upload_area_id, file_name, docker_image, original_validation_id):
         upload_url = "{0}/v1/area/{1}/{2}/validate".format(self.upload_url, upload_area_id, file_name)
         headers = {'Api-Key': self.api_key}
-        message = {"validator_image": "quay.io/humancellatlas/fastq_utils:master"}
+        message = {
+            "validator_image": docker_image,
+            "original_validation_id": original_validation_id
+        }
         response = requests.put(upload_url, headers=headers, json=message)
         if response.status_code == requests.codes.ok:
             logger.info(f"scheduled {upload_area_id}/{file_name} for validation")

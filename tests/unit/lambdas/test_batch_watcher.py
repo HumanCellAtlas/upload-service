@@ -68,10 +68,22 @@ class TestBatchWatcherDaemon(UploadTestCaseUsingMockAWS):
         row = {
             "id": "123",
             "file_id": "test_area/test_id",
-            "job_id": "124"
+            "job_id": "124",
+            "docker_image": "test_docker_image",
+            "original_validation_id": "567"
         }
         self.batch_watcher.schedule_job(row, "validation")
-        mock_schedule_validation_job.assert_called_with("test_area", "test_id")
+        mock_schedule_validation_job.assert_called_with("test_area", "test_id", "test_docker_image", "567")
+
+        row = {
+            "id": "123",
+            "file_id": "test_area/test_id",
+            "job_id": "124",
+            "docker_image": "test_docker_image",
+            "original_validation_id": None
+        }
+        self.batch_watcher.schedule_job(row, "validation")
+        mock_schedule_validation_job.assert_called_with("test_area", "test_id", "test_docker_image", "123")
 
     @patch('upload.lambdas.batch_watcher.batch_watcher.run_query_with_params')
     @patch('upload.lambdas.batch_watcher.batch_watcher.BatchWatcher.invoke_checksum_lambda')

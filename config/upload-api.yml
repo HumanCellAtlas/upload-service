@@ -485,6 +485,9 @@ paths:
               environment:
                 description: Environment variables to pass to the validator.
                 type: object
+              original_validation_id:
+                description: Validation id of original validation attempt on a file.
+                type: string
             required:
               - validator_image
       responses:
