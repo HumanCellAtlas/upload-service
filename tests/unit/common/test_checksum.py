@@ -7,18 +7,12 @@ from ... import FIXTURE_DATA_CHECKSUMS
 
 from upload.common.upload_area import UploadArea
 from upload.common.checksum import UploadedFileChecksummer
-from upload.common.upload_config import UploadConfig
 
 
 class TestUploadedFileChecksummer(UploadTestCaseUsingMockAWS):
 
     def setUp(self):
         super().setUp()
-        # Config
-        self.config = UploadConfig()
-        self.config.set({
-            'bucket_name': 'bogobucket'
-        })
         # Environment
         self.environment = {
             'DEPLOYMENT_STAGE': 'test',
@@ -26,7 +20,7 @@ class TestUploadedFileChecksummer(UploadTestCaseUsingMockAWS):
         self.environmentor = EnvironmentSetup(self.environment)
         self.environmentor.enter()
 
-        self.upload_bucket = boto3.resource('s3').Bucket(self.config.bucket_name)
+        self.upload_bucket = boto3.resource('s3').Bucket(self.upload_config.bucket_name)
         self.upload_bucket.create()
 
         self.upload_area_id = str(uuid.uuid4())
@@ -52,7 +46,7 @@ class TestUploadedFileChecksummer(UploadTestCaseUsingMockAWS):
         file_key = f"{self.upload_area_id}/{filename}"
         s3obj = self.upload_bucket.Object(file_key)
         s3obj.put(Body=contents, ContentType=content_type)
-        boto3.client('s3').put_object_tagging(Bucket=self.config.bucket_name, Key=file_key,
+        boto3.client('s3').put_object_tagging(Bucket=self.upload_config.bucket_name, Key=file_key,
                                               Tagging={'TagSet': tag_set})
         return s3obj
 

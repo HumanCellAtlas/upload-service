@@ -3,6 +3,8 @@ import unittest
 
 from moto import mock_iam, mock_s3, mock_sts
 
+from upload.common.upload_config import UploadConfig
+
 os.environ['DEPLOYMENT_STAGE'] = 'test'
 os.environ['LOG_LEVEL'] = 'CRITICAL'
 
@@ -59,6 +61,15 @@ class UploadTestCaseUsingMockAWS(unittest.TestCase):
         self.iam_mock.start()
         self.sts_mock = mock_sts()
         self.sts_mock.start()
+        # UploadConfig
+        self.upload_config = UploadConfig()
+        self.upload_config.set({
+            'bucket_name': 'bogobucket',
+            'csum_job_q_arn': 'bogo_arn',
+            'csum_job_role_arn': 'bogo_role_arn',
+            'upload_submitter_role_arn': 'bogo_submitter_role_arn',
+            'slack_webhook': 'bogo_slack_url'
+        })
 
     def tearDown(self):
         self.s3_mock.stop()
