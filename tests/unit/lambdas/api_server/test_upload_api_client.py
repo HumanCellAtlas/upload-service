@@ -48,29 +48,12 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
         self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
         return area_id
 
-    def _mock_upload_file(self, area_id, filename, contents="foo", content_type="application/json",
-                          checksums=None):
-        checksums = {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'} if not checksums else checksums
-        file1_key = f"{area_id}/{filename}"
-        s3obj = self.upload_bucket.Object(file1_key)
-        s3obj.put(Body=contents, ContentType=content_type)
-        boto3.client('s3').put_object_tagging(Bucket=self.upload_config.bucket_name, Key=file1_key, Tagging={
-            'TagSet': [
-                {'Key': 'hca-dss-content-type', 'Value': content_type},
-                {'Key': 'hca-dss-s3_etag', 'Value': checksums['s3_etag']},
-                {'Key': 'hca-dss-sha1', 'Value': checksums['sha1']},
-                {'Key': 'hca-dss-sha256', 'Value': checksums['sha256']},
-                {'Key': 'hca-dss-crc32c', 'Value': checksums['crc32c']}
-            ]
-        })
-        return s3obj
-
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_update_event_with_validation_event(self, mock_format_and_send_notification, mock_connect):
         validation_id = str(uuid.uuid4())
         area_id = self._create_area()
-        s3obj = self._mock_upload_file(area_id, 'foo.json')
+        s3obj = self.mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
         uploaded_file.create_record()
@@ -102,7 +85,7 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
     def test_update_event_with_checksum_event(self, mock_format_and_send_notification, mock_connect):
         checksum_id = str(uuid.uuid4())
         area_id = self._create_area()
-        s3obj = self._mock_upload_file(area_id, 'foo.json')
+        s3obj = self.mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
         uploaded_file.create_record()

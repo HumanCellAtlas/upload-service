@@ -82,23 +82,6 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
         return area_id
 
-    def _mock_upload_file(self, area_id, filename, contents="foo", content_type="application/json",
-                          checksums=None):
-        checksums = {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'} if not checksums else checksums
-        file1_key = f"{area_id}/{filename}"
-        s3obj = self.upload_bucket.Object(file1_key)
-        s3obj.put(Body=contents, ContentType=content_type)
-        boto3.client('s3').put_object_tagging(Bucket=self.upload_config.bucket_name, Key=file1_key, Tagging={
-            'TagSet': [
-                {'Key': 'hca-dss-content-type', 'Value': content_type},
-                {'Key': 'hca-dss-s3_etag', 'Value': checksums['s3_etag']},
-                {'Key': 'hca-dss-sha1', 'Value': checksums['sha1']},
-                {'Key': 'hca-dss-sha256', 'Value': checksums['sha256']},
-                {'Key': 'hca-dss-crc32c', 'Value': checksums['crc32c']}
-            ]
-        })
-        return s3obj
-
     def test_head_upload_area_does_not_exist(self):
         area_id = str(uuid.uuid4())
         response = self.client.head(f"/v1/area/{area_id}")
@@ -258,10 +241,10 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
     def test_list_files(self):
         area_id = self._create_area()
-        o1 = self._mock_upload_file(area_id, 'file1.json', content_type='application/json; dcp-type="metadata/foo"')
-        o2 = self._mock_upload_file(area_id, 'file2.fastq.gz',
-                                    content_type='application/octet-stream; dcp-type=data',
-                                    checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
+        o1 = self.mock_upload_file(area_id, 'file1.json', content_type='application/json; dcp-type="metadata/foo"')
+        o2 = self.mock_upload_file(area_id, 'file2.fastq.gz',
+                                   content_type='application/octet-stream; dcp-type=data',
+                                   checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
 
         response = self.client.get(f"/v1/area/{area_id}")
 
@@ -292,8 +275,8 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         area2_id = self._create_area()
         area_1_files = ['file1', 'file2']
         area_2_files = ['file3', 'file4']
-        [self._mock_upload_file(area1_id, file) for file in area_1_files]
-        [self._mock_upload_file(area2_id, file) for file in area_2_files]
+        [self.mock_upload_file(area1_id, file) for file in area_1_files]
+        [self.mock_upload_file(area2_id, file) for file in area_2_files]
 
         response = self.client.get(f"/v1/area/{area2_id}")
 
@@ -304,7 +287,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
     def test_get_file_for_existing_file(self):
         area_id = self._create_area()
         filename = 'file1.json'
-        s3obj = self._mock_upload_file(area_id, filename)
+        s3obj = self.mock_upload_file(area_id, filename)
 
         response = self.client.get(f"/v1/area/{area_id}/{filename}")
 
@@ -334,11 +317,11 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
     def test_put_files_info(self):
         area_id = self._create_area()
-        o1 = self._mock_upload_file(area_id, 'file1.json', content_type='application/json; dcp-type="metadata/foo"')
-        o2 = self._mock_upload_file(area_id, 'file2.fastq.gz',
-                                    content_type='application/octet-stream; dcp-type=data',
-                                    checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
-        self._mock_upload_file(area_id, 'a_file_in_the_same_area_that_we_will_not_attempt_to_list')
+        o1 = self.mock_upload_file(area_id, 'file1.json', content_type='application/json; dcp-type="metadata/foo"')
+        o2 = self.mock_upload_file(area_id, 'file2.fastq.gz',
+                                   content_type='application/octet-stream; dcp-type=data',
+                                   checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
+        self.mock_upload_file(area_id, 'a_file_in_the_same_area_that_we_will_not_attempt_to_list')
 
         response = self.client.put(f"/v1/area/{area_id}/files_info", content_type='application/json',
                                    data=(json.dumps(['file1.json', 'file2.fastq.gz'])))

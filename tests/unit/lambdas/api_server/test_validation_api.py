@@ -43,23 +43,6 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
         return area_id
 
-    def _mock_upload_file(self, area_id, filename, contents="foo", content_type="application/json",
-                          checksums=None):
-        checksums = {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'} if not checksums else checksums
-        file1_key = f"{area_id}/{filename}"
-        s3obj = self.upload_bucket.Object(file1_key)
-        s3obj.put(Body=contents, ContentType=content_type)
-        boto3.client('s3').put_object_tagging(Bucket=self.upload_config.bucket_name, Key=file1_key, Tagging={
-            'TagSet': [
-                {'Key': 'hca-dss-content-type', 'Value': content_type},
-                {'Key': 'hca-dss-s3_etag', 'Value': checksums['s3_etag']},
-                {'Key': 'hca-dss-sha1', 'Value': checksums['sha1']},
-                {'Key': 'hca-dss-sha256', 'Value': checksums['sha256']},
-                {'Key': 'hca-dss-crc32c', 'Value': checksums['crc32c']}
-            ]
-        })
-        return s3obj
-
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_validation_statuses_for_upload_area(self, mock_format_and_send_notification, mock_connect):
@@ -71,10 +54,10 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         validation3_id = str(uuid.uuid4())
         validation4_id = str(uuid.uuid4())
 
-        s3obj1 = self._mock_upload_file(area_id, 'foo1.json')
-        s3obj2 = self._mock_upload_file(area_id, 'foo2.json')
-        s3obj3 = self._mock_upload_file(area_id, 'foo3.json')
-        s3obj4 = self._mock_upload_file(area_id, 'foo4.json')
+        s3obj1 = self.mock_upload_file(area_id, 'foo1.json')
+        s3obj2 = self.mock_upload_file(area_id, 'foo2.json')
+        s3obj3 = self.mock_upload_file(area_id, 'foo3.json')
+        s3obj4 = self.mock_upload_file(area_id, 'foo4.json')
 
         uploaded_file1 = UploadedFile(upload_area, s3object=s3obj1)
         uploaded_file2 = UploadedFile(upload_area, s3object=s3obj2)
@@ -118,7 +101,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
     def test_schedule_file_validation_raises_error_if_file_too_large(self, mock_format_and_send_notification,
                                                                      mock_connect):
         area_id = self._create_area()
-        self._mock_upload_file(area_id, 'foo.json')
+        self.mock_upload_file(area_id, 'foo.json')
         response = self.client.put(
             f"/v1/area/{area_id}/foo.json/validate",
             headers=self.authentication_header,
@@ -137,7 +120,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
                                                                                mock_connect, mock_validate):
         mock_validate.return_value = 4472093160
         area_id = self._create_area()
-        self._mock_upload_file(area_id, 'foo.json')
+        self.mock_upload_file(area_id, 'foo.json')
         response = self.client.put(
             f"/v1/area/{area_id}/foo.json/validate",
             headers=self.authentication_header,
@@ -154,7 +137,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         mock_validate.return_value = 4472093160
         area_id = self._create_area()
         filename = 'green#.json'
-        self._mock_upload_file(area_id, filename)
+        self.mock_upload_file(area_id, filename)
         url_safe_filename = urllib.parse.quote(filename)
         response = self.client.put(
             f"/v1/area/{area_id}/{url_safe_filename}/validate",
@@ -167,7 +150,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_unscheduled_status_file_validation(self, mock_format_and_send_notification, mock_connect):
         area_id = self._create_area()
-        s3obj = self._mock_upload_file(area_id, 'foo.json')
+        s3obj = self.mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
         uploaded_file.create_record()
@@ -180,7 +163,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
     def test_scheduled_status_file_validation(self, mock_format_and_send_notification, mock_connect):
         validation_id = str(uuid.uuid4())
         area_id = self._create_area()
-        s3obj = self._mock_upload_file(area_id, 'foo.json')
+        s3obj = self.mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
         uploaded_file.create_record()
@@ -198,7 +181,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
     def test_validating_status_file_validation(self, mock_format_and_send_notification, mock_connect):
         validation_id = str(uuid.uuid4())
         area_id = self._create_area()
-        s3obj = self._mock_upload_file(area_id, 'foo.json')
+        s3obj = self.mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
         uploaded_file.create_record()
@@ -231,7 +214,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
     def test_validated_status_file_validation(self, mock_format_and_send_notification, mock_connect):
         validation_id = str(uuid.uuid4())
         area_id = self._create_area()
-        s3obj = self._mock_upload_file(area_id, 'foo.json')
+        s3obj = self.mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
         uploaded_file.create_record()

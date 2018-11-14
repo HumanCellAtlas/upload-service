@@ -39,28 +39,14 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
         super().tearDown()
         self.environmentor.exit()
 
-    def _mock_upload_file(self, filename, contents="foo",
-                          content_type='application/json; dcp_type=metadata', checksums=None):
-        tag_set = [
-            {'Key': 'hca-dss-content-type', 'Value': content_type},
-        ]
-        if checksums:
-            for csum_type, csum_value in checksums.items():
-                tag_set.append({'Key': f"hca-dss-{csum_type}", 'Value': csum_value})
-
-        file_key = f"{self.upload_area_id}/{filename}"
-        s3obj = self.upload_bucket.Object(file_key)
-        s3obj.put(Body=contents, ContentType=content_type)
-        boto3.client('s3').put_object_tagging(Bucket=self.upload_bucket_name, Key=file_key,
-                                              Tagging={'TagSet': tag_set})
-        return s3obj
-
     @patch('upload.docker_images.checksummer.checksummer.update_event')
     def test_checksummer_checksums(self, mock_update_checksum_event):
         filename = "foo"
         file_contents = "exquisite corpse"
         file_s3_key = f"{self.upload_area_id}/{filename}"
-        self._mock_upload_file(filename, contents=file_contents)
+        self.mock_upload_file(self.upload_area_id, filename, contents=file_contents,
+                              content_type='application/json; dcp_type=metadata',
+                              checksums={})
         s3_url = f"s3://{self.upload_bucket_name}/{file_s3_key}"
 
         Checksummer([s3_url])
