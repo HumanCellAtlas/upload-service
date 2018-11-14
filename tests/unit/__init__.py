@@ -70,8 +70,16 @@ class UploadTestCaseUsingMockAWS(unittest.TestCase):
             'upload_submitter_role_arn': 'bogo_submitter_role_arn',
             'slack_webhook': 'bogo_slack_url'
         })
+        # Common Environment
+        self.deployment_stage = 'test'
+        self.environment = {
+            'DEPLOYMENT_STAGE': self.deployment_stage
+        }
+        self.common_environmentor = EnvironmentSetup(self.environment)
+        self.common_environmentor.enter()
 
     def tearDown(self):
         self.s3_mock.stop()
         self.iam_mock.stop()
         self.sts_mock.stop()
+        self.common_environmentor.exit()

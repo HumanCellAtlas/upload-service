@@ -28,7 +28,6 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
         # Environment
         self.api_key = "unguessable"
         self.environment = {
-            'DEPLOYMENT_STAGE': 'test',
             'INGEST_API_KEY': self.api_key,
             'INGEST_AMQP_SERVER': 'foo',
             'CSUM_DOCKER_IMAGE': 'bogoimage'

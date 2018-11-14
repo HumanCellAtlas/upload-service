@@ -17,10 +17,8 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
     def setUp(self):
         super().setUp()
         # Environment
-        self.deployment_stage = 'test'
         self.api_key = "foo"
         self.environment = {
-            'DEPLOYMENT_STAGE': self.deployment_stage,
             'INGEST_API_KEY': self.api_key,
             'INGEST_AMQP_SERVER': 'foo',
             'CSUM_DOCKER_IMAGE': 'bogo_image',

@@ -21,12 +21,10 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
         super().setUp()
         UploadConfig.use_env = True
         # Setup environment
-        self.deployment_stage = 'test'
         self.upload_bucket_name = 'bogobucket'
         self.checksum_id = str(uuid.uuid4())
         self.environment = {
             'BUCKET_NAME': self.upload_bucket_name,
-            'DEPLOYMENT_STAGE': self.deployment_stage,
             'AWS_BATCH_JOB_ID': '1',
             'INGEST_AMQP_SERVER': 'bogoamqp',
             'CHECKSUM_ID': self.checksum_id
