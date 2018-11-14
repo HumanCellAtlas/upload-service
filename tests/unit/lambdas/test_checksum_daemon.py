@@ -25,7 +25,6 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
         super().setUp()
         # Environment
         self.environment = {
-            'DEPLOYMENT_STAGE': 'test',
             'INGEST_AMQP_SERVER': 'foo',
             'CSUM_DOCKER_IMAGE': 'bogoimage'
         }

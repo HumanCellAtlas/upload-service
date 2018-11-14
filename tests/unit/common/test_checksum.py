@@ -2,7 +2,7 @@ import uuid
 
 import boto3
 
-from .. import UploadTestCaseUsingMockAWS, EnvironmentSetup
+from .. import UploadTestCaseUsingMockAWS
 from ... import FIXTURE_DATA_CHECKSUMS
 
 from upload.common.upload_area import UploadArea
@@ -13,12 +13,6 @@ class TestUploadedFileChecksummer(UploadTestCaseUsingMockAWS):
 
     def setUp(self):
         super().setUp()
-        # Environment
-        self.environment = {
-            'DEPLOYMENT_STAGE': 'test',
-        }
-        self.environmentor = EnvironmentSetup(self.environment)
-        self.environmentor.enter()
 
         self.upload_bucket = boto3.resource('s3').Bucket(self.upload_config.bucket_name)
         self.upload_bucket.create()
@@ -32,7 +26,6 @@ class TestUploadedFileChecksummer(UploadTestCaseUsingMockAWS):
 
     def tearDown(self):
         super().tearDown()
-        self.environmentor.exit()
 
     def _mock_upload_file(self, filename, contents="foo",
                           content_type='application/json; dcp_type=metadata', checksums=None):

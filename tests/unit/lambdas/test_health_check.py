@@ -1,22 +1,18 @@
 import datetime
 import json
-from botocore.stub import Stubber
 
+from botocore.stub import Stubber
 from dateutil.tz import tzutc
 from mock import patch, Mock
 
-from tests.unit import UploadTestCaseUsingMockAWS
+from .. import UploadTestCaseUsingMockAWS
+
 from upload.lambdas.health_check.health_check import HealthCheck
 
 
 class TestHealthCheckDaemon(UploadTestCaseUsingMockAWS):
     def setUp(self):
         super().setUp()
-        # Environment
-        self.environment = {
-            'DEPLOYMENT_STAGE': 'test'
-        }
-        self.environmentor = EnvironmentSetup(self.environment)
         self.health_check = HealthCheck()
 
     @patch('upload.lambdas.health_check.health_check.HealthCheck.generate_upload_area_status')
