@@ -68,15 +68,15 @@ class ValidatorHarness:
 
     def _stage_file_to_be_validated(self):
         s3 = boto3.resource('s3')
-        self.staged_file_path = os.path.join(self.staging_folder, self.s3_object_key)
+        self.staged_file_path = pathlib.Path(self.staging_folder, self.s3_object_key)
         self._log("Staging s3://{bucket}/{key} at {file_path}".format(bucket=self.s3_bucket_name,
                                                                       key=self.s3_object_key,
                                                                       file_path=self.staged_file_path))
-        pathlib.Path(os.path.dirname(self.staged_file_path)).mkdir(parents=True, exist_ok=True)
-        s3.Bucket(self.s3_bucket_name).download_file(self.s3_object_key, self.staged_file_path)
+        self.staged_file_path.parent.mkdir(parents=True, exist_ok=True)
+        s3.Bucket(self.s3_bucket_name).download_file(self.s3_object_key, str(self.staged_file_path))
 
     def _run_validator(self):
-        command = [self.path_to_validator, self.staged_file_path]
+        command = [self.path_to_validator, str(self.staged_file_path)]
         os.environ['VALIDATION_ID'] = self.validation_id
         start_time = time.time()
         self._log("RUNNING {}".format(command))
@@ -114,7 +114,7 @@ class ValidatorHarness:
 
     def _unstage_file(self):
         self._log("removing file {}".format(self.staged_file_path))
-        os.remove(self.staged_file_path)
+        self.staged_file_path.unlink()
 
     def _find_version(self):
         try:
