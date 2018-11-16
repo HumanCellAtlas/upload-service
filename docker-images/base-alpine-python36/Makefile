@@ -7,7 +7,12 @@ VERSION=$(shell cat VERSION)
 # make bump_version
 #   Make some changes
 # make build
-#	test locally
+#	test locally:
+#		In validator-example/
+#		temporarily change Dockerfile to build on upload-validator-base-alpine:<new-version>
+#		make build
+#		make test
+#		watch the output, look for payload with 'stdout': 'valid\n'
 # make push
 #	test with explicit version number from Docker Hub
 # make promote
