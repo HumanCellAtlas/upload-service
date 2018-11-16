@@ -4,9 +4,11 @@ import pathlib
 import subprocess
 import time
 import urllib.parse
+import logging
 
 import boto3
 from urllib3.util import parse_url
+from tenacity import retry, stop_after_attempt, before_log, before_sleep_log, wait_exponential, TryAgain
 
 from upload.common.validation_event import UploadedFileValidationEvent
 from upload.common.logging import get_logger
@@ -66,14 +68,24 @@ class ValidatorHarness:
 
         self._unstage_file()
 
+    @retry(stop=stop_after_attempt(5),
+           wait=wait_exponential(multiplier=10, min=1, max=4),
+           before=before_log(logger, logging.DEBUG),
+           before_sleep=before_sleep_log(logger, logging.ERROR))
     def _stage_file_to_be_validated(self):
-        s3 = boto3.resource('s3')
         self.staged_file_path = pathlib.Path(self.staging_folder, self.s3_object_key)
         self._log("Staging s3://{bucket}/{key} at {file_path}".format(bucket=self.s3_bucket_name,
                                                                       key=self.s3_object_key,
                                                                       file_path=self.staged_file_path))
         self.staged_file_path.parent.mkdir(parents=True, exist_ok=True)
-        s3.Bucket(self.s3_bucket_name).download_file(self.s3_object_key, str(self.staged_file_path))
+        self._download_file_from_bucket_to_filesystem()
+        if not self.staged_file_path.is_file():
+            raise TryAgain
+
+    def _download_file_from_bucket_to_filesystem(self):
+        s3 = boto3.resource('s3')
+        bucket = s3.Bucket(self.s3_bucket_name)
+        bucket.download_file(self.s3_object_key, str(self.staged_file_path))
 
     def _run_validator(self):
         command = [self.path_to_validator, str(self.staged_file_path)]
