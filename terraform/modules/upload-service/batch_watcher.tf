@@ -107,7 +107,7 @@ resource "aws_lambda_function" "batch_watcher_lambda" {
 resource "aws_cloudwatch_event_rule" "batch_watcher_hourly_rule" {
     name = "batch-watcher-every-hour-${var.deployment_stage}"
     description = "Fires every hour"
-    schedule_expression = "cron(0 * * * *)"
+    schedule_expression = "cron(0 * * * ? *)"
 }
 
 resource "aws_cloudwatch_event_target" "hourly_batch_watcher" {
@@ -121,5 +121,5 @@ resource "aws_lambda_permission" "allow_cloudwatch_to_call_batch_watcher" {
     action = "lambda:InvokeFunction"
     function_name = "${aws_lambda_function.batch_watcher_lambda.function_name}"
     principal = "events.amazonaws.com"
-    source_arn = "${aws_cloudwatch_event_rule.hourly.arn}"
+    source_arn = "${aws_cloudwatch_event_rule.batch_watcher_hourly_rule.arn}"
 }
