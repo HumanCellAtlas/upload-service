@@ -104,14 +104,14 @@ resource "aws_lambda_function" "batch_watcher_lambda" {
   }
 }
 
-resource "aws_cloudwatch_event_rule" "hourly" {
-    name = "every-hour-${var.deployment_stage}"
+resource "aws_cloudwatch_event_rule" "batch_watcher_hourly_rule" {
+    name = "batch-watcher-every-hour-${var.deployment_stage}"
     description = "Fires every hour"
     schedule_expression = "cron(0 * * * *)"
 }
 
 resource "aws_cloudwatch_event_target" "hourly_batch_watcher" {
-    rule = "${aws_cloudwatch_event_rule.hourly.name}"
+    rule = "${aws_cloudwatch_event_rule.batch_watcher_hourly_rule.name}"
     target_id = "batch_watcher_lambda"
     arn = "${aws_lambda_function.batch_watcher_lambda.arn}"
 }

@@ -16,13 +16,10 @@ class BatchWatcher:
     def __init__(self):
         self.api_key = os.environ["INGEST_API_KEY"]
         self.deployment_stage = os.environ["DEPLOYMENT_STAGE"]
+        self.api_host = os.environ["API_HOST"]
         self.batch_client = boto3.client("batch")
         self.ec2_client = boto3.client('ec2')
         self.lambda_client = boto3.client('lambda')
-        if self.deployment_stage == "prod":
-            self.upload_url = "https://upload.data.humancellatlas.org"
-        else:
-            self.upload_url = f"https://upload.{self.deployment_stage}.data.humancellatlas.org"
 
     def run(self):
         incomplete_checksum_jobs, incomplete_validation_jobs = self.find_incomplete_batch_jobs()
@@ -105,17 +102,16 @@ class BatchWatcher:
             WHERE id = %s;", (db_id))
 
     def schedule_validation_job(self, upload_area_id, file_name, docker_image, original_validation_id):
-        upload_url = "{0}/v1/area/{1}/{2}/validate".format(self.upload_url, upload_area_id, file_name)
         headers = {'Api-Key': self.api_key}
         message = {
             "validator_image": docker_image,
             "original_validation_id": original_validation_id
         }
-        response = requests.put(upload_url, headers=headers, json=message)
+        response = requests.put(self.api_host, headers=headers, json=message)
         if response.status_code == requests.codes.ok:
             logger.info(f"scheduled {upload_area_id}/{file_name} for validation")
         else:
-            raise UploadException("Failed to schedule {0}/{1} for validation".format(upload_area_id, file_name))
+            raise UploadException(f"Failed to schedule {upload_area_id}/{file_name} for validation")
 
     def invoke_checksum_lambda(self, file_id):
         payload = {

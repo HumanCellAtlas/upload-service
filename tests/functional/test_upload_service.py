@@ -104,7 +104,7 @@ class TestUploadService(unittest.TestCase):
         WaitFor(self._batch_job_status, validation_job_id)\
             .to_return_value('SUCCEEDED', timeout_seconds=20 * MINUTE_SEC)
 
-        WaitFor(self._validation_record_status, validation_job_id)\
+        WaitFor(self._validation_record_status, validation_id)\
             .to_return_value('VALIDATED', timeout_seconds=MINUTE_SEC)
 
         # TODO: check validation results

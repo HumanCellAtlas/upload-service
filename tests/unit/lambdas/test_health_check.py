@@ -1,28 +1,18 @@
 import datetime
 import json
-from botocore.stub import Stubber
 
+from botocore.stub import Stubber
 from dateutil.tz import tzutc
 from mock import patch, Mock
 
-from tests.unit import UploadTestCaseUsingMockAWS, EnvironmentSetup
-from upload.common.upload_config import UploadConfig
+from .. import UploadTestCaseUsingMockAWS
+
 from upload.lambdas.health_check.health_check import HealthCheck
 
 
 class TestHealthCheckDaemon(UploadTestCaseUsingMockAWS):
     def setUp(self):
         super().setUp()
-        self.webhook = 'slack_url'
-        self.config = UploadConfig()
-        self.config.set({
-            'slack_webhook': self.webhook
-        })
-        # Environment
-        self.environment = {
-            'DEPLOYMENT_STAGE': 'test'
-        }
-        self.environmentor = EnvironmentSetup(self.environment)
         self.health_check = HealthCheck()
 
     @patch('upload.lambdas.health_check.health_check.HealthCheck.generate_upload_area_status')
@@ -58,7 +48,7 @@ class TestHealthCheckDaemon(UploadTestCaseUsingMockAWS):
         mock_generate_deadletter_queue_status.assert_called_once()
         mock_generate_upload_area_status.assert_called_once()
 
-        mock_post_message_to_url.assert_called_once_with(self.webhook, mock_attachment)
+        mock_post_message_to_url.assert_called_once_with(self.upload_config.slack_webhook, mock_attachment)
 
     @patch('upload.lambdas.health_check.health_check.requests.post')
     def test_post_message_to_url_calls_request_with_correct_args(self, mock_post_request):

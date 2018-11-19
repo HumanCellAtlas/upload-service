@@ -8,6 +8,7 @@ class LambdaMgr(InfraMgr):
     UPLOAD_LAMBDAS = [
         'upload-api-{env}',
         'dcp-upload-csum-{env}',
+        'dcp-upload-batch-watcher-{env}',
         # 'dcp-upload-health-check-{env}' - leave this running
     ]
 

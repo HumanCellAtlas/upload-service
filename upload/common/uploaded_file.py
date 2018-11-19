@@ -5,7 +5,7 @@ from botocore.exceptions import ClientError
 
 from .exceptions import UploadException
 if not os.environ.get("CONTAINER"):
-    from .database import create_pg_record, update_pg_record, get_pg_record, run_query_with_params
+    from .database import create_pg_record, get_pg_record, run_query_with_params
 
 s3 = boto3.resource('s3')
 s3client = boto3.client('s3')
