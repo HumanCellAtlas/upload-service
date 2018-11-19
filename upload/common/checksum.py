@@ -6,6 +6,7 @@ from dcplib.s3_multipart import get_s3_multipart_chunk_size, MULTIPART_THRESHOLD
 
 from .logging import get_logger
 from .logging import format_logger_with_id
+from .exceptions import UploadException
 
 logger = get_logger(__name__)
 KB = 1024
@@ -46,7 +47,12 @@ class UploadedFileChecksummer:
                                       self.uploaded_file.s3obj.key, sink,
                                       Callback=progress_callback,
                                       Config=self._transfer_config())
-            return sink.get_checksums()
+            checksums = sink.get_checksums()
+            if len(self.CHECKSUM_NAMES) != len(checksums):
+                error = f"checksums {checksums} for {self.uploaded_file.s3obj.key} do not meet requirements"
+                raise UploadException(status=500,
+                                      details=error)
+            return checksums
 
     def _compute_checksums_progress_callback(self, bytes_transferred):
         self.bytes_checksummed += bytes_transferred

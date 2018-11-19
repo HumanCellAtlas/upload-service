@@ -137,6 +137,7 @@ class ChecksumDaemon:
 
         checksummer = UploadedFileChecksummer(self.uploaded_file)
         checksums = checksummer.checksum(report_progress=True)
+
         self.uploaded_file.checksums = checksums
         tags = self.uploaded_file.save_tags()
 

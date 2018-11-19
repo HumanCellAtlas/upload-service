@@ -3,6 +3,8 @@ from functools import reduce
 import boto3
 from botocore.exceptions import ClientError
 
+from tenacity import retry, wait_fixed, stop_after_attempt
+
 from .exceptions import UploadException
 if not os.environ.get("CONTAINER"):
     from .database import create_pg_record, get_pg_record, run_query_with_params
@@ -82,11 +84,16 @@ class UploadedFile:
         else:
             return self.s3obj.content_length
 
+    @retry(wait=wait_fixed(2), stop=stop_after_attempt(5))
     def save_tags(self):
         tags = {f"hca-dss-{csum}": self.checksums[csum] for csum in self.checksums.keys()}
         tagging = dict(TagSet=self._encode_tags(tags))
         s3client.put_object_tagging(Bucket=self.upload_area.bucket_name, Key=self.s3obj.key, Tagging=tagging)
-        return tags
+        self.checksums = self._dcp_tags_of_file()
+        if len(self.CHECKSUM_TAGS) != len(self.checksums.keys()):
+            raise UploadException(status=500,
+                                  detail="Tags {tags} did not stick to {self.s3obj.key}")
+        return self.checksums
 
     def _dcp_tags_of_file(self):
         try:
