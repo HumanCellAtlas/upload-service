@@ -54,8 +54,9 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         scheduler = ValidationScheduler(uploaded_file)
         scheduler.batch_job_id = "123456"
         validation_id = str(uuid.uuid4())
-        validation_event = scheduler._create_scheduled_validation_event(validation_id)
+        validation_event = scheduler._create_scheduled_validation_event("test_docker_image", validation_id, None)
         self.assertEqual(validation_event.job_id, "123456")
+        self.assertEqual(validation_event.docker_image, "test_docker_image")
 
     @patch('upload.common.upload_area.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES - 1)
     def test_check_file_can_be_validated_returns_true_if_file_is_not_too_large(self):

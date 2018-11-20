@@ -26,7 +26,7 @@ def create_pg_record(record_type, prop_vals_dict):
     table = record_type_table_map[record_type]
     ins = table.insert().values(prop_vals_dict)
     try:
-        _run_query(ins)
+        run_query(ins)
     except IntegrityError as e:
         if re.search("duplicate key value violates unique constraint", e.orig.pgerror):
             raise UploadException(status=requests.codes.conflict,
@@ -42,13 +42,13 @@ def update_pg_record(record_type, prop_vals_dict):
     prop_vals_dict["updated_at"] = datetime.utcnow()
     table = record_type_table_map[record_type]
     update = table.update().where(table.c.id == record_id).values(prop_vals_dict)
-    _run_query(update)
+    run_query(update)
 
 
 def get_pg_record(record_type, record_id):
     table = record_type_table_map[record_type]
     select = table.select().where(table.c.id == record_id)
-    result = _run_query(select)
+    result = run_query(select)
     column_keys = result.keys()
     rows = result.fetchall()
     if len(rows) == 0:
@@ -70,7 +70,7 @@ def get_pg_record(record_type, record_id):
 # keeps old lambda containers warmed up and waiting. This code path should not be
 # followed often, but it is a good protective measure.
 
-def _run_query(query):
+def run_query(query):
     try:
         results = engine.execute(query)
     except (OperationalError, DatabaseError) as e:

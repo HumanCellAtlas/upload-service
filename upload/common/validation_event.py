@@ -15,6 +15,8 @@ class UploadedFileValidationEvent:
         self.job_id = kwargs["job_id"]
         self.file_id = kwargs["file_id"]
         self.status = kwargs["status"]
+        self.docker_image = kwargs.get("docker_image")
+        self.original_validation_id = kwargs.get("original_validation_id")
 
     def _format_prop_vals_dict(self):
         vals_dict = {
@@ -29,6 +31,11 @@ class UploadedFileValidationEvent:
         elif self.status == "VALIDATED":
             vals_dict["validation_ended_at"] = datetime.utcnow()
             vals_dict["results"] = self.results
+
+        if self.docker_image:
+            vals_dict["docker_image"] = self.docker_image
+        if self.original_validation_id:
+            vals_dict["original_validation_id"] = self.original_validation_id
 
         return vals_dict
 

@@ -180,6 +180,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_validating_status_file_validation(self, mock_format_and_send_notification, mock_connect):
         validation_id = str(uuid.uuid4())
+        orig_val_id = str(uuid.uuid4())
         area_id = self._create_area()
         s3obj = self.mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
@@ -188,7 +189,9 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
                                                        validation_id=validation_id,
                                                        job_id='12345',
-                                                       status="SCHEDULED")
+                                                       status="SCHEDULED",
+                                                       docker_image="test_docker_image",
+                                                       original_validation_id=orig_val_id)
         validation_event.create_record()
         data = {
             "status": "VALIDATING",
@@ -200,6 +203,9 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
                                     data=json.dumps(data))
         self.assertEqual(204, response.status_code)
         record = get_pg_record("validation", validation_id)
+        self.assertEqual("test_docker_image", record["docker_image"])
+        self.assertEqual(validation_id, record["id"])
+        self.assertEqual(orig_val_id, record["original_validation_id"])
         self.assertEqual("VALIDATING", record["status"])
         self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("validation_started_at"))))
         self.assertEqual(None, record["validation_ended_at"])
@@ -221,7 +227,8 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
                                                        validation_id=validation_id,
                                                        job_id='12345',
-                                                       status="SCHEDULED")
+                                                       status="SCHEDULED",
+                                                       docker_image="test_docker_image")
         validation_event.create_record()
         data = {
             "status": "VALIDATING",
@@ -251,6 +258,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         })
         record = get_pg_record("validation", validation_id)
         self.assertEqual("VALIDATED", record["status"])
+        self.assertEqual("test_docker_image", record["docker_image"])
         self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("validation_started_at"))))
         self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("validation_ended_at"))))
         self.assertEqual(uploaded_file.info(), record.get("results"))

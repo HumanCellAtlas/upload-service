@@ -32,7 +32,7 @@ class ValidationScheduler:
     def check_file_can_be_validated(self):
         return self.file.size < MAX_FILE_SIZE_IN_BYTES
 
-    def schedule_validation(self, validator_docker_image: str, environment: dict) -> str:
+    def schedule_validation(self, validator_docker_image: str, environment: dict, orig_val_id=None) -> str:
         validation_id = str(uuid.uuid4())
         job_defn = self._find_or_create_job_definition_for_image(validator_docker_image)
         environment['DEPLOYMENT_STAGE'] = os.environ['DEPLOYMENT_STAGE']
@@ -40,7 +40,13 @@ class ValidationScheduler:
         environment['INGEST_API_KEY'] = os.environ['INGEST_API_KEY']
         environment['API_HOST'] = os.environ['API_HOST']
         environment['CONTAINER'] = 'DOCKER'
-        environment['VALIDATION_ID'] = validation_id
+        if orig_val_id:
+            # If there is an original validation id for a scheduled validation, we pass the original validation id
+            # rather than the new validation db id into the environment variables.
+            # This allows ingest to correlate results for this file with the original validation id.
+            environment['VALIDATION_ID'] = orig_val_id
+        else:
+            environment['VALIDATION_ID'] = validation_id
         url_safe_file_key = urllib.parse.quote(self.file_key)
         file_s3loc = "s3://{bucket}/{file_key}".format(
             bucket=self.file.upload_area.bucket_name,
@@ -48,14 +54,16 @@ class ValidationScheduler:
         )
         command = ['/validator', file_s3loc]
         self.batch_job_id = self._enqueue_batch_job(job_defn, command, environment)
-        self._create_scheduled_validation_event(validation_id)
+        self._create_scheduled_validation_event(validator_docker_image, validation_id, orig_val_id)
         return validation_id
 
-    def _create_scheduled_validation_event(self, validation_id):
+    def _create_scheduled_validation_event(self, validator_docker_image, validation_id, orig_val_id):
         validation_event = UploadedFileValidationEvent(file_id=self.file_key,
                                                        validation_id=validation_id,
                                                        job_id=self.batch_job_id,
-                                                       status="SCHEDULED")
+                                                       status="SCHEDULED",
+                                                       docker_image=validator_docker_image,
+                                                       original_validation_id=orig_val_id)
         validation_event.create_record()
         return validation_event
 
