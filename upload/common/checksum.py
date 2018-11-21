@@ -5,7 +5,6 @@ from dcplib.checksumming_io import ChecksummingSink
 from dcplib.s3_multipart import get_s3_multipart_chunk_size, MULTIPART_THRESHOLD
 
 from .logging import get_logger
-from .logging import format_logger_with_id
 from .exceptions import UploadException
 
 logger = get_logger(__name__)
@@ -24,7 +23,6 @@ class UploadedFileChecksummer:
         self.start_time = None
         self.last_diag_output_time = None
         self.multipart_chunksize = get_s3_multipart_chunk_size(self.uploaded_file.s3obj.content_length)
-        format_logger_with_id(logger, "file_key", self.uploaded_file.s3obj.key)
 
     def has_checksums(self):
         return sorted(tuple(self.uploaded_file.checksums.keys())) == sorted(self.CHECKSUM_NAMES)
