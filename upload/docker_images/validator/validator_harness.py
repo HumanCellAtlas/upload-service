@@ -12,7 +12,6 @@ from tenacity import retry, stop_after_attempt, before_log, before_sleep_log, wa
 
 from upload.common.validation_event import UploadedFileValidationEvent
 from upload.common.logging import get_logger
-from upload.common.logging import format_logger_with_id
 from upload.common.upload_api_client import update_event
 
 
@@ -44,7 +43,6 @@ class ValidatorHarness:
         key_parts = self.s3_object_key.split('/')
         upload_area_id = key_parts.pop(0)
         file_name = "/".join(key_parts)
-        format_logger_with_id(logger, "file_key", self.s3_object_key)
         self._log("VERSION {version}, attempt {attempt} with argv: {argv}".format(
             version=self.version, attempt=os.environ['AWS_BATCH_JOB_ATTEMPT'], argv=sys.argv))
 

@@ -6,7 +6,6 @@ import requests
 
 from .exceptions import UploadException
 from .logging import get_logger
-from .logging import format_logger_with_id
 from .database import create_pg_record, update_pg_record
 
 logger = get_logger(__name__)
@@ -45,7 +44,6 @@ class IngestNotifier:
     def format_and_send_notification(self, file_info):
         notification_props = self._format_notification_props(file_info)
         notification_props["status"] = "DELIVERING"
-        format_logger_with_id(logger, "file_key", notification_props["file_id"])
         create_pg_record("notification", notification_props)
         body = json.dumps(file_info)
         success = self._publish_notification(body)

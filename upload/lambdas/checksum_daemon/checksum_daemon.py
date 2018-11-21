@@ -13,7 +13,6 @@ from ...common.checksum_event import UploadedFileChecksumEvent
 from ...common.database_orm import db_session_maker, DbChecksum
 from ...common.ingest_notifier import IngestNotifier
 from ...common.logging import get_logger
-from ...common.logging import format_logger_with_id
 from ...common.retry import retry_on_aws_too_many_requests
 from ...common.upload_area import UploadArea
 from ...common.upload_config import UploadConfig, UploadVersion
@@ -38,7 +37,6 @@ class ChecksumDaemon:
 
     def __init__(self, context):
         self.request_id = context.aws_request_id
-        format_logger_with_id(logger, "request_id", self.request_id)
         logger.debug("Ahm ahliiivvve!")
         self.config = UploadConfig()
         self.upload_service_version = UploadVersion().upload_service_version
@@ -71,7 +69,6 @@ class ChecksumDaemon:
                 self._checksum_file()
 
     def _find_file(self, file_key):
-        format_logger_with_id(logger, "file_key", file_key)
         logger.debug(f"File: {file_key}")
         area_uuid = file_key.split('/')[0]
         filename = urllib.parse.unquote(file_key[len(area_uuid) + 1:])
