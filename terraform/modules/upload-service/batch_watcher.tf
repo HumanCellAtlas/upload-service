@@ -75,6 +75,14 @@ resource "aws_iam_role_policy" "batch_watcher_lambda" {
       "Resource": [
         "*"
       ]
+    },
+    {
+      "Sid": "LambdaPolicy",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:InvokeFunction"
+      ],
+      "Resource": "arn:aws:lambda:${local.aws_region}:${local.account_id}:function:dcp-upload-csum-${var.deployment_stage}"
     }
   ]
 }

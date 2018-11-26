@@ -191,6 +191,23 @@ class TestBatchWatcherDaemon(UploadTestCaseUsingMockAWS):
         self.assertEqual(kill_instances, False)
         self.mock_batch_client.deactivate()
 
+    def test_get_job_status(self):
+        output_two = {
+            "jobs": [{
+                "status": "SUCCEEDED",
+                "jobName": "test",
+                "jobId": "test",
+                "jobQueue": "test",
+                "startedAt": 1234,
+                "jobDefinition": "test"
+            }]
+        }
+        self.mock_batch_client.add_response('describe_jobs', output_two, {"jobs": ["346"]})
+        self.mock_batch_client.activate()
+        status = self.batch_watcher._get_job_status("346")
+        self.assertEqual(status, "SUCCEEDED")
+        self.mock_batch_client.deactivate()
+
 
 class QueryResult:
     def fetchall(self):
