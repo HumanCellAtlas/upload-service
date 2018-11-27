@@ -29,6 +29,8 @@ class BatchWatcher:
         kill_instances = self.should_instances_be_killed(incomplete_jobs)
         if kill_instances:
             self.find_and_kill_deployment_batch_instances()
+            # Re fetch incomplete checksum and validation jobs after killing instances to catch newly scheduled
+            incomplete_checksum_jobs, incomplete_validation_jobs = self.find_incomplete_batch_jobs()
             for row in incomplete_validation_jobs:
                 self.schedule_job(row, "validation")
             for row in incomplete_checksum_jobs:
