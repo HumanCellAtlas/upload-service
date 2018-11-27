@@ -44,13 +44,21 @@ class BatchWatcher:
             db_id = row["id"]
             job_id = row["job_id"]
             file_id = row["file_id"]
-            response = self.batch_client.describe_jobs(jobs=[job_id])["jobs"][0]
-            if response["status"] == "FAILED":
+            status = self._get_job_status(job_id)
+            if status == "FAILED":
                 logger.info(f"database record id {db_id} for file {file_id} represents a failed batch job. \
                     Time to kill instances.")
                 kill_instances = True
                 break
         return kill_instances
+
+    @retry_on_aws_too_many_requests
+    def _get_job_status(self, job_id):
+        response = self.batch_client.describe_jobs(jobs=[job_id])
+        jobs = response.get("jobs")
+        if jobs and len(jobs):
+            status = jobs[0]["status"]
+            return status
 
     def find_incomplete_batch_jobs(self):
         validation_results = run_query("SELECT * from validation WHERE status = 'SCHEDULED' or status = 'VALIDATING';")
