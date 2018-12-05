@@ -4,6 +4,8 @@ import os, sys, unittest, uuid, json
 
 from botocore.exceptions import ClientError
 
+from moto import mock_sts
+
 from . import client_for_test_api_server
 from ... import UploadTestCaseUsingMockAWS, EnvironmentSetup
 
@@ -123,6 +125,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(self.upload_config.bucket_name, record["bucket_name"])
         self.assertEqual("UNLOCKED", record["status"])
 
+    @mock_sts
     def test_credentials_with_non_existent_upload_area(self):
         area_id = str(uuid.uuid4())
 
@@ -130,6 +133,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
         self.assertEqual(404, response.status_code)
 
+    @mock_sts
     def test_credentials_with_existing_locked_upload_area(self):
         area_id = self._create_area()
         UploadArea(area_id).lock()
@@ -138,6 +142,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
         self.assertEqual(409, response.status_code)
 
+    @mock_sts
     def test_credentials_with_deleted_upload_area(self):
         area_id = self._create_area()
         UploadArea(area_id).delete()
@@ -146,6 +151,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
         self.assertEqual(404, response.status_code)
 
+    @mock_sts
     def test_credentials_with_existing_unlocked_upload_area(self):
         area_id = self._create_area()
 
