@@ -20,11 +20,17 @@ class TestBatchWatcherDaemon(UploadTestCaseUsingMockAWS):
             'DEPLOYMENT_STAGE': 'test',
             'API_KEY': 'test'
         }
-        EnvironmentSetup(self.environment)
+        self.environmentor = EnvironmentSetup(self.environment)
+        self.environmentor.enter()
+
         self.batch_watcher = BatchWatcher()
         self.mock_batch_client = Stubber(self.batch_watcher.batch_client)
         self.mock_ec2_client = Stubber(self.batch_watcher.ec2_client)
         self.mock_lambda_client = Stubber(self.batch_watcher.lambda_client)
+
+    def tearDown(self):
+        self.environmentor.exit()
+        super().tearDown()
 
     @patch('upload.lambdas.batch_watcher.batch_watcher.run_query')
     def test_find_incomplete_batch_jobs(self, mock_run_query):
