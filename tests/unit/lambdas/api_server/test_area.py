@@ -9,7 +9,7 @@ from . import client_for_test_api_server
 from ... import UploadTestCaseUsingMockAWS, EnvironmentSetup
 
 from upload.common.upload_area import UploadArea
-from upload.common.database import get_pg_record
+from upload.common.database import UploadDB
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
@@ -103,7 +103,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             {'uri': f"s3://{self.upload_config.bucket_name}/{area_id}/"},
             body)
 
-        record = get_pg_record("upload_area", area_id)
+        record = UploadDB().get_pg_record("upload_area", area_id)
         self.assertEqual(area_id, record["id"])
         self.assertEqual(self.upload_config.bucket_name, record["bucket_name"])
         self.assertEqual("UNLOCKED", record["status"])
@@ -119,7 +119,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             {'uri': f"s3://{self.upload_config.bucket_name}/{area_id}/"},
             body)
 
-        record = get_pg_record("upload_area", area_id)
+        record = UploadDB().get_pg_record("upload_area", area_id)
         self.assertEqual(area_id, record["id"])
         self.assertEqual(self.upload_config.bucket_name, record["bucket_name"])
         self.assertEqual("UNLOCKED", record["status"])
@@ -164,7 +164,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         response = self.client.delete(f"/v1/area/{area_id}", headers=self.authentication_header)
 
         self.assertEqual(204, response.status_code)
-        record = get_pg_record("upload_area", area_id)
+        record = UploadDB().get_pg_record("upload_area", area_id)
         self.assertEqual("DELETED", record["status"])
         with self.assertRaises(ClientError):
             obj.load()
@@ -179,19 +179,19 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
     def test_locking_of_upload_area(self):
         area_id = self._create_area()
-        record = get_pg_record("upload_area", area_id)
+        record = UploadDB().get_pg_record("upload_area", area_id)
         self.assertEqual("UNLOCKED", record["status"])
 
         response = self.client.post(f"/v1/area/{area_id}/lock", headers=self.authentication_header)
 
         self.assertEqual(204, response.status_code)
-        record = get_pg_record("upload_area", area_id)
+        record = UploadDB().get_pg_record("upload_area", area_id)
         self.assertEqual("LOCKED", record["status"])
 
         response = self.client.delete(f"/v1/area/{area_id}/lock", headers=self.authentication_header)
 
         self.assertEqual(204, response.status_code)
-        record = get_pg_record("upload_area", area_id)
+        record = UploadDB().get_pg_record("upload_area", area_id)
         self.assertEqual("UNLOCKED", record["status"])
 
     def test_put_file_without_content_type_dcp_type_param(self):
@@ -234,7 +234,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         obj = self.upload_bucket.Object(f"{area_id}/some.json")
         self.assertEqual("exquisite corpse".encode('utf8'), obj.get()['Body'].read())
 
-        record = get_pg_record("file", s3_key)
+        record = UploadDB().get_pg_record("file", s3_key)
         self.assertEqual(16, record["size"])
         self.assertEqual(area_id, record["upload_area_id"])
         self.assertEqual("some.json", record["name"])

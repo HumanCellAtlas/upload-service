@@ -7,7 +7,7 @@ from tenacity import retry, wait_fixed, stop_after_attempt
 
 from .exceptions import UploadException
 if not os.environ.get("CONTAINER"):
-    from .database import create_pg_record, get_pg_record, run_query_with_params
+    from .database import UploadDB
 
 s3 = boto3.resource('s3')
 s3client = boto3.client('s3')
@@ -35,6 +35,7 @@ class UploadedFile:
         self.name = name
         self.content_type = content_type
         self.checksums = {}
+        self.db = UploadDB()
         if name and data and content_type:
             self.content_size = len(data)
             self._create(data)
@@ -132,17 +133,17 @@ class UploadedFile:
 
     def create_record(self):
         prop_vals_dict = self._format_prop_vals_dict()
-        create_pg_record("file", prop_vals_dict)
+        self.db.create_pg_record("file", prop_vals_dict)
 
     def fetch_or_create_db_record(self):
-        existing_file = get_pg_record("file", self.s3obj.key)
+        existing_file = self.db.get_pg_record("file", self.s3obj.key)
         if not existing_file:
             self.create_record()
 
     def retrieve_latest_file_validation_status_and_results(self):
         status = "UNSCHEDULED"
         results = None
-        query_results = run_query_with_params("SELECT status, results->>'stdout' FROM validation \
+        query_results = self.db.run_query_with_params("SELECT status, results->>'stdout' FROM validation \
             WHERE file_id = %s order by created_at desc limit 1;", (self.s3obj.key,))
         rows = query_results.fetchall()
         if len(rows) > 0:
@@ -153,7 +154,7 @@ class UploadedFile:
     def retrieve_latest_file_checksum_status_and_values(self):
         status = "UNSCHEDULED"
         checksums = None
-        query_results = run_query_with_params("SELECT status, checksums FROM checksum \
+        query_results = self.db.run_query_with_params("SELECT status, checksums FROM checksum \
             WHERE file_id = %s order by created_at desc limit 1;", (self.s3obj.key,))
         rows = query_results.fetchall()
         if len(rows) > 0:
