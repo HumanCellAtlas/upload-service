@@ -36,7 +36,7 @@ class TestHealthCheckDaemon(UploadTestCaseUsingMockAWS):
 
         mock_attachment = {
             'attachments': [{
-                'title': 'Health Check Report for test:',
+                'title': f'Health Check Report for {self.deployment_stage}:',
                 'color': 'good',
                 'text': 'DEADLETTER_QUEUE: 2 in queue, 3 added in past 24 hrs\nUPLOAD_AREAS: '
                 '5 undeleted areas, 4 stuck in checksumming, 3 stuck in validation \n2 areas'

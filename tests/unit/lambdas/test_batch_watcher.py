@@ -15,7 +15,6 @@ class TestBatchWatcherDaemon(UploadTestCaseUsingMockAWS):
     def setUp(self):
         super().setUp()
         self.environment = {
-            'DEPLOYMENT_STAGE': 'test',
             'API_KEY': 'test'
         }
         self.environmentor = EnvironmentSetup(self.environment)
@@ -40,7 +39,7 @@ class TestBatchWatcherDaemon(UploadTestCaseUsingMockAWS):
     def test_find_and_kill_deployment_batch_instances(self):
         describe_params = {
             "Filters": [
-                {"Name": 'key-name', "Values": ["hca-upload-test"]},
+                {"Name": 'key-name', "Values": [f"hca-upload-{self.deployment_stage}"]},
                 {"Name": 'instance-state-name', "Values": ["running"]}
             ]
         }
@@ -106,7 +105,7 @@ class TestBatchWatcherDaemon(UploadTestCaseUsingMockAWS):
                 'eventName': 'ObjectCreated:Put',
                 "s3": {
                     "bucket": {
-                        "name": f"org-humancellatlas-upload-test"
+                        "name": f"org-humancellatlas-upload-{self.deployment_stage}"
                     },
                     "object": {
                         "key": "test_area/test_file_id"
@@ -115,7 +114,7 @@ class TestBatchWatcherDaemon(UploadTestCaseUsingMockAWS):
             }]
         }
         lambda_params = {
-            "FunctionName": f"dcp-upload-csum-test",
+            "FunctionName": f"dcp-upload-csum-{self.deployment_stage}",
             "InvocationType": "Event",
             "Payload": json.dumps(payload).encode()
         }
