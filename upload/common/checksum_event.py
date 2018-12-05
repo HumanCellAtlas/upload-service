@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 from .logging import get_logger
 if not os.environ.get("CONTAINER"):
-    from .database import create_pg_record, update_pg_record
+    from .database import UploadDB
 
 logger = get_logger(__name__)
 
@@ -15,6 +15,7 @@ class UploadedFileChecksumEvent:
         self.file_id = kwargs["file_id"]
         self.status = kwargs["status"]
         self.checksums = None
+        self.db = UploadDB()
 
     def _format_prop_vals_dict(self):
         vals_dict = {
@@ -34,8 +35,8 @@ class UploadedFileChecksumEvent:
 
     def create_record(self):
         prop_vals_dict = self._format_prop_vals_dict()
-        create_pg_record("checksum", prop_vals_dict)
+        self.db.create_pg_record("checksum", prop_vals_dict)
 
     def update_record(self):
         prop_vals_dict = self._format_prop_vals_dict()
-        update_pg_record("checksum", prop_vals_dict)
+        self.db.update_pg_record("checksum", prop_vals_dict)

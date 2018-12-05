@@ -1,9 +1,6 @@
 from . import client_for_test_api_server
 from ... import UploadTestCaseUsingMockAWS, EnvironmentSetup
 
-# The following line is a HACK to stop database.yml opening a connection when file upload-api.yml is read.
-from upload.common.database import get_pg_record
-
 
 class TestHealthcheckEndpoint(UploadTestCaseUsingMockAWS):
 

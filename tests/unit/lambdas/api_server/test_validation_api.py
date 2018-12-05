@@ -9,7 +9,7 @@ from upload.common.upload_area import UploadArea
 from upload.common.uploaded_file import UploadedFile
 from upload.common.validation_event import UploadedFileValidationEvent
 from upload.lambdas.api_server.validation_scheduler import MAX_FILE_SIZE_IN_BYTES
-from upload.common.database import get_pg_record
+from upload.common.database import UploadDB
 
 from . import client_for_test_api_server
 from ... import UploadTestCaseUsingMockAWS, EnvironmentSetup
@@ -202,7 +202,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
                                     headers=self.authentication_header,
                                     data=json.dumps(data))
         self.assertEqual(204, response.status_code)
-        record = get_pg_record("validation", validation_id)
+        record = UploadDB().get_pg_record("validation", validation_id)
         self.assertEqual("test_docker_image", record["docker_image"])
         self.assertEqual(validation_id, record["id"])
         self.assertEqual(orig_val_id, record["original_validation_id"])
@@ -256,7 +256,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
             'url': f"s3://{self.upload_config.bucket_name}/{area_id}/foo.json",
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         })
-        record = get_pg_record("validation", validation_id)
+        record = UploadDB().get_pg_record("validation", validation_id)
         self.assertEqual("VALIDATED", record["status"])
         self.assertEqual("test_docker_image", record["docker_image"])
         self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("validation_started_at"))))
