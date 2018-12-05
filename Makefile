@@ -21,3 +21,6 @@ clean clobber build deploy:
 
 run: build
 	scripts/upload-api
+
+migrate:
+	alembic -x db=${DEPLOYMENT_STAGE} -c=./config/database.ini upgrade head
