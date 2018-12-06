@@ -332,6 +332,35 @@ paths:
 
   /v1/area/{upload_area_id}/{filename}:
 
+    post:
+      summary: Notify upload of uploaded file
+      operationId: upload.lambdas.api_server.v1.area.post_file
+      description: Notify upload api of uploaded file in upload area.
+      tags:
+        - All
+      parameters:
+        - name: upload_area_id
+          in: path
+          description: A RFC4122-compliant ID for the upload area.
+          required: true
+          type: string
+        - name: filename
+          in: path
+          description: Name of file uploaded in upload area.
+          required: true
+          type: string
+      responses:
+        202:
+          description: File upload notification added to queue
+        404:
+          description: Could not find that upload area.
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
     put:
       summary: Store a metadata file
       operationId: upload.lambdas.api_server.v1.area.put_file
