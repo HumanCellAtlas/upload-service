@@ -1,6 +1,6 @@
 # Data Coordination Platform, Upload Service
 
-[![Staging Service Build Status](https://travis-ci.org/HumanCellAtlas/upload-service.svg?branch=master)](https://travis-ci.org/HumanCellAtlas/upload-service)
+[![Build Status](https://travis-ci.org/HumanCellAtlas/upload-service.svg?branch=master)](https://travis-ci.org/HumanCellAtlas/upload-service)
 [![Maintainability](https://api.codeclimate.com/v1/badges/6deca9bc2ccd7516d739/maintainability)](https://codeclimate.com/github/HumanCellAtlas/upload-service/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/6deca9bc2ccd7516d739/test_coverage)](https://codeclimate.com/github/HumanCellAtlas/upload-service/test_coverage)
 [![Organized by ZenHub](https://img.shields.io/badge/Organized_by-ZenHub-5e60ba.svg?style=flat-square)](https://app.zenhub.com/workspace/o/humancellatlas/upload-service/boards?repos=96461745)
@@ -9,7 +9,7 @@
 
 The DCP Upload Service provides a file staging and validation facility for the DCP.
 Upload Areas are created/deleted using a REST API, which is secured so only the DCP Ingestion Service may use it.
-It stages files into AWS S3 and computes checksums for the files.
+Files are staged into AWS S3 using the HCA CLI, where the Upload Service then computes checksums for them.
 The validation service runs Docker images against files.
 
 ## Components
@@ -66,9 +66,28 @@ Then edit as necessary.
 ## Running Tests
 
 ```bash
+export AWS_PROFILE=hca
 source config/environment
 make test
 ```
+
+### Running Tests Offline
+Tests may also be run offline if you have a PostgreSQL server running locally.
+You must setup an `upload_local` postgres database first, e.g.:
+```bash
+brew install postgres
+# follow instructions to start postgres server
+createuser
+createdb upload_local
+DEPLOYMENT_STAGE=local make migrate
+```
+To run tests offline use the `local` environment:
+```bash
+export DEPLOYMENT_STAGE=local
+source config/environment
+make test
+```
+
 
 ## Running Locally
 ```bash
