@@ -2,7 +2,6 @@
 
 import os, sys, unittest, uuid, json
 
-import boto3
 from botocore.exceptions import ClientError
 
 from . import client_for_test_api_server

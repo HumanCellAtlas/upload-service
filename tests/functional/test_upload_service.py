@@ -2,7 +2,6 @@ import json
 import os
 import random
 import subprocess
-import time
 import unittest
 
 import boto3

@@ -1,12 +1,10 @@
 import json
 
 from botocore.stub import Stubber
-from mock import patch, Mock
+from mock import patch
 
 from upload.lambdas.batch_watcher.batch_watcher import BatchWatcher
 from tests.unit import UploadTestCaseUsingMockAWS, EnvironmentSetup
-from upload.common.checksum_event import UploadedFileChecksumEvent
-from upload.common.validation_event import UploadedFileValidationEvent
 
 
 class TestBatchWatcherDaemon(UploadTestCaseUsingMockAWS):
