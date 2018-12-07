@@ -353,8 +353,10 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
     def test_post_file_with_valid_area(self):
         area_id = self._create_area()
+
         response = self.client.post(f"/v1/area/{area_id}/filename123")
         message = self.sqs.meta.client.receive_message(QueueUrl='bogo_url')
+
         message_body = json.loads(message['Messages'][0]['Body'])
         s3_key = message_body['Records'][0]['s3']['object']['key']
         s3_bucket = message_body['Records'][0]['s3']['bucket']['name']
@@ -369,8 +371,10 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
     def test_add_uploaded_file_to_csum_daemon_sqs(self):
         area_id = self._create_area()
+
         UploadArea(area_id).add_uploaded_file_to_csum_daemon_sqs("filename123")
         message = self.sqs.meta.client.receive_message(QueueUrl='bogo_url')
+
         message_body = json.loads(message['Messages'][0]['Body'])
         s3_key = message_body['Records'][0]['s3']['object']['key']
         s3_bucket = message_body['Records'][0]['s3']['bucket']['name']
