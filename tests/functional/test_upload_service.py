@@ -11,7 +11,7 @@ from .waitfor import WaitFor
 from .. import fixture_file_path, FIXTURE_DATA_CHECKSUMS
 
 from upload.common.upload_config import UploadConfig
-from upload.common.database_orm import DbUploadArea, DbChecksum, DbValidation, db_session_maker
+from upload.common.database_orm import DbUploadArea, DbChecksum, DbValidation, DBSessionMaker
 
 MINUTE_SEC = 60
 
@@ -22,6 +22,7 @@ class TestUploadService(unittest.TestCase):
         super().__init__(*args, **kwargs)
         self.batch = boto3.client('batch')
         self.uri = None
+        self.db_session_maker = DBSessionMaker()
 
     def setUp(self):
         self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
@@ -136,17 +137,17 @@ class TestUploadService(unittest.TestCase):
         return record.status if record else None
 
     def _upload_area_record(self):
-        db = db_session_maker()
+        db = self.db_session_maker.session()
         return db.query(DbUploadArea).filter(DbUploadArea.id == self.upload_area_id).one_or_none()
 
     def _checksum_record(self, filename):
-        db = db_session_maker()
+        db = self.db_session_maker.session()
         file_id = f"{self.upload_area_id}/{filename}"
         record = db.query(DbChecksum).filter(DbChecksum.file_id == file_id).one_or_none()
         return record
 
     def _validation_record(self, validation_id):
-        db = db_session_maker()
+        db = self.db_session_maker.session()
         return db.query(DbValidation).filter(DbValidation.id == validation_id).one_or_none()
 
     def _batch_job_status(self, job_id):
