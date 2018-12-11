@@ -5,7 +5,7 @@ import os
 import boto3
 import requests
 
-from upload.common.database import run_query
+from upload.common.database import UploadDB
 from upload.common.logging import get_logger
 from upload.common.upload_config import UploadConfig
 
@@ -17,6 +17,7 @@ client = boto3.client('cloudwatch')
 class HealthCheck:
     def __init__(self):
         self.env = os.environ['DEPLOYMENT_STAGE']
+        self.db = UploadDB()
         logger.debug(f"Running a health check for {self.env}. Results will be posted in #upload-service")
         self.webhook = UploadConfig().slack_webhook
 
@@ -180,7 +181,7 @@ class HealthCheck:
         return results
 
     def _query_db_and_return_first_row(self, query):
-        query_result = run_query(query)
+        query_result = self.db.run_query(query)
         rows = query_result.fetchall()
         if len(rows) > 0:
             results = rows[0][0]

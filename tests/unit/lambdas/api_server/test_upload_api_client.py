@@ -14,7 +14,7 @@ from upload.common.uploaded_file import UploadedFile
 from upload.common.upload_area import UploadArea
 from upload.common.validation_event import UploadedFileValidationEvent
 from upload.common.checksum_event import UploadedFileChecksumEvent
-from upload.common.database import get_pg_record
+from upload.common.database import UploadDB
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
@@ -65,7 +65,7 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
         validation_event.status = "VALIDATING"
         response = update_event(validation_event, uploaded_file.info(), self.client)
         self.assertEqual(response.status_code, 204)
-        record = get_pg_record("validation", validation_id)
+        record = UploadDB().get_pg_record("validation", validation_id)
         self.assertEqual(record["status"], "VALIDATING")
         self.assertEqual(str(type(record.get("validation_started_at"))), "<class 'datetime.datetime'>")
         self.assertEqual(record["validation_ended_at"], None)
@@ -74,7 +74,7 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
         validation_event.status = "VALIDATED"
         response = update_event(validation_event, uploaded_file.info(), self.client)
         self.assertEqual(response.status_code, 204)
-        record = get_pg_record("validation", validation_id)
+        record = UploadDB().get_pg_record("validation", validation_id)
         self.assertEqual(record["status"], "VALIDATED")
         self.assertEqual(str(type(record.get("validation_started_at"))), "<class 'datetime.datetime'>")
         self.assertEqual(str(type(record.get("validation_ended_at"))), "<class 'datetime.datetime'>")
@@ -98,7 +98,7 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
         checksum_event.status = "CHECKSUMMING"
         response = update_event(checksum_event, uploaded_file.info(), self.client)
         self.assertEqual(response.status_code, 204)
-        record = get_pg_record("checksum", checksum_id)
+        record = UploadDB().get_pg_record("checksum", checksum_id)
         self.assertEqual(record["status"], "CHECKSUMMING")
         self.assertEqual(str(type(record.get("checksum_started_at"))), "<class 'datetime.datetime'>")
         self.assertEqual(record["checksum_ended_at"], None)
@@ -106,7 +106,7 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
         checksum_event.status = "CHECKSUMMED"
         response = update_event(checksum_event, uploaded_file.info(), self.client)
         self.assertEqual(response.status_code, 204)
-        record = get_pg_record("checksum", checksum_id)
+        record = UploadDB().get_pg_record("checksum", checksum_id)
         self.assertEqual(record["status"], "CHECKSUMMED")
         self.assertEqual(str(type(record.get("checksum_started_at"))), "<class 'datetime.datetime'>")
         self.assertEqual(str(type(record.get("checksum_ended_at"))), "<class 'datetime.datetime'>")

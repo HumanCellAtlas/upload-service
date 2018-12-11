@@ -1,13 +1,16 @@
+import logging
 import os
 import unittest
 
 import boto3
 from moto import mock_iam, mock_s3, mock_sts, mock_sqs
 
-from upload.common.upload_config import UploadConfig
+from upload.common.upload_config import UploadConfig, UploadDbConfig, UploadVersion
 
-os.environ['DEPLOYMENT_STAGE'] = 'test'
 os.environ['LOG_LEVEL'] = 'CRITICAL'
+# logging.basicConfig(level=logging.DEBUG)
+# logging.getLogger('botocore').setLevel(logging.WARNING)
+# logging.getLogger('boto3').setLevel(logging.WARNING)
 
 
 class EnvironmentSetup:
@@ -15,23 +18,41 @@ class EnvironmentSetup:
     Set environment variables.
     Provide a dict of variable names and values.
     Setting a value to None will delete it from the environment.
+    Works as a context manager:
+
+        with EnvironmentSetup({'FOO': 'bar'}):
+            pass
+
+    or use enter() and exit()  (e.g. in setUp() and tearDown() functions).
+
+        self.enver = EnvironmentSetup({'FOO': 'bar'})
+        self.enver.enter()
+        # Stuff
+        self.enver.exit()
     """
     def __init__(self, env_vars_dict):
         self.env_vars = env_vars_dict
         self.saved_vars = {}
+        self.logger = logging.getLogger('EnvironmentSetup')
 
     def enter(self):
         for k, v in self.env_vars.items():
             if k in os.environ:
+                old_value = os.environ[k]
                 self.saved_vars[k] = os.environ[k]
+            else:
+                old_value = None
             if v:
                 os.environ[k] = v
+                self.logger.debug(f"temporarily changing {k} from {old_value} to {v}")
             else:
                 if k in os.environ:
                     del os.environ[k]
+                    self.logger.debug(f"temporarily deleting {k}")
 
     def exit(self):
         for k, v in self.saved_vars.items():
+            self.logger.debug(f"resetting {k} back to {v}")
             os.environ[k] = v
 
     def __enter__(self):
@@ -41,27 +62,44 @@ class EnvironmentSetup:
         self.exit()
 
 
-class UploadTestCaseUsingLiveAWS(unittest.TestCase):
-
+class UploadTestCase(unittest.TestCase):
     def setUp(self):
-        # Does nothing but provide for consistency in test subclasses.
+        # Common Environment
+        if os.environ['DEPLOYMENT_STAGE'] in ['local', 'test']:
+            self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
+        else:
+            self.deployment_stage = 'test'
+        self.environment = {
+            'DEPLOYMENT_STAGE': self.deployment_stage
+        }
+        self.common_environmentor = EnvironmentSetup(self.environment)
+        self.common_environmentor.enter()
         pass
 
     def tearDown(self):
-        # Does nothing but provide for consistency in test subclasses.
-        pass
+        self.common_environmentor.exit()
 
 
-class UploadTestCaseUsingMockAWS(unittest.TestCase):
+class UploadTestCaseUsingLiveAWS(UploadTestCase):
 
     def setUp(self):
+        super().setUp()
+        if self.deployment_stage == 'local':
+            self.skipTest("requires Internet")
+
+    def tearDown(self):
+        super().setUp()
+
+
+class UploadTestCaseUsingMockAWS(UploadTestCase):
+
+    def setUp(self):
+        super().setUp()
         # Setup mock AWS
         self.s3_mock = mock_s3()
         self.s3_mock.start()
         self.iam_mock = mock_iam()
         self.iam_mock.start()
-        self.sts_mock = mock_sts()
-        self.sts_mock.start()
         self.sqs_mock = mock_sqs()
         self.sqs_mock.start()
         # UploadConfig
@@ -74,13 +112,21 @@ class UploadTestCaseUsingMockAWS(unittest.TestCase):
             'upload_submitter_role_arn': 'bogo_submitter_role_arn',
             'slack_webhook': 'bogo_slack_url',
         })
-        # Common Environment
-        self.deployment_stage = 'test'
-        self.environment = {
-            'DEPLOYMENT_STAGE': self.deployment_stage
-        }
-        self.common_environmentor = EnvironmentSetup(self.environment)
-        self.common_environmentor.enter()
+        # UploadVersion
+        self.upload_version = UploadVersion()
+        self.upload_version.set({"upload_service_version": "0"})
+        if self.deployment_stage == 'local':
+            # When online, we need STS to access SecretsManager to access RDS.
+            # When offline, mock out STS/SecretsManager and use local Postgres.
+            # STS
+            self.sts_mock = mock_sts()
+            self.sts_mock.start()
+            # UploadDbConfig
+            self.upload_db_config = UploadDbConfig()
+            self.upload_db_config.set({
+                'database_uri': 'postgresql://:@localhost/upload_local',
+                'pgbouncer_uri': 'postgresql://:@localhost/upload_local'
+            })
         # Upload Bucket
         self.upload_bucket = boto3.resource('s3').Bucket(self.upload_config.bucket_name)
         self.upload_bucket.create()
@@ -89,10 +135,11 @@ class UploadTestCaseUsingMockAWS(unittest.TestCase):
         self.sqs.create_queue(QueueName=f"bogo_url")
 
     def tearDown(self):
+        super().tearDown()
         self.s3_mock.stop()
         self.iam_mock.stop()
-        self.sts_mock.stop()
-        self.common_environmentor.exit()
+        if self.deployment_stage == 'local':
+            self.sts_mock.stop()
 
     """
     Simulate a file that has been uploaded to the S3 upload bucket by the HCA CLI,

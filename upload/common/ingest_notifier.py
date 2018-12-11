@@ -6,7 +6,7 @@ import requests
 
 from .exceptions import UploadException
 from .logging import get_logger
-from .database import create_pg_record, update_pg_record
+from .database import UploadDB
 
 logger = get_logger(__name__)
 
@@ -31,6 +31,7 @@ class IngestNotifier:
         self.ingest_amqp_server = os.environ['INGEST_AMQP_SERVER']
         logger.debug("starting")
         self.connect()
+        self.db = UploadDB()
 
     def connect(self):
         logger.debug(f"connecting to {self.ingest_amqp_server}")
@@ -44,11 +45,11 @@ class IngestNotifier:
     def format_and_send_notification(self, file_info):
         notification_props = self._format_notification_props(file_info)
         notification_props["status"] = "DELIVERING"
-        create_pg_record("notification", notification_props)
+        self.db.create_pg_record("notification", notification_props)
         body = json.dumps(file_info)
         success = self._publish_notification(body)
         notification_props["status"] = "DELIVERED"
-        update_pg_record("notification", notification_props)
+        self.db.update_pg_record("notification", notification_props)
         return success
 
     def _publish_notification(self, body):

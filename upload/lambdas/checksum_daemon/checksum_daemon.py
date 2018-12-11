@@ -10,7 +10,7 @@ from six.moves import urllib
 from ...common.batch import JobDefinition
 from ...common.checksum import UploadedFileChecksummer
 from ...common.checksum_event import UploadedFileChecksumEvent
-from ...common.database_orm import db_session_maker, DbChecksum
+from ...common.database_orm import DBSessionMaker, DbChecksum
 from ...common.ingest_notifier import IngestNotifier
 from ...common.logging import get_logger
 from ...common.retry import retry_on_aws_too_many_requests
@@ -113,7 +113,7 @@ class ChecksumDaemon:
 
     def _find_checksum_status_of_event_newer_than_file_last_modified(self, file_key):
         checksum_status = None
-        db_session = db_session_maker()
+        db_session = DBSessionMaker().session()
         checksums = db_session.query(DbChecksum).filter(DbChecksum.file_id == file_key).all()
         for csum in checksums:
             if csum.status == "CHECKSUMMED" and csum.updated_at >= self.uploaded_file.s3obj.last_modified:

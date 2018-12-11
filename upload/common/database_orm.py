@@ -65,7 +65,14 @@ DbUploadArea.files = relationship('DbFile', order_by=DbFile.id, back_populates='
 DbFile.checksums = relationship('DbChecksum', order_by=DbChecksum.created_at, back_populates='file')
 DbFile.validations = relationship('DbValidation', order_by=DbValidation.created_at, back_populates='file')
 
-engine = create_engine(UploadDbConfig().database_uri)
-Base.metadata.bind = engine
-db_session_maker = sessionmaker()
-db_session_maker.bind = engine
+
+class DBSessionMaker:
+
+    def __init__(self):
+        engine = create_engine(UploadDbConfig().database_uri)
+        Base.metadata.bind = engine
+        self.session_maker = sessionmaker()
+        self.session_maker.bind = engine
+
+    def session(self):
+        return self.session_maker()

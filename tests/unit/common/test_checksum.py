@@ -1,7 +1,5 @@
 import uuid
 
-import boto3
-
 from .. import UploadTestCaseUsingMockAWS
 from ... import FIXTURE_DATA_CHECKSUMS
 

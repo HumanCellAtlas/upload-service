@@ -22,5 +22,5 @@ clean clobber build deploy:
 run: build
 	scripts/upload-api
 
-secrets:
-	openssl enc -aes-256-cbc -k $(enc_password) -in config/deployment_secrets.${DEPLOYMENT_STAGE} -out config/deployment_secrets.${DEPLOYMENT_STAGE}.enc
+migrate:
+	alembic -x db=${DEPLOYMENT_STAGE} -c=./config/database.ini upgrade head

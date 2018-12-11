@@ -15,7 +15,7 @@ from .upload_config import UploadConfig
 from .logging import get_logger
 
 if not os.environ.get("CONTAINER"):
-    from .database import get_pg_record, create_pg_record, update_pg_record, run_query_with_params
+    from .database import UploadDB
 
 logger = get_logger(__name__)
 
@@ -33,6 +33,7 @@ class UploadArea:
         self.key_prefix_length = len(self.key_prefix)
         self._bucket = s3.Bucket(self.bucket_name)
         self.csum_sqs_url = self.config.csum_job_q_url
+        self.db = UploadDB()
 
     @property
     def bucket_name(self):
@@ -163,7 +164,7 @@ class UploadArea:
         return UploadedFile.from_s3_key(self, key)
 
     def is_extant(self) -> bool:
-        record = get_pg_record('upload_area', self.uuid)
+        record = self.db.get_pg_record('upload_area', self.uuid)
         if record and record['status'] != 'DELETED':
             return True
         else:
@@ -194,15 +195,15 @@ class UploadArea:
         }
 
     def _db_record(self):
-        return get_pg_record('upload_area', self.uuid)
+        return self.db.get_pg_record('upload_area', self.uuid)
 
     def _create_record(self):
         prop_vals_dict = self._format_prop_vals_dict()
-        create_pg_record("upload_area", prop_vals_dict)
+        self.db.create_pg_record("upload_area", prop_vals_dict)
 
     def _update_record(self):
         prop_vals_dict = self._format_prop_vals_dict()
-        update_pg_record("upload_area", prop_vals_dict)
+        self.db.update_pg_record("upload_area", prop_vals_dict)
 
     def retrieve_file_checksum_statuses_for_upload_area(self):
         checksum_status = {
@@ -211,8 +212,8 @@ class UploadArea:
             'CHECKSUMMED': 0,
             'CHECKSUMMING_UNSCHEDULED': 0
         }
-        query_result = run_query_with_params("SELECT status, COUNT(DISTINCT checksum.file_id) FROM checksum "
-                                             "WHERE file_id LIKE %s GROUP BY  status;", (f"{self.uuid}/%",))
+        query_result = self.db.run_query_with_params("SELECT status, COUNT(DISTINCT checksum.file_id) FROM checksum "
+                                                     "WHERE file_id LIKE %s GROUP BY  status;", (f"{self.uuid}/%",))
         results = query_result.fetchall()
         checksumming_file_count = 0
         if len(results) > 0:
@@ -223,8 +224,8 @@ class UploadArea:
         return checksum_status
 
     def retrieve_file_validation_statuses_for_upload_area(self):
-        query_result = run_query_with_params("SELECT status, COUNT(DISTINCT validation.file_id) FROM validation "
-                                             "WHERE file_id LIKE %s GROUP BY  status;", (f"{self.uuid}/%",))
+        query_result = self.db.run_query_with_params("SELECT status, COUNT(DISTINCT validation.file_id) FROM validation"
+                                                     " WHERE file_id LIKE %s GROUP BY  status;", (f"{self.uuid}/%",))
         results = query_result.fetchall()
         validation_status_dict = {
             'VALIDATING': 0,
@@ -237,6 +238,7 @@ class UploadArea:
         return validation_status_dict
 
     def retrieve_file_count_for_upload_area(self):
-        query_result = run_query_with_params("SELECT COUNT(DISTINCT name) FROM file WHERE upload_area_id=%s", self.uuid)
+        query_result = self.db.run_query_with_params("SELECT COUNT(DISTINCT name) FROM file WHERE upload_area_id=%s",
+                                                     self.uuid)
         results = query_result.fetchall()
         return results[0][0]

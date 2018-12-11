@@ -1,12 +1,10 @@
 import json
 
 from botocore.stub import Stubber
-from mock import patch, Mock
+from mock import patch
 
 from upload.lambdas.batch_watcher.batch_watcher import BatchWatcher
 from tests.unit import UploadTestCaseUsingMockAWS, EnvironmentSetup
-from upload.common.checksum_event import UploadedFileChecksumEvent
-from upload.common.validation_event import UploadedFileValidationEvent
 
 
 class TestBatchWatcherDaemon(UploadTestCaseUsingMockAWS):
@@ -17,16 +15,21 @@ class TestBatchWatcherDaemon(UploadTestCaseUsingMockAWS):
     def setUp(self):
         super().setUp()
         self.environment = {
-            'DEPLOYMENT_STAGE': 'test',
             'API_KEY': 'test'
         }
-        EnvironmentSetup(self.environment)
+        self.environmentor = EnvironmentSetup(self.environment)
+        self.environmentor.enter()
+
         self.batch_watcher = BatchWatcher()
         self.mock_batch_client = Stubber(self.batch_watcher.batch_client)
         self.mock_ec2_client = Stubber(self.batch_watcher.ec2_client)
         self.mock_lambda_client = Stubber(self.batch_watcher.lambda_client)
 
-    @patch('upload.lambdas.batch_watcher.batch_watcher.run_query')
+    def tearDown(self):
+        self.environmentor.exit()
+        super().tearDown()
+
+    @patch('upload.lambdas.batch_watcher.batch_watcher.UploadDB.run_query')
     def test_find_incomplete_batch_jobs(self, mock_run_query):
         mock_run_query.return_value = QueryResult()
         csum_jobs, val_jobs = self.batch_watcher.find_incomplete_batch_jobs()
@@ -36,7 +39,7 @@ class TestBatchWatcherDaemon(UploadTestCaseUsingMockAWS):
     def test_find_and_kill_deployment_batch_instances(self):
         describe_params = {
             "Filters": [
-                {"Name": 'key-name', "Values": ["hca-upload-test"]},
+                {"Name": 'key-name', "Values": [f"hca-upload-{self.deployment_stage}"]},
                 {"Name": 'instance-state-name', "Values": ["running"]}
             ]
         }
@@ -62,7 +65,7 @@ class TestBatchWatcherDaemon(UploadTestCaseUsingMockAWS):
         killed_instance_ids = self.batch_watcher.find_and_kill_deployment_batch_instances()
         self.assertEqual(killed_instance_ids, instance_ids)
 
-    @patch('upload.lambdas.batch_watcher.batch_watcher.run_query_with_params')
+    @patch('upload.lambdas.batch_watcher.batch_watcher.UploadDB.run_query_with_params')
     @patch('upload.lambdas.batch_watcher.batch_watcher.BatchWatcher.schedule_validation_job')
     def test_schedule_job_with_validation(self, mock_schedule_validation_job, mock_run_query):
         row = {
@@ -85,7 +88,7 @@ class TestBatchWatcherDaemon(UploadTestCaseUsingMockAWS):
         self.batch_watcher.schedule_job(row, "validation")
         mock_schedule_validation_job.assert_called_with("test_area", "test_id", "test_docker_image", "123")
 
-    @patch('upload.lambdas.batch_watcher.batch_watcher.run_query_with_params')
+    @patch('upload.lambdas.batch_watcher.batch_watcher.UploadDB.run_query_with_params')
     @patch('upload.lambdas.batch_watcher.batch_watcher.BatchWatcher.invoke_checksum_lambda')
     def test_schedule_job_with_checksum(self, mock_invoke_csum_lambda, mock_run_query):
         row = {
@@ -102,7 +105,7 @@ class TestBatchWatcherDaemon(UploadTestCaseUsingMockAWS):
                 'eventName': 'ObjectCreated:Put',
                 "s3": {
                     "bucket": {
-                        "name": f"org-humancellatlas-upload-test"
+                        "name": f"org-humancellatlas-upload-{self.deployment_stage}"
                     },
                     "object": {
                         "key": "test_area/test_file_id"
@@ -111,7 +114,7 @@ class TestBatchWatcherDaemon(UploadTestCaseUsingMockAWS):
             }]
         }
         lambda_params = {
-            "FunctionName": f"dcp-upload-csum-test",
+            "FunctionName": f"dcp-upload-csum-{self.deployment_stage}",
             "InvocationType": "Event",
             "Payload": json.dumps(payload).encode()
         }

@@ -6,7 +6,7 @@ import requests
 
 from upload.common.retry import retry_on_aws_too_many_requests
 from upload.common.logging import get_logger
-from upload.common.database import run_query, run_query_with_params
+from upload.common.database import UploadDB
 from upload.common.exceptions import UploadException
 
 logger = get_logger(__name__)
@@ -20,6 +20,7 @@ class BatchWatcher:
         self.batch_client = boto3.client("batch")
         self.ec2_client = boto3.client('ec2')
         self.lambda_client = boto3.client('lambda')
+        self.db = UploadDB()
 
     def run(self):
         incomplete_checksum_jobs, incomplete_validation_jobs = self.find_incomplete_batch_jobs()
@@ -63,10 +64,12 @@ class BatchWatcher:
             return status
 
     def find_incomplete_batch_jobs(self):
-        validation_results = run_query("SELECT * from validation WHERE status = 'SCHEDULED' or status = 'VALIDATING';")
+        validation_results = self.db.run_query("SELECT * from validation "
+                                               "WHERE status = 'SCHEDULED' or status = 'VALIDATING';")
         validation_rows = validation_results.fetchall()
-        checksum_results = run_query("SELECT * from checksum WHERE(status='SCHEDULED' or status = 'CHECKSUMMING') \
-            and job_id is not null;")
+        checksum_results = self.db.run_query("SELECT * from checksum "
+                                             "WHERE(status='SCHEDULED' or status = 'CHECKSUMMING') "
+                                             "and job_id is not null;")
         checksum_rows = checksum_results.fetchall()
         return checksum_rows, validation_rows
 
@@ -108,7 +111,7 @@ class BatchWatcher:
                 original_validation_id = db_id
             self.schedule_validation_job(upload_area_id, file_name, docker_image, original_validation_id)
         logger.info(f"Marking {table_name} record id {db_id} for file {file_id} as failed.")
-        run_query_with_params(f"UPDATE {table_name} SET status = 'FAILED' \
+        self.db.run_query_with_params(f"UPDATE {table_name} SET status = 'FAILED' \
             WHERE id = %s;", (db_id))
 
     def schedule_validation_job(self, upload_area_id, file_name, docker_image, original_validation_id):

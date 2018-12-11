@@ -4,7 +4,6 @@ import os
 import traceback
 
 import connexion
-import flask
 import requests
 from connexion.resolver import RestyResolver
 from connexion.lifecycle import ConnexionResponse

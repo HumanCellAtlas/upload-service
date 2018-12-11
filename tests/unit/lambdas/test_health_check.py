@@ -36,7 +36,7 @@ class TestHealthCheckDaemon(UploadTestCaseUsingMockAWS):
 
         mock_attachment = {
             'attachments': [{
-                'title': 'Health Check Report for test:',
+                'title': f'Health Check Report for {self.deployment_stage}:',
                 'color': 'good',
                 'text': 'DEADLETTER_QUEUE: 2 in queue, 3 added in past 24 hrs\nUPLOAD_AREAS: '
                 '5 undeleted areas, 4 stuck in checksumming, 3 stuck in validation \n2 areas'
@@ -306,7 +306,7 @@ class TestHealthCheckDaemon(UploadTestCaseUsingMockAWS):
         assert deadletter_dict == {'visible_messages': 'no value returned', 'received_messages': 'no value returned'}
         stubber.deactivate()
 
-    @patch('upload.lambdas.health_check.health_check.run_query')
+    @patch('upload.lambdas.health_check.health_check.UploadDB.run_query')
     def test_query_db_and_return_first_row_queries_db_and_handles_expected_db_response(self, mock_run_query):
         mock_run_query.return_value = MockIt()
         area_count = self.health_check._query_db_and_return_first_row("SELECT COUNT(*) FROM checksum ")
