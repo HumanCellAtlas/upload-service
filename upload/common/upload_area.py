@@ -3,6 +3,7 @@ import os
 import uuid
 
 import boto3
+from tenacity import retry, wait_fixed, stop_after_attempt
 
 from dcplib.media_types import DcpMediaType
 
@@ -19,6 +20,7 @@ if not os.environ.get("CONTAINER"):
 logger = get_logger(__name__)
 
 s3 = boto3.resource('s3')
+sqs = boto3.resource('sqs')
 
 
 class UploadArea:
@@ -30,6 +32,7 @@ class UploadArea:
         self.key_prefix = f"{self.uuid}/"
         self.key_prefix_length = len(self.key_prefix)
         self._bucket = s3.Bucket(self.bucket_name)
+        self.csum_sqs_url = self.config.csum_job_q_url
         self.db = UploadDB()
 
     @property
@@ -111,6 +114,27 @@ class UploadArea:
 
     def s3_object_for_file(self, filename):
         return self._bucket.Object(self.key_prefix + filename)
+
+    @retry(wait=wait_fixed(2), stop=stop_after_attempt(5))
+    def add_uploaded_file_to_csum_daemon_sqs(self, filename):
+        payload = {
+            'Records': [{
+                'eventName': 'ObjectCreated:Put',
+                "s3": {
+                    "bucket": {
+                        "name": f"{self.bucket_name}"
+                    },
+                    "object": {
+                        "key": f"{self.key_prefix}{filename}"
+                    }
+                }
+            }]
+        }
+        response = sqs.meta.client.send_message(QueueUrl=self.csum_sqs_url, MessageBody=json.dumps(payload))
+        status = response['ResponseMetadata']['HTTPStatusCode']
+        if status != 200:
+            raise UploadException(f"Adding file upload message for {self.key_prefix}{filename} \
+                                    was unsuccessful to sqs {self.csum_job_q_url} )")
 
     def store_file(self, filename, content, content_type):
         media_type = DcpMediaType.from_string(content_type)

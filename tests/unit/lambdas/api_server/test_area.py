@@ -356,6 +356,36 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             'checksums': {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'}
         })
 
+    def test_post_file_with_valid_area(self):
+        area_id = self._create_area()
+
+        response = self.client.post(f"/v1/area/{area_id}/filename123")
+        message = self.sqs.meta.client.receive_message(QueueUrl='bogo_url')
+
+        message_body = json.loads(message['Messages'][0]['Body'])
+        s3_key = message_body['Records'][0]['s3']['object']['key']
+        s3_bucket = message_body['Records'][0]['s3']['bucket']['name']
+        self.assertEqual(202, response.status_code)
+        self.assertEqual(s3_key, f"{area_id}/filename123")
+        self.assertEqual(s3_bucket, "bogobucket")
+
+    def test_post_file_with_invalid_area(self):
+        area_id = str(uuid.uuid4())
+        response = self.client.post(f"/v1/area/{area_id}/filename123")
+        self.assertEqual(404, response.status_code)
+
+    def test_add_uploaded_file_to_csum_daemon_sqs(self):
+        area_id = self._create_area()
+
+        UploadArea(area_id).add_uploaded_file_to_csum_daemon_sqs("filename123")
+        message = self.sqs.meta.client.receive_message(QueueUrl='bogo_url')
+
+        message_body = json.loads(message['Messages'][0]['Body'])
+        s3_key = message_body['Records'][0]['s3']['object']['key']
+        s3_bucket = message_body['Records'][0]['s3']['bucket']['name']
+        self.assertEqual(s3_key, f"{area_id}/filename123")
+        self.assertEqual(s3_bucket, "bogobucket")
+
 
 if __name__ == '__main__':
     unittest.main()
