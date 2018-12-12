@@ -51,6 +51,7 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         record = db.query(DbFile).filter(DbFile.id == s3_key).one()
         self.assertEqual(s3_key, record.id)
         self.assertEqual(filename, record.name)
+        self.assertEqual(s3object.e_tag, record.s3_etag)
         self.assertEqual(len(file_content), record.size)
         self.assertEqual(self.upload_area.uuid, record.upload_area_id)
 
@@ -60,7 +61,9 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         file_content = "file2_body"
         s3object = self._create_s3_object(filename, content=file_content)
         record = DbFile(id=s3object.key, name=filename,
-                        upload_area_id=self.upload_area.uuid, size=len(file_content))
+                        upload_area_id=self.upload_area.uuid,
+                        size=len(file_content),
+                        s3_etag=s3object.e_tag)
         db.add(record)
         db.commit()
         record_count_before = db.query(DbFile).count()
