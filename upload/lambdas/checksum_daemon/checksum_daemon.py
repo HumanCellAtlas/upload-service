@@ -77,7 +77,6 @@ class ChecksumDaemon:
                     "file_name": filename, "file_key": file_key, "type": "correlation"})
         self.upload_area = UploadArea(area_uuid)
         self.uploaded_file = self.upload_area.uploaded_file(filename)
-        self.uploaded_file.fetch_or_create_db_record()
 
     def _checksum_file(self):
         if self.uploaded_file.size > self.USE_BATCH_IF_FILE_LARGER_THAN:
