@@ -43,29 +43,6 @@ class UploadedFile:
         else:
             raise RuntimeError("you must provide s3object, or name, content_type and data")
 
-    def _create_s3_object(self, data, content_type):
-        self.s3obj = self.upload_area.s3_object_for_file(self.name)
-        self.s3obj.put(Body=data, ContentType=content_type)
-
-    def _load_s3_object(self, s3object):
-        self.s3obj = s3object
-        self.name = s3object.key[self.upload_area.key_prefix_length:]  # cut off upload-area-id/
-        self.checksums = self._dcp_tags_of_file()
-
-    def info(self):
-        return {
-            'upload_area_id': self.upload_area.uuid,
-            'name': self.name,
-            'size': self.size,
-            'content_type': self.content_type,
-            'url': f"s3://{self.upload_area.bucket_name}/{self.s3obj.key}",
-            'checksums': self.checksums,
-            'last_modified': self.s3obj.last_modified.isoformat()
-        }
-
-    def refresh(self):
-        self.s3obj.reload()
-
     @property
     def s3key(self):
         return self.s3obj.key
@@ -82,6 +59,20 @@ class UploadedFile:
     def size(self):
         return self.s3obj.content_length
 
+    def info(self):
+        return {
+            'upload_area_id': self.upload_area.uuid,
+            'name': self.name,
+            'size': self.size,
+            'content_type': self.content_type,
+            'url': f"s3://{self.upload_area.bucket_name}/{self.s3obj.key}",
+            'checksums': self.checksums,
+            'last_modified': self.s3obj.last_modified.isoformat()
+        }
+
+    def refresh(self):
+        self.s3obj.reload()
+
     @retry(wait=wait_fixed(2), stop=stop_after_attempt(5))
     def save_tags(self):
         tags = {f"hca-dss-{csum}": self.checksums[csum] for csum in self.checksums.keys()}
@@ -92,6 +83,37 @@ class UploadedFile:
             raise UploadException(status=500,
                                   detail="Tags {tags} did not stick to {self.s3obj.key}")
         return self.checksums
+
+    def retrieve_latest_file_validation_status_and_results(self):
+        status = "UNSCHEDULED"
+        results = None
+        query_results = self.db.run_query_with_params("SELECT status, results->>'stdout' FROM validation \
+            WHERE file_id = %s order by created_at desc limit 1;", (self.s3obj.key,))
+        rows = query_results.fetchall()
+        if len(rows) > 0:
+            status = rows[0][0]
+            results = rows[0][1]
+        return status, results
+
+    def retrieve_latest_file_checksum_status_and_values(self):
+        status = "UNSCHEDULED"
+        checksums = None
+        query_results = self.db.run_query_with_params("SELECT status, checksums FROM checksum \
+            WHERE file_id = %s order by created_at desc limit 1;", (self.s3obj.key,))
+        rows = query_results.fetchall()
+        if len(rows) > 0:
+            status = rows[0][0]
+            checksums = rows[0][1]
+        return status, checksums
+
+    def _create_s3_object(self, data, content_type):
+        self.s3obj = self.upload_area.s3_object_for_file(self.name)
+        self.s3obj.put(Body=data, ContentType=content_type)
+
+    def _load_s3_object(self, s3object):
+        self.s3obj = s3object
+        self.name = s3object.key[self.upload_area.key_prefix_length:]  # cut off upload-area-id/
+        self.checksums = self._dcp_tags_of_file()
 
     def _dcp_tags_of_file(self):
         try:
@@ -133,25 +155,3 @@ class UploadedFile:
         if not existing_file:
             prop_vals_dict = self._format_prop_vals_dict()
             self.db.create_pg_record("file", prop_vals_dict)
-
-    def retrieve_latest_file_validation_status_and_results(self):
-        status = "UNSCHEDULED"
-        results = None
-        query_results = self.db.run_query_with_params("SELECT status, results->>'stdout' FROM validation \
-            WHERE file_id = %s order by created_at desc limit 1;", (self.s3obj.key,))
-        rows = query_results.fetchall()
-        if len(rows) > 0:
-            status = rows[0][0]
-            results = rows[0][1]
-        return status, results
-
-    def retrieve_latest_file_checksum_status_and_values(self):
-        status = "UNSCHEDULED"
-        checksums = None
-        query_results = self.db.run_query_with_params("SELECT status, checksums FROM checksum \
-            WHERE file_id = %s order by created_at desc limit 1;", (self.s3obj.key,))
-        rows = query_results.fetchall()
-        if len(rows) > 0:
-            status = rows[0][0]
-            checksums = rows[0][1]
-        return status, checksums
