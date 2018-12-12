@@ -22,5 +22,37 @@ clean clobber build deploy:
 run: build
 	scripts/upload-api
 
-migrate:
+db/migrate:
 	alembic -x db=${DEPLOYMENT_STAGE} -c=./config/database.ini upgrade head
+
+db/rollback:
+	alembic -x db=${DEPLOYMENT_STAGE}  -c=./config/database.ini downgrade -1
+
+db/new_migration:
+	# Usage: make db/new_migration MESSAGE="purpose_of_migration"
+	alembic -c=./config/database.ini revision --message $(MESSAGE)
+
+db/download:
+	$(eval DATABASE_URI = $(shell aws secretsmanager get-secret-value --secret-id dcp/upload/${DEPLOYMENT_STAGE}/database --region us-east-1 | jq -r '.SecretString | fromjson.database_uri'))
+	$(eval OUTFILE = $(shell date +upload_${DEPLOYMENT_STAGE}-%Y%m%d%H%M.sqlc))
+	pg_dump -Fc --dbname=$(DATABASE_URI) --file=$(OUTFILE)
+
+db/import:
+	# Usage: DEPLOYMENT_STAGE=dev make db/import     - imports upload_dev.sqlc into upload_local
+	pg_restore --clean --no-owner --dbname upload_local upload_$(DEPLOYMENT_STAGE).sqlc
+
+db/import/schema:
+	# Usage: DEPLOYMENT_STAGE=dev make db/import/schema  - imports upload_dev.sqlc into upload_local
+	pg_restore --schema-only --clean --no-owner --dbname upload_local upload_$(DEPLOYMENT_STAGE).sqlc
+	# Also import alembic schema version
+	pg_restore --data-only --table=alembic_version --no-owner --dbname upload_local upload_$(DEPLOYMENT_STAGE).sqlc
+
+db/dump_schema:
+	pg_dump --schema-only --dbname=upload_local
+
+db/test_migration:
+	$(MAKE) db/dump_schema > /tmp/before
+	$(MAKE) db/migrate
+	$(MAKE) db/rollback
+	$(MAKE) db/dump_schema > /tmp/after
+	diff /tmp/{before,after}
