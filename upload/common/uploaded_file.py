@@ -29,7 +29,6 @@ class UploadedFile:
         return cls(upload_area, s3object=s3object)
 
     def __init__(self, upload_area, name=None, content_type=None, data=None, s3object=None):
-        self.content_size = None
         self.upload_area = upload_area
         self.s3obj = None
         self.name = name
@@ -45,7 +44,6 @@ class UploadedFile:
             raise RuntimeError("you must provide s3object, or name, content_type and data")
 
     def _create(self, data):
-        self.content_size = len(data)
         self._create_s3_object(data)
         self._fetch_or_create_db_record()
 
@@ -84,10 +82,7 @@ class UploadedFile:
 
     @property
     def size(self):
-        if self.content_size:
-            return self.content_size
-        else:
-            return self.s3obj.content_length
+        return self.s3obj.content_length
 
     @retry(wait=wait_fixed(2), stop=stop_after_attempt(5))
     def save_tags(self):
