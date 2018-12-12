@@ -37,16 +37,20 @@ class UploadedFile:
         self.checksums = {}
         self.db = UploadDB()
         if name and data and content_type:
-            self.content_size = len(data)
             self._create(data)
         elif s3object:
             self._load_s3_object(s3object)
+            self._fetch_or_create_db_record()
         else:
             raise RuntimeError("you must provide s3object, or name, content_type and data")
 
     def _create(self, data):
+        self.content_size = len(data)
+        self._create_s3_object(data)
+        self._fetch_or_create_db_record()
+
+    def _create_s3_object(self, data):
         self.s3obj = self.upload_area.s3_object_for_file(self.name)
-        self.fetch_or_create_db_record()
         self.s3obj.put(Body=data, ContentType=self.content_type)
 
     def _load_s3_object(self, s3object):
@@ -72,7 +76,7 @@ class UploadedFile:
 
     @property
     def s3key(self):
-        return f"{self.upload_area.uuid}/{self.name}"
+        return self.s3obj.key
 
     @property
     def s3url(self):
@@ -131,14 +135,11 @@ class UploadedFile:
             "size": self.size
         }
 
-    def create_record(self):
-        prop_vals_dict = self._format_prop_vals_dict()
-        self.db.create_pg_record("file", prop_vals_dict)
-
-    def fetch_or_create_db_record(self):
+    def _fetch_or_create_db_record(self):
         existing_file = self.db.get_pg_record("file", self.s3obj.key)
         if not existing_file:
-            self.create_record()
+            prop_vals_dict = self._format_prop_vals_dict()
+            self.db.create_pg_record("file", prop_vals_dict)
 
     def retrieve_latest_file_validation_status_and_results(self):
         status = "UNSCHEDULED"

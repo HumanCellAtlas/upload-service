@@ -46,8 +46,7 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         area_id = self._create_area()
         s3obj = self.mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
-        uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        uploaded_file.create_record()
+        UploadedFile(upload_area, s3object=s3obj)
         response = self.client.get(f"/v1/area/{area_id}/foo.json/checksum")
         checksum_status = response.get_json()['checksum_status']
         self.assertEqual(checksum_status, "UNSCHEDULED")
@@ -59,8 +58,7 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         area_id = self._create_area()
         s3obj = self.mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
-        uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        uploaded_file.create_record()
+        UploadedFile(upload_area, s3object=s3obj)
         checksum_event = UploadedFileChecksumEvent(file_id=s3obj.key,
                                                    checksum_id=checksum_id,
                                                    job_id='12345',
@@ -78,7 +76,6 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        uploaded_file.create_record()
         checksum_event = UploadedFileChecksumEvent(file_id=s3obj.key,
                                                    checksum_id=checksum_id,
                                                    job_id='12345',
@@ -106,7 +103,6 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        uploaded_file.create_record()
         checksum_event = UploadedFileChecksumEvent(file_id=s3obj.key,
                                                    checksum_id=checksum_id,
                                                    job_id='12345',
@@ -142,17 +138,11 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         s3obj4 = self.mock_upload_file(area_id, 'foo4.json')
         s3obj5 = self.mock_upload_file(area_id, 'foo5.json')
 
-        uploaded_file1 = UploadedFile(upload_area, s3object=s3obj1)
-        uploaded_file2 = UploadedFile(upload_area, s3object=s3obj2)
-        uploaded_file3 = UploadedFile(upload_area, s3object=s3obj3)
-        uploaded_file4 = UploadedFile(upload_area, s3object=s3obj4)
-        uploaded_file5 = UploadedFile(upload_area, s3object=s3obj5)
-
-        uploaded_file1.create_record()
-        uploaded_file2.create_record()
-        uploaded_file3.create_record()
-        uploaded_file4.create_record()
-        uploaded_file5.create_record()
+        UploadedFile(upload_area, s3object=s3obj1)
+        UploadedFile(upload_area, s3object=s3obj2)
+        UploadedFile(upload_area, s3object=s3obj3)
+        UploadedFile(upload_area, s3object=s3obj4)
+        UploadedFile(upload_area, s3object=s3obj5)
 
         checksum1_event = UploadedFileChecksumEvent(file_id=s3obj1.key,
                                                     checksum_id=checksum1_id,

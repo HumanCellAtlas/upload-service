@@ -56,7 +56,6 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        uploaded_file.create_record()
         validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
                                                        validation_id=validation_id,
                                                        job_id='12345',
@@ -88,7 +87,6 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        uploaded_file.create_record()
         checksum_event = UploadedFileChecksumEvent(file_id=s3obj.key,
                                                    checksum_id=checksum_id,
                                                    job_id='12345',

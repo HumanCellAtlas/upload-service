@@ -59,15 +59,10 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         s3obj3 = self.mock_upload_file(area_id, 'foo3.json')
         s3obj4 = self.mock_upload_file(area_id, 'foo4.json')
 
-        uploaded_file1 = UploadedFile(upload_area, s3object=s3obj1)
-        uploaded_file2 = UploadedFile(upload_area, s3object=s3obj2)
-        uploaded_file3 = UploadedFile(upload_area, s3object=s3obj3)
-        uploaded_file4 = UploadedFile(upload_area, s3object=s3obj4)
-
-        uploaded_file1.create_record()
-        uploaded_file2.create_record()
-        uploaded_file3.create_record()
-        uploaded_file4.create_record()
+        UploadedFile(upload_area, s3object=s3obj1)
+        UploadedFile(upload_area, s3object=s3obj2)
+        UploadedFile(upload_area, s3object=s3obj3)
+        UploadedFile(upload_area, s3object=s3obj4)
 
         validation_event1 = UploadedFileValidationEvent(file_id=s3obj1.key,
                                                         validation_id=validation1_id,
@@ -152,8 +147,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         area_id = self._create_area()
         s3obj = self.mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
-        uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        uploaded_file.create_record()
+        UploadedFile(upload_area, s3object=s3obj)
         response = self.client.get(f"/v1/area/{area_id}/foo.json/validate")
         validation_status = response.get_json()['validation_status']
         self.assertEqual(validation_status, "UNSCHEDULED")
@@ -165,8 +159,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         area_id = self._create_area()
         s3obj = self.mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
-        uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        uploaded_file.create_record()
+        UploadedFile(upload_area, s3object=s3obj)
         validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
                                                        validation_id=validation_id,
                                                        job_id='12345',
@@ -185,7 +178,6 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        uploaded_file.create_record()
         validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
                                                        validation_id=validation_id,
                                                        job_id='12345',
@@ -223,7 +215,6 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        uploaded_file.create_record()
         validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
                                                        validation_id=validation_id,
                                                        job_id='12345',
