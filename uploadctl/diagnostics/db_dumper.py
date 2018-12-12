@@ -1,10 +1,10 @@
-from upload.common.database_orm import db_session_maker, DbUploadArea, DbFile
+from upload.common.database_orm import DBSessionMaker, DbUploadArea, DbFile
 
 
 class DbDumper:
 
     def __init__(self):
-        self.db = db_session_maker()
+        self.db = DBSessionMaker().session()
 
     def dump_all(self):
         for area in self.db.query(DbUploadArea).all():
