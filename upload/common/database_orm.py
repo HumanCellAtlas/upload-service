@@ -25,6 +25,7 @@ class DbFile(Base):
     upload_area_id = Column(String(), ForeignKey('upload_area.id'), nullable=False)
     name = Column(String(), nullable=False)
     size = Column(Integer(), nullable=False)
+    s3_etag = Column(String(), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, nullable=False, onupdate=datetime.utcnow)
 

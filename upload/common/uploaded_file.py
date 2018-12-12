@@ -59,6 +59,10 @@ class UploadedFile:
     def size(self):
         return self.s3obj.content_length
 
+    @property
+    def s3_etag(self):
+        return self.s3obj.e_tag
+
     def info(self):
         return {
             'upload_area_id': self.upload_area.uuid,
@@ -147,7 +151,8 @@ class UploadedFile:
             "id": self.s3obj.key,
             "upload_area_id": self.upload_area.uuid,
             "name": self.name,
-            "size": self.size
+            "size": self.size,
+            "s3_etag": self.s3_etag
         }
 
     def _fetch_or_create_db_record(self):
