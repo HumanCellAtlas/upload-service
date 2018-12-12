@@ -32,30 +32,25 @@ class UploadedFile:
         self.upload_area = upload_area
         self.s3obj = None
         self.name = name
-        self.content_type = content_type
         self.checksums = {}
         self.db = UploadDB()
         if name and data and content_type:
-            self._create(data)
+            self._create_s3_object(data, content_type)
+            self._fetch_or_create_db_record()
         elif s3object:
             self._load_s3_object(s3object)
             self._fetch_or_create_db_record()
         else:
             raise RuntimeError("you must provide s3object, or name, content_type and data")
 
-    def _create(self, data):
-        self._create_s3_object(data)
-        self._fetch_or_create_db_record()
-
-    def _create_s3_object(self, data):
+    def _create_s3_object(self, data, content_type):
         self.s3obj = self.upload_area.s3_object_for_file(self.name)
-        self.s3obj.put(Body=data, ContentType=self.content_type)
+        self.s3obj.put(Body=data, ContentType=content_type)
 
     def _load_s3_object(self, s3object):
         self.s3obj = s3object
         self.name = s3object.key[self.upload_area.key_prefix_length:]  # cut off upload-area-id/
         self.checksums = self._dcp_tags_of_file()
-        self.content_type = self.s3obj.content_type
 
     def info(self):
         return {
@@ -70,7 +65,6 @@ class UploadedFile:
 
     def refresh(self):
         self.s3obj.reload()
-        self.content_type = self.s3obj.content_type
 
     @property
     def s3key(self):
@@ -79,6 +73,10 @@ class UploadedFile:
     @property
     def s3url(self):
         return f"s3://{self.upload_area.bucket_name}/{self.s3key}"
+
+    @property
+    def content_type(self):
+        return self.s3obj.content_type
 
     @property
     def size(self):
