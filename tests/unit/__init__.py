@@ -107,7 +107,7 @@ class UploadTestCaseUsingMockAWS(UploadTestCase):
         self.upload_config.set({
             'bucket_name': 'bogobucket',
             'csum_job_q_arn': 'bogo_arn',
-            'csum_job_q_url': 'bogo_url',
+            'csum_upload_q_url': 'bogo_url',
             'csum_job_role_arn': 'bogo_role_arn',
             'upload_submitter_role_arn': 'bogo_submitter_role_arn',
             'slack_webhook': 'bogo_slack_url',

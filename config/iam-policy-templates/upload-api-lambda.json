@@ -72,6 +72,15 @@
       "Resource": [
         "arn:aws:secretsmanager:us-east-1:$account_id:secret:dcp/upload/${DEPLOYMENT_STAGE}/*"
       ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sqs:SendMessage"
+      ],
+      "Resource": [
+        "arn:aws:sqs:us-east-1:$account_id:dcp-upload-pre-csum-queue-${DEPLOYMENT_STAGE}"
+      ]
     }
   ]
 }
