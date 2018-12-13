@@ -96,6 +96,15 @@ resource "aws_iam_role_policy" "upload_api_lambda" {
       "Resource": [
         "arn:aws:secretsmanager:${local.aws_region}:${local.account_id}:secret:dcp/upload/${var.deployment_stage}/*"
       ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sqs:SendMessage"
+      ],
+      "Resource": [
+        "arn:aws:sqs:${local.aws_region}:${local.account_id}:dcp-upload-pre-csum-queue-${var.deployment_stage}"
+      ]
     }
   ]
 }

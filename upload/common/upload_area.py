@@ -32,7 +32,7 @@ class UploadArea:
         self.key_prefix = f"{self.uuid}/"
         self.key_prefix_length = len(self.key_prefix)
         self._bucket = s3.Bucket(self.bucket_name)
-        self.csum_sqs_url = self.config.csum_job_q_url
+        self.csum_upload_q_url = self.config.csum_upload_q_url
         self.db = UploadDB()
 
     @property
@@ -130,11 +130,11 @@ class UploadArea:
                 }
             }]
         }
-        response = sqs.meta.client.send_message(QueueUrl=self.csum_sqs_url, MessageBody=json.dumps(payload))
+        response = sqs.meta.client.send_message(QueueUrl=self.csum_upload_q_url, MessageBody=json.dumps(payload))
         status = response['ResponseMetadata']['HTTPStatusCode']
         if status != 200:
             raise UploadException(f"Adding file upload message for {self.key_prefix}{filename} \
-                                    was unsuccessful to sqs {self.csum_job_q_url} )")
+                                    was unsuccessful to sqs {self.csum_upload_q_url} )")
 
     def store_file(self, filename, content, content_type):
         media_type = DcpMediaType.from_string(content_type)
