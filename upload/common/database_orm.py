@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
@@ -62,9 +62,30 @@ class DbValidation(Base):
     file = relationship("DbFile", back_populates='validations')
 
 
+class DbNotification(Base):
+    __tablename__ = 'notification'
+    id = Column(String(), primary_key=True)
+    file_id = Column(String(), ForeignKey('file.id'), nullable=False)
+    status = Column(String(), nullable=False)
+    payload = Column(JSON(), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, nullable=False, onupdate=datetime.utcnow)
+
+    file = relationship("DbFile", back_populates='notifications')
+
+
 DbUploadArea.files = relationship('DbFile', order_by=DbFile.id, back_populates='upload_area')
-DbFile.checksums = relationship('DbChecksum', order_by=DbChecksum.created_at, back_populates='file')
-DbFile.validations = relationship('DbValidation', order_by=DbValidation.created_at, back_populates='file')
+DbFile.checksums = relationship('DbChecksum', order_by=DbChecksum.created_at,
+                                back_populates='file',
+                                cascade='all, delete, delete-orphan')
+DbFile.validations = relationship('DbValidation',
+                                  order_by=DbValidation.created_at,
+                                  back_populates='file',
+                                  cascade='all, delete, delete-orphan')
+DbFile.notifications = relationship('DbNotification',
+                                    order_by=DbNotification.created_at,
+                                    back_populates='file',
+                                    cascade='all, delete, delete-orphan')
 
 
 class DBSessionMaker:
@@ -75,5 +96,5 @@ class DBSessionMaker:
         self.session_maker = sessionmaker()
         self.session_maker.bind = engine
 
-    def session(self):
-        return self.session_maker()
+    def session(self, **kwargs):
+        return self.session_maker(**kwargs)
