@@ -38,8 +38,8 @@ def credentials(upload_area_id: str):
 @require_authenticated
 def delete(upload_area_id: str):
     upload_area = _load_upload_area(upload_area_id)
-    upload_area.delete()
-    return None, requests.codes.no_content
+    upload_area.add_upload_area_to_delete_sqs()
+    return None, requests.codes.accepted
 
 
 @return_exceptions_as_http_errors

@@ -15,7 +15,8 @@ class TestDatabase(UploadTestCaseUsingLiveAWS):
         self.config = UploadConfig()
         self.config.set({
             'bucket_name': "test_bucket_name",
-            'csum_upload_q_url': "bogo_url"
+            'csum_upload_q_url': "bogo_url",
+            'area_deletion_q_url': 'delete_sqs_url'
         })
 
         self.area_id = str(uuid.uuid4())

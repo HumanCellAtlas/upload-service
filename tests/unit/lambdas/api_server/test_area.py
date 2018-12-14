@@ -168,7 +168,18 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
         response = self.client.delete(f"/v1/area/{area_id}", headers=self.authentication_header)
 
-        self.assertEqual(204, response.status_code)
+        self.assertEqual(202, response.status_code)
+        record = UploadDB().get_pg_record("upload_area", area_id)
+        self.assertEqual("DELETION_QUEUED", record["status"])
+
+    def test_upload_area_delete(self):
+        area_id = self._create_area()
+        obj = self.upload_bucket.Object(f'{area_id}/test_file')
+        obj.put(Body="foo")
+
+        area = UploadArea(area_id)
+        area.delete()
+
         record = UploadDB().get_pg_record("upload_area", area_id)
         self.assertEqual("DELETED", record["status"])
         with self.assertRaises(ClientError):
@@ -385,6 +396,17 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         s3_bucket = message_body['Records'][0]['s3']['bucket']['name']
         self.assertEqual(s3_key, f"{area_id}/filename123")
         self.assertEqual(s3_bucket, "bogobucket")
+
+    def test_add_upload_area_to_delete_sqs(self):
+        area_id = self._create_area()
+
+        UploadArea(area_id).add_upload_area_to_delete_sqs()
+        message = self.sqs.meta.client.receive_message(QueueUrl='delete_sqs_url')
+
+        message_body = json.loads(message['Messages'][0]['Body'])
+        self.assertEqual(message_body['area_uuid'], area_id)
+        record = UploadDB().get_pg_record("upload_area", area_id)
+        self.assertEqual(record['status'], "DELETION_QUEUED")
 
 
 if __name__ == '__main__':

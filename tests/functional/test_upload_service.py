@@ -117,8 +117,9 @@ class TestUploadService(unittest.TestCase):
                            verb='DELETE',
                            url=f"{self.api_url}/area/{self.upload_area_id}",
                            headers=self.auth_headers,
-                           expected_status=204)
-        self.assertEqual('DELETED', self._upload_area_record_status())
+                           expected_status=202)
+        WaitFor(self._upload_area_record_status)\
+            .to_return_value('DELETED', timeout_seconds=MINUTE_SEC)
 
     def _upload_area_record_status(self):
         record = self._upload_area_record()

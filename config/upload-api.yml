@@ -101,7 +101,7 @@ paths:
     delete:
       summary: Delete an Upload Area
       operationId: upload.lambdas.api_server.v1.area.delete
-      description: Delete an Upload Area
+      description: Schedule an Upload Area for deletion
       tags:
         - For Ingestion Service Use Only
       security:
@@ -118,8 +118,8 @@ paths:
           required: true
           type: string
       responses:
-        204:
-          description: Upload area was deleted.
+        202:
+          description: Upload area was queued for deletion.
         401:
           description: Unrecognized Api-Key.
           schema:

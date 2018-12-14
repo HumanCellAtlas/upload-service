@@ -1,6 +1,7 @@
 import json
 import os
 import uuid
+import time
 
 import boto3
 from tenacity import retry, wait_fixed, stop_after_attempt
@@ -33,6 +34,7 @@ class UploadArea:
         self.key_prefix_length = len(self.key_prefix)
         self._bucket = s3.Bucket(self.bucket_name)
         self.csum_upload_q_url = self.config.csum_upload_q_url
+        self.area_deletion_q_url = self.config.area_deletion_q_url
         self.db = UploadDB()
 
     @property
@@ -97,8 +99,8 @@ class UploadArea:
         # This may need to be offloaded to an async lambda if _empty_bucket() starts taking a long time.
         self.status = "DELETING"
         self._update_record()
-        self._empty_upload_area()
-        self.status = "DELETED"
+        area_status = self._empty_upload_area()
+        self.status = area_status
         self._update_record()
 
     def ls(self):
@@ -135,6 +137,20 @@ class UploadArea:
         if status != 200:
             raise UploadException(f"Adding file upload message for {self.key_prefix}{filename} \
                                     was unsuccessful to sqs {self.csum_upload_q_url} )")
+
+    @retry(wait=wait_fixed(2), stop=stop_after_attempt(5))
+    def add_upload_area_to_delete_sqs(self):
+        self.status = "DELETION_QUEUED"
+        self._update_record()
+        payload = {
+            'area_uuid': f"{self.uuid}"
+        }
+        response = sqs.meta.client.send_message(QueueUrl=self.area_deletion_q_url, MessageBody=json.dumps(payload))
+        status = response['ResponseMetadata']['HTTPStatusCode']
+        if status != 200:
+            raise UploadException(f"Adding delete message for area {self.uuid} \
+                                    was unsuccessful to sqs {self.area_deletion_q_url} )")
+        logger.info(f"added deletion of area {self.uuid} to sqs")
 
     def store_file(self, filename, content, content_type):
         media_type = DcpMediaType.from_string(content_type)
@@ -181,11 +197,20 @@ class UploadArea:
         return file_list
 
     def _empty_upload_area(self):
+        logger.info(f"starting deletion of area {self.uuid}")
+        deletion_start_time = time.time()
         paginator = s3.meta.client.get_paginator('list_objects')
         for page in paginator.paginate(Bucket=self.bucket_name, Prefix=self.uuid):
             if 'Contents' in page:
                 for o in page['Contents']:
+                    elapsed_time = time.time() - deletion_start_time
+                    if elapsed_time > 840:
+                        # Lambda will timeout in less than 1 minute. Re-add this area to deletion sqs.
+                        self.add_upload_area_to_delete_sqs()
+                        return "DELETION_QUEUED"
                     s3.meta.client.delete_object(Bucket=self.bucket_name, Key=o['Key'])
+        logger.info(f"completed deletion of area {self.uuid}")
+        return "DELETED"
 
     def _format_prop_vals_dict(self):
         return {

@@ -108,6 +108,7 @@ class UploadTestCaseUsingMockAWS(UploadTestCase):
             'bucket_name': 'bogobucket',
             'csum_job_q_arn': 'bogo_arn',
             'csum_upload_q_url': 'bogo_url',
+            'area_deletion_q_url': 'delete_sqs_url',
             'csum_job_role_arn': 'bogo_role_arn',
             'upload_submitter_role_arn': 'bogo_submitter_role_arn',
             'slack_webhook': 'bogo_slack_url',
@@ -133,6 +134,7 @@ class UploadTestCaseUsingMockAWS(UploadTestCase):
 
         self.sqs = boto3.resource('sqs')
         self.sqs.create_queue(QueueName=f"bogo_url")
+        self.sqs.create_queue(QueueName=f"delete_sqs_url")
 
     def tearDown(self):
         super().tearDown()
