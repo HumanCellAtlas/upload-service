@@ -51,7 +51,7 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         record = db.query(DbFile).filter(DbFile.id == s3_key).one()
         self.assertEqual(s3_key, record.id)
         self.assertEqual(filename, record.name)
-        self.assertEqual(s3object.e_tag, record.s3_etag)
+        self.assertEqual(s3object.e_tag.strip('\"'), record.s3_etag)
         self.assertEqual(len(file_content), record.size)
         self.assertEqual(self.upload_area.uuid, record.upload_area_id)
 
