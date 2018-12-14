@@ -61,7 +61,7 @@ class UploadedFile:
 
     @property
     def s3_etag(self):
-        return self.s3obj.e_tag
+        return self.s3obj.e_tag.strip('\"')
 
     def info(self):
         return {
