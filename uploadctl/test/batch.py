@@ -21,8 +21,6 @@ class TestBatch:
 
         job_queue_arn = f"arn:aws:batch:us-east-1:{account_id}:job-queue/{self.queue_name}"
         job_role_arn = f"arn:aws:iam::{account_id}:role/{self.role_name}"
-        print(f"SAM: role_name={self.role_name}")
-        print(f"SAM: job_role_arn={job_role_arn}")
 
         job_defn = JobDefinition(
             docker_image=docker_image,

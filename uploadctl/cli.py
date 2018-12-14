@@ -10,7 +10,7 @@ Upload Service Administration Tool
 import argparse
 import os
 
-# from .cleanup import CleanupCLI
+from .cleanup import CleanupCLI
 from .diagnostics import DiagnosticsCLI
 from .runlevel import RunLevelCLI
 from .test import TestCLI
@@ -39,8 +39,8 @@ class UploadctlCLI:
         elif args.command == 'test':
             TestCLI.run(args)
 
-        # elif args.command == 'cleanup':
-        #     CleanupCLI.run(args)
+        elif args.command == 'cleanup':
+            CleanupCLI.run(args)
 
         exit(0)
 
@@ -48,24 +48,24 @@ class UploadctlCLI:
     def _setup_argparse():
         parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
         parser.add_argument('-d', '--deployment',
-                            choices=['predev', 'dev', 'integration', 'staging', 'prod'],
+                            choices=['local', 'predev', 'dev', 'integration', 'staging', 'prod'],
                             help="operate on this deployment")
         subparsers = parser.add_subparsers()
 
         RunLevelCLI.configure(subparsers)
-        # CleanupCLI.configure(subparsers)
+        CleanupCLI.configure(subparsers)
         DiagnosticsCLI.configure(subparsers)
         TestCLI.configure(subparsers)
         return parser
 
     @staticmethod
     def _check_deployment(args):
-        if not args.deployment:
+        if args.deployment:
+            deployment = args.deployment
+            os.environ['DEPLOYMENT_STAGE'] = deployment
+        else:
             deployment = os.environ['DEPLOYMENT_STAGE']
             answer = input(f"Use deployment {deployment}? (y/n): ")
             if answer is not 'y':
                 exit(1)
-        else:
-            deployment = args.deployment
-            os.environ['DEPLOYMENT_STAGE'] = deployment
         return deployment

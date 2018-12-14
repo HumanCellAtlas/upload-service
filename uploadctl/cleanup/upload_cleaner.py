@@ -1,131 +1,114 @@
-import re
-import sys
-import dateutil.parser
-from datetime import datetime, timezone
+import os
+
+# import logging
+# logging.basicConfig()
+# logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 import boto3
+from botocore.exceptions import ClientError
 
-from upload.common.upload_area import UploadArea
+from hca.util.pool import ThreadPool
+
+from upload.common.database_orm import DBSessionMaker, DbFile, DbChecksum, DbValidation
+
+"""
+TODO:
+populate s3_etag column for files we have
+delete file,checksum,validation,notification records for files we don't.
+
+Iterate through every File in the database
+"""
+import time
+
+import signal
+import sys
+from threading import Lock
+
+stats = {
+    'deleted': 0,
+    'etag_added': 0,
+    'already_good': 0
+}
+stats_lock = Lock()
+
+
+def signal_handler(sig, frame):
+    global stats
+
+    print("\n" + str(stats))
+    sys.exit(0)
+
+
+signal.signal(signal.SIGINT, signal_handler)
 
 
 class UploadCleaner:
-
-    """
-    Find and delete old Upload Areas
-    """
 
     CLEAR_TO_EOL = "\x1b[0K"
 
     class DontDelete(RuntimeError):
         pass
 
-    def __init__(self, deployment, clean_older_than_days=2, ignore_file_age=False, dry_run=False):
-        self.iam = boto3.client('iam')
-        self.deployment = deployment
-        self.clean_older_than_days = clean_older_than_days
-        self.ignore_file_age = ignore_file_age
-        self.dry_run = dry_run
-        self.now = datetime.now(timezone.utc)
-        self.counts = {
-            'users': 0,
-            'matching_users': 0,
-            'old_users': 0
-        }
-        self.clean()
+    def __init__(self, options):
+        self.options = options
+        self.s3 = boto3.resource('s3')
+        self.bucket = self.s3.Bucket(f"org-humancellatlas-upload-{os.environ['DEPLOYMENT_STAGE']}")
+        self.db_session_maker = DBSessionMaker()
 
-    def clean(self):
-        for user in self._iam_users():
-            try:
-                username = user['UserName']
-                sys.stdout.write(f"\r{username} {self.CLEAR_TO_EOL}")
-                self.counts['users'] += 1
-                self._check_username_matches_deployment(username)
+    def clean_files(self):
+        """
+        Delete entries from file,checksum,validation,notification DB tables for which this is no file in S3.
+        For files that are is S3, ensure the s3_etag is up to date in the DB file record.
+        """
+        global stats
 
-                upload_area_uuid = '-'.join(user['UserName'].split("-")[3:])
-                self._check_special_case_upload_areas(upload_area_uuid)
+        session = self.db_session_maker.session()
+        t1 = time.time()
+        files_id_list = []
+        # TODO: sam remove filter after this run
+        for file in session.query(DbFile).filter(DbFile.s3_etag == None):  # noqa
+            files_id_list.append(file.id)
+        t2 = time.time()
+        print(f"Retrieved {len(files_id_list)} files in {t2-t1}")
+        session.close()
 
-                self._check_if_user_used_recently(user)
+        pool = ThreadPool(self.options.jobs)
+        for file_id in files_id_list:
+            pool.add_task(self._clean_file, file_id)
+        pool.wait_for_completion()
+        print("\n" + str(stats))
 
-                area = UploadArea(upload_area_uuid)
-                self._check_if_files_modified_recently(area)
-
-                print("DELETE.")
-                if not self.dry_run:
-                    area.delete()
-
-            except self.DontDelete:
-                pass
-            sys.stdout.flush()
-
-        print("\rUsers={user_count} matching={matching_count} deleted={deleted_count}".format(
-            user_count=self.counts['users'],
-            matching_count=self.counts['matching_users'],
-            deleted_count=self.counts['old_users']
-        ))
-
-    def _check_username_matches_deployment(self, username):
-        regex = f"^upload-{self.deployment}-user-"
-        if re.match(regex, username):
-            sys.stdout.write(f"matches, ")
-            self.counts['matching_users'] += 1
-        else:
-            raise self.DontDelete()
-
-    def _check_if_user_used_recently(self, user):
-        used_ago = self.now - self._user_last_used_at(user)
-        sys.stdout.write(f"user used {used_ago.days} days ago, ")
-        if used_ago.days <= self.clean_older_than_days:
-            print("skipping.")
-            raise self.DontDelete()
-        else:
-            self.counts['old_users'] += 1
-
-    def _user_last_used_at(self, user):
-        """ Return latest date that a user account was used or a file modified in the upload area """
-        last_used = user['CreateDate']
-        for key in self.iam.list_access_keys(UserName=user['UserName'])['AccessKeyMetadata']:
-            if key['CreateDate'] > last_used:
-                last_used = key['CreateDate']
-            key_last_used = self.iam.get_access_key_last_used(AccessKeyId=key['AccessKeyId'])['AccessKeyLastUsed']
-            if 'LastUsedDate' in key_last_used and key_last_used['LastUsedDate'] > last_used:
-                last_used = key_last_used['LastUsedDate']
-        return last_used
-
-    def _check_special_case_upload_areas(self, area_uuid):
-        if re.match('aaaaaaaa-bbbb-cccc-dddd-.*', area_uuid):
-            print("special case.")
-            raise self.DontDelete
-
-    def _check_if_files_modified_recently(self, upload_area):
-        if self.ignore_file_age:
-            return
-        used_ago = self.now - self._files_last_modified_at(upload_area)
-        sys.stdout.write(f"files used {used_ago.days} days ago, ")
-        if used_ago.days <= self.clean_older_than_days:
-            print("skipping.")
-            raise self.DontDelete()
-
-    def _files_last_modified_at(self, upload_area):
-        last_file_modified_at = datetime.fromtimestamp(0, tz=timezone.utc)
-        files = upload_area.ls()['files']
-        sys.stdout.write(f"{len(files)} files, ")
-        sys.stdout.flush()
-        for file in files:
-            file_last_modified = dateutil.parser.parse(file['last_modified'])
-            if file_last_modified > last_file_modified_at:
-                last_file_modified_at = file_last_modified
-        return last_file_modified_at
-
-    def _iam_users(self):
-        marker = None
-        while True:
-            if marker:
-                resp = self.iam.list_users(Marker=marker)
+    def _clean_file(self, file_id):
+        output = f"{file_id}: "
+        session = self.db_session_maker.session()
+        file = session.query(DbFile).get(file_id)
+        obj = self.bucket.Object(file_id)
+        try:
+            obj.load()
+            output += "exists in S3... "
+            e_tag = obj.e_tag.strip('\"')
+            if file.s3_etag and file.s3_etag == e_tag:
+                self._increment_stat('already_good')
+                output += "already good."
             else:
-                resp = self.iam.list_users()
-            for user in resp['Users']:
-                yield user
-            if 'Marker' in resp:
-                marker = resp['Marker']
+                output += "adding etag to file record."
+                file.s3_etag = e_tag
+                session.add(file)
+                self._increment_stat('etag_added')
+        except ClientError as e:
+            if e.response['Error']['Code'] == '404':
+                output += "is not in S3, deleting."
+                session.delete(file)
+                self._increment_stat('deleted')
             else:
-                break
+                print(e)
+                raise
+        print(output)
+        session.commit()
+        session.close()
+
+    def _increment_stat(self, stat):
+        global stats, stats_lock
+
+        with stats_lock:
+            stats[stat] += 1
