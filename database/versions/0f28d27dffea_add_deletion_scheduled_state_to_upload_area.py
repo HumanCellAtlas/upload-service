@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '0f28d27dffea'
-down_revision = '10c523521ee7'
+down_revision = '1c7493144cbf'
 branch_labels = None
 depends_on = None
 
@@ -23,4 +23,4 @@ def upgrade():
 
 def downgrade():
     op.execute('COMMIT')
-    op.execute("ALTER TYPE upload_status_enum DROP VALUE 'FAILED';")
+    op.execute("ALTER TYPE upload_status_enum DROP VALUE 'DELETION_QUEUED';")

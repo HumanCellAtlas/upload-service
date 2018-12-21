@@ -41,11 +41,20 @@ resource "aws_iam_role_policy" "area_deletion_lambda" {
       "Action": [
         "logs:CreateLogGroup",
         "logs:CreateLogStream",
-        "logs:PutLogEvents",
         "logs:DescribeLogStreams"
       ],
       "Resource": [
         "arn:aws:logs:*:*:*"
+      ],
+      "Effect": "Allow"
+    },
+    {
+      "Sid": "LambdaObjectLogging",
+      "Action": [
+        "logs:PutLogEvents"
+      ],
+      "Resource": [
+        "arn:aws:logs:*:*:/aws/lambda/${aws_lambda_function.area_deletion_lambda.function_name}:*"
       ],
       "Effect": "Allow"
     },
@@ -109,7 +118,7 @@ resource "aws_lambda_function" "area_deletion_lambda" {
   role             = "arn:aws:iam::${local.account_id}:role/area-deletion-daemon-${var.deployment_stage}"
   handler          = "app.delete_upload_area"
   runtime          = "python3.6"
-  memory_size      = 960
+  memory_size      = 500
   timeout          = 900
 
   environment {

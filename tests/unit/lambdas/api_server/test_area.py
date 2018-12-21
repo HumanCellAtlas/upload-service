@@ -5,11 +5,12 @@ import os, sys, unittest, uuid, json
 from botocore.exceptions import ClientError
 
 from moto import mock_sts
+from mock import patch
 
 from . import client_for_test_api_server
 from ... import UploadTestCaseUsingMockAWS, EnvironmentSetup
 
-from upload.common.upload_area import UploadArea
+from upload.common.upload_area import UploadArea, lambda_client
 from upload.common.database import UploadDB
 
 if __name__ == '__main__':
@@ -143,8 +144,10 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(409, response.status_code)
 
     @mock_sts
-    def test_credentials_with_deleted_upload_area(self):
+    @patch('upload.common.upload_area.UploadArea._retrieve_upload_area_deletion_lambda_timeout')
+    def test_credentials_with_deleted_upload_area(self, mock_area_deletion_timeout):
         area_id = self._create_area()
+        mock_area_deletion_timeout.return_value = 900
         UploadArea(area_id).delete()
 
         response = self.client.post(f"/v1/area/{area_id}/credentials")
@@ -172,10 +175,12 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         record = UploadDB().get_pg_record("upload_area", area_id)
         self.assertEqual("DELETION_QUEUED", record["status"])
 
-    def test_upload_area_delete(self):
+    @patch('upload.common.upload_area.UploadArea._retrieve_upload_area_deletion_lambda_timeout')
+    def test_upload_area_delete(self, mock_retrieve_lambda_timeout):
         area_id = self._create_area()
         obj = self.upload_bucket.Object(f'{area_id}/test_file')
         obj.put(Body="foo")
+        mock_retrieve_lambda_timeout.return_value = 900
 
         area = UploadArea(area_id)
         area.delete()
@@ -184,6 +189,19 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual("DELETED", record["status"])
         with self.assertRaises(ClientError):
             obj.load()
+
+    @patch('upload.common.upload_area.UploadArea._retrieve_upload_area_deletion_lambda_timeout')
+    def test_upload_area_delete_over_timeout(self, mock_retrieve_lambda_timeout):
+        area_id = self._create_area()
+        obj = self.upload_bucket.Object(f'{area_id}/test_file')
+        obj.put(Body="foo")
+        mock_retrieve_lambda_timeout.return_value = 0
+
+        area = UploadArea(area_id)
+        area.delete()
+
+        record = UploadDB().get_pg_record("upload_area", area_id)
+        self.assertEqual("DELETION_QUEUED", record["status"])
 
     def test_delete_with_unused_used_upload_area_id(self):
         area_id = str(uuid.uuid4())

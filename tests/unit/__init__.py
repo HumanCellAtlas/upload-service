@@ -112,6 +112,7 @@ class UploadTestCaseUsingMockAWS(UploadTestCase):
             'csum_job_role_arn': 'bogo_role_arn',
             'upload_submitter_role_arn': 'bogo_submitter_role_arn',
             'slack_webhook': 'bogo_slack_url',
+            'area_deletion_lambda_name': 'delete_lambda_name'
         })
         # UploadVersion
         self.upload_version = UploadVersion()

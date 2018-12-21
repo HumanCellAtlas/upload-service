@@ -16,7 +16,8 @@ class TestDatabase(UploadTestCaseUsingLiveAWS):
         self.config.set({
             'bucket_name': "test_bucket_name",
             'csum_upload_q_url': "bogo_url",
-            'area_deletion_q_url': 'delete_sqs_url'
+            'area_deletion_q_url': "delete_sqs_url",
+            'area_deletion_lambda_name': "delete_lambda_name"
         })
 
         self.area_id = str(uuid.uuid4())

@@ -22,6 +22,7 @@ logger = get_logger(__name__)
 
 s3 = boto3.resource('s3')
 sqs = boto3.resource('sqs')
+lambda_client = boto3.client('lambda')
 
 
 class UploadArea:
@@ -35,6 +36,7 @@ class UploadArea:
         self._bucket = s3.Bucket(self.bucket_name)
         self.csum_upload_q_url = self.config.csum_upload_q_url
         self.area_deletion_q_url = self.config.area_deletion_q_url
+        self.area_deletion_lambda_name = self.config.area_deletion_lambda_name
         self.db = UploadDB()
 
     @property
@@ -96,7 +98,7 @@ class UploadArea:
         return creds
 
     def delete(self):
-        # This may need to be offloaded to an async lambda if _empty_bucket() starts taking a long time.
+        # This is currently invoked by scheduled deletions in sqs
         self.status = "DELETING"
         self._update_record()
         area_status = self._empty_upload_area()
@@ -198,19 +200,24 @@ class UploadArea:
 
     def _empty_upload_area(self):
         logger.info(f"starting deletion of area {self.uuid}")
+        lambda_timeout = self._retrieve_upload_area_deletion_lambda_timeout() - 30
         deletion_start_time = time.time()
         paginator = s3.meta.client.get_paginator('list_objects')
         for page in paginator.paginate(Bucket=self.bucket_name, Prefix=self.uuid):
             if 'Contents' in page:
                 for o in page['Contents']:
                     elapsed_time = time.time() - deletion_start_time
-                    if elapsed_time > 840:
+                    if elapsed_time > lambda_timeout:
                         # Lambda will timeout in less than 1 minute. Re-add this area to deletion sqs.
                         self.add_upload_area_to_delete_sqs()
                         return "DELETION_QUEUED"
                     s3.meta.client.delete_object(Bucket=self.bucket_name, Key=o['Key'])
         logger.info(f"completed deletion of area {self.uuid}")
         return "DELETED"
+
+    def _retrieve_upload_area_deletion_lambda_timeout(self):
+        response = lambda_client.get_function(FunctionName=self.area_deletion_lambda_name)
+        return response['Configuration']['Timeout']
 
     def _format_prop_vals_dict(self):
         return {
