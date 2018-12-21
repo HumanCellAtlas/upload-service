@@ -58,6 +58,13 @@ class UploadArea:
         else:
             self._create_record()
 
+    def is_extant(self) -> bool:
+        record = self.db.get_pg_record('upload_area', self.uuid)
+        if record and record['status'] != 'DELETED':
+            return True
+        else:
+            return False
+
     def credentials(self):
         record = self._db_record()
         if not record['status'] == 'UNLOCKED':
@@ -181,12 +188,43 @@ class UploadArea:
         key = f"{self.key_prefix}{filename}"
         return UploadedFile.from_s3_key(self, key)
 
-    def is_extant(self) -> bool:
-        record = self.db.get_pg_record('upload_area', self.uuid)
-        if record and record['status'] != 'DELETED':
-            return True
-        else:
-            return False
+    def retrieve_file_checksum_statuses_for_upload_area(self):
+        checksum_status = {
+            'TOTAL_NUM_FILES': self.retrieve_file_count_for_upload_area(),
+            'CHECKSUMMING': 0,
+            'CHECKSUMMED': 0,
+            'CHECKSUMMING_UNSCHEDULED': 0
+        }
+        query_result = self.db.run_query_with_params("SELECT status, COUNT(DISTINCT checksum.file_id) FROM checksum "
+                                                     "WHERE file_id LIKE %s GROUP BY  status;", (f"{self.uuid}/%",))
+        results = query_result.fetchall()
+        checksumming_file_count = 0
+        if len(results) > 0:
+            for status in results:
+                checksum_status[status[0]] = status[1]
+                checksumming_file_count += status[1]
+        checksum_status['CHECKSUMMING_UNSCHEDULED'] = checksum_status['TOTAL_NUM_FILES'] - checksumming_file_count
+        return checksum_status
+
+    def retrieve_file_validation_statuses_for_upload_area(self):
+        query_result = self.db.run_query_with_params("SELECT status, COUNT(DISTINCT validation.file_id) FROM validation"
+                                                     " WHERE file_id LIKE %s GROUP BY  status;", (f"{self.uuid}/%",))
+        results = query_result.fetchall()
+        validation_status_dict = {
+            'VALIDATING': 0,
+            'VALIDATED': 0,
+            'SCHEDULED': 0
+        }
+        if len(results) > 0:
+            for status in results:
+                validation_status_dict[status[0]] = status[1]
+        return validation_status_dict
+
+    def retrieve_file_count_for_upload_area(self):
+        query_result = self.db.run_query_with_params("SELECT COUNT(DISTINCT name) FROM file WHERE upload_area_id=%s",
+                                                     self.uuid)
+        results = query_result.fetchall()
+        return results[0][0]
 
     def _file_list(self):
         file_list = []
@@ -236,41 +274,3 @@ class UploadArea:
     def _update_record(self):
         prop_vals_dict = self._format_prop_vals_dict()
         self.db.update_pg_record("upload_area", prop_vals_dict)
-
-    def retrieve_file_checksum_statuses_for_upload_area(self):
-        checksum_status = {
-            'TOTAL_NUM_FILES': self.retrieve_file_count_for_upload_area(),
-            'CHECKSUMMING': 0,
-            'CHECKSUMMED': 0,
-            'CHECKSUMMING_UNSCHEDULED': 0
-        }
-        query_result = self.db.run_query_with_params("SELECT status, COUNT(DISTINCT checksum.file_id) FROM checksum "
-                                                     "WHERE file_id LIKE %s GROUP BY  status;", (f"{self.uuid}/%",))
-        results = query_result.fetchall()
-        checksumming_file_count = 0
-        if len(results) > 0:
-            for status in results:
-                checksum_status[status[0]] = status[1]
-                checksumming_file_count += status[1]
-        checksum_status['CHECKSUMMING_UNSCHEDULED'] = checksum_status['TOTAL_NUM_FILES'] - checksumming_file_count
-        return checksum_status
-
-    def retrieve_file_validation_statuses_for_upload_area(self):
-        query_result = self.db.run_query_with_params("SELECT status, COUNT(DISTINCT validation.file_id) FROM validation"
-                                                     " WHERE file_id LIKE %s GROUP BY  status;", (f"{self.uuid}/%",))
-        results = query_result.fetchall()
-        validation_status_dict = {
-            'VALIDATING': 0,
-            'VALIDATED': 0,
-            'SCHEDULED': 0
-        }
-        if len(results) > 0:
-            for status in results:
-                validation_status_dict[status[0]] = status[1]
-        return validation_status_dict
-
-    def retrieve_file_count_for_upload_area(self):
-        query_result = self.db.run_query_with_params("SELECT COUNT(DISTINCT name) FROM file WHERE upload_area_id=%s",
-                                                     self.uuid)
-        results = query_result.fetchall()
-        return results[0][0]
