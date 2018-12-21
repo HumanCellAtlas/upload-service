@@ -7,7 +7,6 @@ resource "aws_sqs_queue" "upload_queue" {
 
 }
 
-
 resource "aws_sqs_queue" "deadletter_queue" {
   name                      = "dcp-upload-pre-csum-deadletter-queue-${var.deployment_stage}"
   message_retention_seconds = 1209600
@@ -49,10 +48,31 @@ resource "aws_sqs_queue_policy" "pre_checksum_upload_queue_access" {
 POLICY
 }
 
-
 resource "aws_lambda_event_source_mapping" "event_source_mapping" {
   batch_size = 1
   event_source_arn  = "${aws_sqs_queue.upload_queue.arn}"
   enabled           = true
   function_name     = "${aws_lambda_function.upload_checksum_lambda.arn}"
+}
+
+
+resource "aws_sqs_queue" "area_deletion_queue" {
+  name                      = "dcp-upload-area-deletion-queue-${var.deployment_stage}"
+//  Queue visibility timeout must be larger than (triggered lambda) function timeout
+  visibility_timeout_seconds = 960
+  message_retention_seconds = 86400
+  redrive_policy            = "{\"deadLetterTargetArn\":\"${aws_sqs_queue.area_deletion_deadletter_queue.arn}\",\"maxReceiveCount\":4}"
+
+}
+
+resource "aws_sqs_queue" "area_deletion_deadletter_queue" {
+  name                      = "dcp-upload-area-deletion-deadletter-queue-${var.deployment_stage}"
+  message_retention_seconds = 1209600
+}
+
+resource "aws_lambda_event_source_mapping" "area_deletion_event_source_mapping" {
+  batch_size = 1
+  event_source_arn  = "${aws_sqs_queue.area_deletion_queue.arn}"
+  enabled           = true
+  function_name     = "${aws_lambda_function.area_deletion_lambda.arn}"
 }

@@ -11,6 +11,8 @@ resource "aws_secretsmanager_secret_version" "secrets" {
   "validation_job_role_arn": "${aws_iam_role.validation_job_role.arn}",
   "csum_job_q_arn": "${aws_batch_job_queue.csum_job_q.arn}",
   "csum_upload_q_url": "${aws_sqs_queue.upload_queue.id}",
+  "area_deletion_q_url": "${aws_sqs_queue.area_deletion_queue.id}",
+  "area_deletion_lambda_name": "${aws_lambda_function.area_deletion_lambda.function_name}",
   "csum_job_role_arn": "${aws_iam_role.csum_job_role.arn}",
   "upload_submitter_role_arn": "${aws_iam_role.upload_submitter.arn}",
   "api_key": "${var.ingest_api_key}",
