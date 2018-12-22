@@ -246,77 +246,19 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
         response = self.client.put(f"/v1/area/{area_id}/some.json", data="exquisite corpse", headers=headers)
 
-        s3_key = f"{area_id}/some.json"
-        o1 = self.upload_bucket.Object(s3_key)
-        o1.load()
         self.assertEqual(201, response.status_code)
         self.assertEqual('application/json', response.content_type)
-        self.assertEqual(json.loads(response.data), {
-            'upload_area_id': area_id,
-            'name': 'some.json',
-            'size': 16,
-            'last_modified': o1.last_modified.isoformat(),
-            'content_type': 'application/json; dcp-type="metadata/sample"',
-            'url': f"s3://{self.upload_config.bucket_name}/{area_id}/some.json",
-            'checksums': {
-                "crc32c": "FE9ADA52",
-                "s3_etag": "18f17fbfdd21cf869d664731e10d4ffd",
-                "sha1": "b1b101e21cf9cf8a4729da44d7818f935eec0ce8",
-                "sha256": "29f5572dfbe07e1db9422a4c84e3f9e455aab9ac596f0bf3340be17841f26f70"
-            }
-        })
-        obj = self.upload_bucket.Object(f"{area_id}/some.json")
-        self.assertEqual("exquisite corpse".encode('utf8'), obj.get()['Body'].read())
-
-        record = UploadDB().get_pg_record("file", s3_key)
-        self.assertEqual(16, record["size"])
-        self.assertEqual(area_id, record["upload_area_id"])
-        self.assertEqual("some.json", record["name"])
+        self.assertEqual(f"s3://{self.upload_config.bucket_name}/{area_id}/some.json", json.loads(response.data)['url'])
 
     def test_list_files(self):
         area_id = self._create_area()
-        o1 = self.mock_upload_file(area_id, 'file1.json', content_type='application/json; dcp-type="metadata/foo"')
-        o2 = self.mock_upload_file(area_id, 'file2.fastq.gz',
-                                   content_type='application/octet-stream; dcp-type=data',
-                                   checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
+        self.mock_upload_file(area_id, 'file1')
+        self.mock_upload_file(area_id, 'file2')
 
         response = self.client.get(f"/v1/area/{area_id}")
 
         self.assertEqual(200, response.status_code)
-        data = json.loads(response.data)
-        self.assertIn('size', data['files'][0].keys())  # moto file sizes are not accurate
-        for fileinfo in data['files']:
-            del fileinfo['size']
-        self.assertEqual(data['files'][0], {
-            'upload_area_id': area_id,
-            'name': 'file1.json',
-            'last_modified': o1.last_modified.isoformat(),
-            'content_type': 'application/json; dcp-type="metadata/foo"',
-            'url': f"s3://{self.upload_config.bucket_name}/{area_id}/file1.json",
-            'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
-        })
-        self.assertEqual(data['files'][1], {
-            'upload_area_id': area_id,
-            'name': 'file2.fastq.gz',
-            'last_modified': o2.last_modified.isoformat(),
-            'content_type': 'application/octet-stream; dcp-type=data',
-            'url': f"s3://{self.upload_config.bucket_name}/{area_id}/file2.fastq.gz",
-            'checksums': {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'}
-        })
-
-    def test_list_files_only_lists_files_in_my_upload_area(self):
-        area1_id = self._create_area()
-        area2_id = self._create_area()
-        area_1_files = ['file1', 'file2']
-        area_2_files = ['file3', 'file4']
-        [self.mock_upload_file(area1_id, file) for file in area_1_files]
-        [self.mock_upload_file(area2_id, file) for file in area_2_files]
-
-        response = self.client.get(f"/v1/area/{area2_id}")
-
-        self.assertEqual(200, response.status_code)
-        data = json.loads(response.data)
-        self.assertEqual(area_2_files, [file['name'] for file in data['files']])
+        self.assertEqual(2, len(json.loads(response.data)['files']))
 
     def test_get_file_for_existing_file(self):
         area_id = self._create_area()
