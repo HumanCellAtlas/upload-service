@@ -49,6 +49,17 @@ resource "aws_iam_role_policy" "area_deletion_lambda" {
       "Effect": "Allow"
     },
     {
+      "Sid": "GetLambda",
+      "Action": [
+        "lambda:GetFunction",
+        "lambda:GetFunctionConfiguration"
+      ],
+      "Resource": [
+        "${aws_lambda_function.area_deletion_lambda.arn}"
+      ],
+      "Effect": "Allow"
+    },
+    {
       "Sid": "LambdaObjectLogging",
       "Action": [
         "logs:PutLogEvents"
