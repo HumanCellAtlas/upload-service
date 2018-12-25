@@ -65,7 +65,8 @@ class UploadedFile:
 
     def info(self):
         return {
-            'upload_area_id': self.upload_area.uuid,
+            # we should rename upload_area_id to upload_area_uuid, but let's keep the API the same for now.
+            'upload_area_id': self.upload_area.uuid,  # TBD rename key to upload_area_uuid
             'name': self.name,
             'size': self.size,
             'content_type': self.content_type,
@@ -146,10 +147,10 @@ class UploadedFile:
         simplified_dicts = list({tag['Key']: tag['Value']} for tag in tags)
         return reduce(lambda x, y: dict(x, **y), simplified_dicts)
 
-    def _format_prop_vals_dict(self):
+    def _serialize(self):
         return {
             "id": self.s3obj.key,
-            "upload_area_id": self.upload_area.uuid,
+            "upload_area_id": self.upload_area.db_id,
             "name": self.name,
             "size": self.size,
             "s3_etag": self.s3_etag
@@ -158,5 +159,5 @@ class UploadedFile:
     def _fetch_or_create_db_record(self):
         existing_file = self.db.get_pg_record("file", self.s3obj.key)
         if not existing_file:
-            prop_vals_dict = self._format_prop_vals_dict()
+            prop_vals_dict = self._serialize()
             self.db.create_pg_record("file", prop_vals_dict)

@@ -21,7 +21,7 @@ if __name__ == '__main__':
     sys.path.insert(0, pkg_root)  # noqa
 
 
-class TestDatabase(UploadTestCaseUsingMockAWS):
+class TestUploadApiClient(UploadTestCaseUsingMockAWS):
 
     def setUp(self):
         super().setUp()
@@ -44,9 +44,9 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
         self.environmentor.exit()
 
     def _create_area(self):
-        area_id = str(uuid.uuid4())
-        self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
-        return area_id
+        area_uuid = str(uuid.uuid4())
+        self.client.post(f"/v1/area/{area_uuid}", headers=self.authentication_header)
+        return area_uuid
 
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
@@ -83,9 +83,9 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_update_event_with_checksum_event(self, mock_format_and_send_notification, mock_connect):
         checksum_id = str(uuid.uuid4())
-        area_id = self._create_area()
-        s3obj = self.mock_upload_file(area_id, 'foo.json')
-        upload_area = UploadArea(area_id)
+        area_uuid = self._create_area()
+        s3obj = self.mock_upload_file(area_uuid, 'foo.json')
+        upload_area = UploadArea(area_uuid)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
         checksum_event = UploadedFileChecksumEvent(file_id=s3obj.key,
                                                    checksum_id=checksum_id,
