@@ -53,7 +53,7 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         self.assertEqual(filename, record.name)
         self.assertEqual(s3object.e_tag.strip('\"'), record.s3_etag)
         self.assertEqual(len(file_content), record.size)
-        self.assertEqual(self.upload_area.uuid, record.upload_area_id)
+        self.assertEqual(self.upload_area.db_id, record.upload_area_id)
 
     def test_from_s3_key__loads_data_but_doesnt_creates_db_record_if_one_exists(self):
         db = self.db_session_maker.session()
@@ -61,7 +61,7 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         file_content = "file2_body"
         s3object = self._create_s3_object(filename, content=file_content)
         record = DbFile(id=s3object.key, name=filename,
-                        upload_area_id=self.upload_area.uuid,
+                        upload_area_id=self.upload_area.db_id,
                         size=len(file_content),
                         s3_etag=s3object.e_tag)
         db.add(record)
