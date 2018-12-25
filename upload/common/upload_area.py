@@ -142,8 +142,9 @@ class UploadArea:
                                                 MessageBody=json.dumps(payload))
         status = response['ResponseMetadata']['HTTPStatusCode']
         if status != 200:
-            raise UploadException(f"Adding file upload message for {self.key_prefix}{filename} \
-                                    was unsuccessful to sqs {self.config.csum_upload_q_url} )")
+            raise UploadException(status=500, title="Internal error",
+                                  detail=f"Adding file upload message for {self.key_prefix}{filename} "
+                                         f"was unsuccessful to SQS {self.config.csum_upload_q_url} )")
 
     @retry(wait=wait_fixed(2), stop=stop_after_attempt(5))
     def add_upload_area_to_delete_sqs(self):
@@ -156,8 +157,9 @@ class UploadArea:
                                                 MessageBody=json.dumps(payload))
         status = response['ResponseMetadata']['HTTPStatusCode']
         if status != 200:
-            raise UploadException(f"Adding delete message for area {self.uuid} \
-                                    was unsuccessful to sqs {self.config.area_deletion_q_url} )")
+            raise UploadException(status=500, title="Internal error",
+                                  detail=f"Adding delete message for area {self.uuid} \
+                                        was unsuccessful to sqs {self.config.area_deletion_q_url} )")
         logger.info(f"added deletion of area {self.uuid} to sqs")
 
     def store_file(self, filename, content, content_type):
