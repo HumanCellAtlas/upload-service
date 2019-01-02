@@ -37,15 +37,6 @@ resource "aws_iam_policy" "upload_areas_submitter_access" {
 POLICY
 }
 
-resource "aws_s3_bucket_notification" "bucket_notification" {
-  bucket = "${aws_s3_bucket.upload_areas_bucket.id}"
-
-  queue {
-    queue_arn     = "${aws_sqs_queue.upload_queue.arn}"
-    events        = ["s3:ObjectCreated:*"]
-  }
-}
-
 locals {
   # The ARN of the principal of the running API Lambda
   api_lambda_principal_arn = "arn:aws:sts::${local.account_id}:assumed-role/${aws_iam_role.upload_api_lambda.name}/${aws_lambda_function.upload_api_lambda.function_name}"
