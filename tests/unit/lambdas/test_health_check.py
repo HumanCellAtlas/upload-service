@@ -25,12 +25,45 @@ class TestHealthCheckDaemon(UploadTestCaseUsingMockAWS):
                                                                     mock_generate_deadletter_queue_status,
                                                                     mock_generate_upload_area_status
                                                                     ):
-        mock_generate_upload_area_status.return_value = f"UPLOAD_AREAS: 5 undeleted areas, 4 stuck in checksumming, " \
+        mock_generate_upload_area_status.return_value = f"5 undeleted areas, 4 stuck in checksumming, " \
                                                         f"3 stuck in validation \n2 areas scheduled for checksumming," \
                                                         f" 1 areas scheduled for validation (for over 2 hours)\n"
 
-        mock_generate_lambda_error_status.return_value = f"LAMBDA_ERRORS: 10 for Upload API, 5 for csum daemon"
-        mock_generate_deadletter_queue_status.return_value = f"DEADLETTER_QUEUE: 2 in queue, 3 added in past 24 hrs\n"
+        mock_generate_lambda_error_status.return_value = f"10 errors for Upload API, 5 errors for csum daemon\n"
+        mock_generate_deadletter_queue_status.return_value = f"2 in queue, 3 added in past 24 hrs\n"
+
+        self.health_check.run_upload_service_health_check()
+
+        mock_attachment = {
+            'attachments': [{
+                'title': f'Health Check Report for {self.deployment_stage}:',
+                'color': 'bad',
+                'text': 'DEADLETTER_QUEUE: 2 in queue, 3 added in past 24 hrs\nUPLOAD_AREAS: '
+                '5 undeleted areas, 4 stuck in checksumming, 3 stuck in validation \n2 areas'
+                ' scheduled for checksumming, 1 areas scheduled for validation (for over 2'
+                ' hours)\nLAMBDAS: 10 errors for Upload API, 5 errors for csum daemon\n'
+            }]
+        }
+        mock_generate_lambda_error_status.assert_called_once()
+        mock_generate_deadletter_queue_status.assert_called_once()
+        mock_generate_upload_area_status.assert_called_once()
+
+        mock_post_message_to_url.assert_called_once_with(self.upload_config.slack_webhook, mock_attachment)
+
+    @patch('upload.lambdas.health_check.health_check.HealthCheck.generate_upload_area_status')
+    @patch('upload.lambdas.health_check.health_check.HealthCheck.generate_deadletter_queue_status')
+    @patch('upload.lambdas.health_check.health_check.HealthCheck.generate_lambda_error_status')
+    @patch('upload.lambdas.health_check.health_check.HealthCheck.post_message_to_url')
+    def test_health_check_calls_health_functions_handles_all_good_scenario(self,
+                                                                           mock_post_message_to_url,
+                                                                           mock_generate_lambda_error_status,
+                                                                           mock_generate_deadletter_queue_status,
+                                                                           mock_generate_upload_area_status
+                                                                           ):
+        mock_generate_upload_area_status.return_value = f"GOOD\n"
+
+        mock_generate_lambda_error_status.return_value = f"GOOD\n"
+        mock_generate_deadletter_queue_status.return_value = f"GOOD\n"
 
         self.health_check.run_upload_service_health_check()
 
@@ -38,10 +71,7 @@ class TestHealthCheckDaemon(UploadTestCaseUsingMockAWS):
             'attachments': [{
                 'title': f'Health Check Report for {self.deployment_stage}:',
                 'color': 'good',
-                'text': 'DEADLETTER_QUEUE: 2 in queue, 3 added in past 24 hrs\nUPLOAD_AREAS: '
-                '5 undeleted areas, 4 stuck in checksumming, 3 stuck in validation \n2 areas'
-                ' scheduled for checksumming, 1 areas scheduled for validation (for over 2'
-                ' hours)\nLAMBDA_ERRORS: 10 for Upload API, 5 for csum daemon'
+                'text': "It's 6 o'clock somewhere and all is well"
             }]
         }
         mock_generate_lambda_error_status.assert_called_once()
@@ -97,12 +127,18 @@ class TestHealthCheckDaemon(UploadTestCaseUsingMockAWS):
             }
         ]
         assert mock_query.called_once_with(expected_deadletter_query)
-        assert queue_status == 'DEADLETTER_QUEUE: 5 in queue, 2 added in past 24 hrs\n'
+        assert queue_status == '5 in queue, 2 added in past 24 hrs\n'
+
+    @patch('upload.lambdas.health_check.health_check.HealthCheck._query_cloudwatch_metrics_for_past_day')
+    def test_gen_deadletter_queue_status_queries_cloudwatch_and_formats_string_for_no_new_messages(self, mock_query):
+        mock_query.return_value = {'visible_messages': 5, 'received_messages': 0}
+        queue_status = self.health_check.generate_deadletter_queue_status()
+        assert queue_status == 'GOOD\n'
 
     @patch('upload.lambdas.health_check.health_check.HealthCheck._query_cloudwatch_metrics_for_past_day')
     def test_gen_lambda_error_status_queries_cloudwatch_and_formats_string(self, mock_query):
         mock_query.return_value = {'upload_api_lambda_errors': 5, 'checksum_daemon_lambda_errors': 2}
-        lambada_status = self.health_check.generate_lambda_error_status()
+        lambda_status = self.health_check.generate_lambda_error_status()
         expected_lambda_error_query = [
             {
                 'Id': 'upload_api_lambda_errors',
@@ -140,7 +176,13 @@ class TestHealthCheckDaemon(UploadTestCaseUsingMockAWS):
             }
         ]
         mock_query.called_once_with(expected_lambda_error_query)
-        assert lambada_status == "LAMBDA_ERRORS: 5 for Upload API, 2 for csum daemon"
+        assert lambda_status == "5 errors for Upload API, 2 errors for csum daemon\n"
+
+    @patch('upload.lambdas.health_check.health_check.HealthCheck._query_cloudwatch_metrics_for_past_day')
+    def test_gen_lambda_error_status_queries_cloudwatch_and_formats_string_for_no_errors(self, mock_query):
+        mock_query.return_value = {'upload_api_lambda_errors': 0, 'checksum_daemon_lambda_errors': 0}
+        lambda_status = self.health_check.generate_lambda_error_status()
+        assert lambda_status == "GOOD\n"
 
     @patch('upload.lambdas.health_check.health_check.HealthCheck._query_db_and_return_first_row')
     def test_gen_upload_area_status_queries_db_and_formats_string(self, mock_query_db):
@@ -148,11 +190,19 @@ class TestHealthCheckDaemon(UploadTestCaseUsingMockAWS):
         upload_area_status = self.health_check.generate_upload_area_status()
         assert mock_query_db.call_count == 7
 
-        assert upload_area_status == "UPLOAD_AREAS: 5 undeleted areas, 4 stuck in checksumming, 3 stuck in " \
+        assert upload_area_status == "5 undeleted areas, 4 stuck in checksumming, 3 stuck in " \
                                      "validation \n2 files scheduled for checksumming, 1 files scheduled for " \
                                      "validation (for over 2 hours)\n" \
                                      "2 files failed batch checksumming in last day\n" \
-                                     "3 files failed batch validation in last day"
+                                     "3 files failed batch validation in last day\n"
+
+    @patch('upload.lambdas.health_check.health_check.HealthCheck._query_db_and_return_first_row')
+    def test_gen_upload_area_status_queries_db_and_formats_string_for_no_errors(self, mock_query_db):
+        mock_query_db.side_effect = [5, 0, 0, 0, 0, 0, 0]
+        upload_area_status = self.health_check.generate_upload_area_status()
+        assert mock_query_db.call_count == 7
+
+        assert upload_area_status == "GOOD\n"
 
     @patch('upload.lambdas.health_check.health_check.datetime')
     def test_query_cloudwatch_metrics_calls_boto3_client(self, mock_datetime):
