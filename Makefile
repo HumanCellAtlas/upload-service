@@ -32,6 +32,10 @@ db/new_migration:
 	# Usage: make db/new_migration MESSAGE="purpose_of_migration"
 	alembic -c=./config/database.ini revision --message $(MESSAGE)
 
+db/connect:
+	$(eval DATABASE_URI = $(shell aws secretsmanager get-secret-value --secret-id dcp/upload/${DEPLOYMENT_STAGE}/database --region us-east-1 | jq -r '.SecretString | fromjson.database_uri'))
+	psql --dbname $(DATABASE_URI)
+
 db/download:
 	$(eval DATABASE_URI = $(shell aws secretsmanager get-secret-value --secret-id dcp/upload/${DEPLOYMENT_STAGE}/database --region us-east-1 | jq -r '.SecretString | fromjson.database_uri'))
 	$(eval OUTFILE = $(shell date +upload_${DEPLOYMENT_STAGE}-%Y%m%d%H%M.sqlc))
