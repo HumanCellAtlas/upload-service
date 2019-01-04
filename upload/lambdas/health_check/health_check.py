@@ -120,15 +120,24 @@ class HealthCheck:
         ]
 
     def run_upload_service_health_check(self):
-        status_info = (
-            self.generate_deadletter_queue_status() +
-            self.generate_upload_area_status() +
-            self.generate_lambda_error_status()
-        )
+        deadletter_queue_info = self.generate_deadletter_queue_status()
+        upload_area_info = self.generate_upload_area_status()
+        lambda_info = self.generate_lambda_error_status()
+
+        if deadletter_queue_info == upload_area_info == lambda_info == 'GOOD\n':
+            color = 'good'
+            status_info = "It's 6 o'clock somewhere and all is well"
+        else:
+            color = 'bad'
+            status_info = (
+                f"DEADLETTER_QUEUE: {deadletter_queue_info}" +
+                f"UPLOAD_AREAS: {upload_area_info}" +
+                f"LAMBDAS: {lambda_info}"
+            )
 
         attachments = [{
             "title": f"Health Check Report for {self.env}:",
-            "color": "good",
+            "color": color,
             "text": status_info
         }]
 
@@ -136,14 +145,21 @@ class HealthCheck:
 
     def generate_deadletter_queue_status(self):
         deadletter_results = self._query_cloudwatch_metrics_for_past_day(self.deadletter_metric_queries)
-        deadletter_queue_status = f"DEADLETTER_QUEUE: {deadletter_results['visible_messages']} in queue, " \
-                                  f"{deadletter_results['received_messages']} added in past 24 hrs\n"
+        if deadletter_results['received_messages'] == 0:
+            deadletter_queue_status = "GOOD\n"
+        else:
+            deadletter_queue_status = f"{deadletter_results['visible_messages']} in queue, " \
+                                      f"{deadletter_results['received_messages']} added in past 24 hrs\n"
         return deadletter_queue_status
 
     def generate_lambda_error_status(self):
         lambda_error_results = self._query_cloudwatch_metrics_for_past_day(self.lambda_error_queries)
-        lambda_error_status = f"LAMBDA_ERRORS: {lambda_error_results['upload_api_lambda_errors']} for Upload API, " \
-                              f"{lambda_error_results['checksum_daemon_lambda_errors']} for csum daemon"
+        if lambda_error_results['upload_api_lambda_errors'] == 0 and \
+                lambda_error_results['checksum_daemon_lambda_errors'] == 0:
+            lambda_error_status = 'GOOD\n'
+        else:
+            lambda_error_status = f"{lambda_error_results['upload_api_lambda_errors']} errors for Upload API, " \
+                                  f"{lambda_error_results['checksum_daemon_lambda_errors']} errors for csum daemon\n"
         return lambda_error_status
 
     def generate_upload_area_status(self):
@@ -154,13 +170,16 @@ class HealthCheck:
         scheduled_validation_areas = self._query_db_and_return_first_row(self.scheduled_validation_job_count_query)
         failed_checksum_count = self._query_db_and_return_first_row(self.failed_checksum_count_query)
         failed_validation_count = self._query_db_and_return_first_row(self.failed_validation_count_query)
-
-        upload_area_status = f"UPLOAD_AREAS: {undeleted_upload_area_count} undeleted areas, {stale_checksumming_areas}"\
-                             f" stuck in checksumming, {stale_validating_areas} stuck in validation \n" \
-                             f"{scheduled_checksum_areas} files scheduled for checksumming, " \
-                             f"{scheduled_validation_areas} files scheduled for validation (for over 2 hours)\n" \
-                             f"{failed_checksum_count} files failed batch checksumming in last day\n" \
-                             f"{failed_validation_count} files failed batch validation in last day"
+        if (stale_checksumming_areas + stale_validating_areas + scheduled_checksum_areas + scheduled_validation_areas +
+                failed_checksum_count + failed_validation_count) == 0:
+            upload_area_status = 'GOOD\n'
+        else:
+            upload_area_status = f"{undeleted_upload_area_count} undeleted areas, {stale_checksumming_areas}" \
+                                 f" stuck in checksumming, {stale_validating_areas} stuck in validation \n" \
+                                 f"{scheduled_checksum_areas} files scheduled for checksumming, " \
+                                 f"{scheduled_validation_areas} files scheduled for validation (for over 2 hours)\n" \
+                                 f"{failed_checksum_count} files failed batch checksumming in last day\n" \
+                                 f"{failed_validation_count} files failed batch validation in last day\n"
         return upload_area_status
 
     def post_message_to_url(self, url, message):
