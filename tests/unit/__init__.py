@@ -63,6 +63,18 @@ class EnvironmentSetup:
 
 
 class UploadTestCase(unittest.TestCase):
+
+    BOGO_CONFIG = {
+        'bucket_name': 'bogobucket',
+        'csum_job_q_arn': 'bogo_arn',
+        'csum_upload_q_url': 'bogo_url',
+        'area_deletion_q_url': 'delete_sqs_url',
+        'csum_job_role_arn': 'bogo_role_arn',
+        'upload_submitter_role_arn': 'bogo_submitter_role_arn',
+        'slack_webhook': 'bogo_slack_url',
+        'area_deletion_lambda_name': 'delete_lambda_name'
+    }
+
     def setUp(self):
         # Common Environment
         if os.environ['DEPLOYMENT_STAGE'] in ['local', 'test']:
@@ -74,7 +86,14 @@ class UploadTestCase(unittest.TestCase):
         }
         self.common_environmentor = EnvironmentSetup(self.environment)
         self.common_environmentor.enter()
-        pass
+
+        # UploadConfig
+        self.upload_config = UploadConfig()
+        self.upload_config.set(self.__class__.BOGO_CONFIG)
+
+        # UploadVersion
+        self.upload_version = UploadVersion()
+        self.upload_version.set({"upload_service_version": "0"})
 
     def tearDown(self):
         self.common_environmentor.exit()
@@ -88,7 +107,7 @@ class UploadTestCaseUsingLiveAWS(UploadTestCase):
             self.skipTest("requires Internet")
 
     def tearDown(self):
-        super().setUp()
+        super().tearDown()
 
 
 class UploadTestCaseUsingMockAWS(UploadTestCase):
@@ -102,21 +121,7 @@ class UploadTestCaseUsingMockAWS(UploadTestCase):
         self.iam_mock.start()
         self.sqs_mock = mock_sqs()
         self.sqs_mock.start()
-        # UploadConfig
-        self.upload_config = UploadConfig()
-        self.upload_config.set({
-            'bucket_name': 'bogobucket',
-            'csum_job_q_arn': 'bogo_arn',
-            'csum_upload_q_url': 'bogo_url',
-            'area_deletion_q_url': 'delete_sqs_url',
-            'csum_job_role_arn': 'bogo_role_arn',
-            'upload_submitter_role_arn': 'bogo_submitter_role_arn',
-            'slack_webhook': 'bogo_slack_url',
-            'area_deletion_lambda_name': 'delete_lambda_name'
-        })
-        # UploadVersion
-        self.upload_version = UploadVersion()
-        self.upload_version.set({"upload_service_version": "0"})
+
         if self.deployment_stage == 'local':
             # When online, we need STS to access SecretsManager to access RDS.
             # When offline, mock out STS/SecretsManager and use local Postgres.
