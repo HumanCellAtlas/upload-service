@@ -36,8 +36,7 @@ class UploadDB:
         return self.__class__._record_type_table_map
 
     def create_pg_record(self, record_type, prop_vals_dict):
-        prop_vals_dict["created_at"] = datetime.utcnow()
-        prop_vals_dict["updated_at"] = datetime.utcnow()
+        prop_vals_dict["created_at"] = prop_vals_dict["updated_at"] = datetime.utcnow()
         table = self.record_type_table_map[record_type]
         ins = table.insert().values(prop_vals_dict)
         try:
