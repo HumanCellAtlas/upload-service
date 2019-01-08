@@ -87,6 +87,17 @@ class UploadArea:
                     "Condition": {
                         "StringEquals": {"s3:prefix": f"{self.uuid}/"}
                     }
+                },
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "s3:Get*",
+                        "s3:List*"
+                    ],
+                    "Resource": [
+                        "arn:aws:s3:::org-humancellatlas-upload-staging/*",
+                        "arn:aws:s3:::org-humancellatlas-upload-staging"
+                    ]
                 }
             ]
         })
