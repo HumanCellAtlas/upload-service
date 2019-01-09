@@ -36,7 +36,7 @@ class UploadArea:
         self.key_prefix_length = len(self.key_prefix)
         self._bucket = s3.Bucket(self.bucket_name)
         self.db = UploadDB()
-        self._load()
+        self._db_load()
 
     @property
     def bucket_name(self):
@@ -51,22 +51,22 @@ class UploadArea:
         return f"s3://{self._bucket.name}/{self.key_prefix}"
 
     def update_or_create(self):
-        self._load()
+        self._db_load()
         if self.db_id:
-            self._update_record()
+            self._db_update()
         else:
             self.status = "UNLOCKED"
-            self.db_id = self._create_record()
+            self.db_id = self._db_create()
 
     def is_extant(self) -> bool:
-        self._load()
+        self._db_load()
         if self.db_id and self.status != 'DELETED':
             return True
         else:
             return False
 
     def credentials(self):
-        self._load()
+        self._db_load()
         if not self.status == 'UNLOCKED':
             raise UploadException(status=409, title="Upload Area is Not Writable",
                                   detail=f"Cannot issue credentials, upload area {self.uuid} is {self.status}")
@@ -107,21 +107,21 @@ class UploadArea:
     def delete(self):
         # This is currently invoked by scheduled deletions in sqs
         self.status = "DELETING"
-        self._update_record()
+        self._db_update()
         area_status = self._empty_upload_area()
         self.status = area_status
-        self._update_record()
+        self._db_update()
 
     def ls(self):
         return {'files': self._file_list()}
 
     def lock(self):
         self.status = "LOCKED"
-        self._update_record()
+        self._db_update()
 
     def unlock(self):
         self.status = "UNLOCKED"
-        self._update_record()
+        self._db_update()
 
     def s3_object_for_file(self, filename):
         return self._bucket.Object(self.key_prefix + filename)
@@ -152,7 +152,7 @@ class UploadArea:
     @retry(wait=wait_fixed(2), stop=stop_after_attempt(5))
     def add_upload_area_to_delete_sqs(self):
         self.status = "DELETION_QUEUED"
-        self._update_record()
+        self._db_update()
         payload = {
             'area_uuid': f"{self.uuid}"
         }
@@ -230,12 +230,6 @@ class UploadArea:
         results = query_result.fetchall()
         return results[0][0]
 
-    def _load(self):
-        data = self.db.get_pg_record('upload_area', self.uuid, column='uuid')
-        if data:
-            self.db_id = data['id']
-            self.status = data['status']
-
     def _get_and_check_config(self):
         config = UploadConfig()
         assert config.bucket_name is not None, "bucket_name is not in config"
@@ -276,7 +270,13 @@ class UploadArea:
         response = lambda_client.get_function(FunctionName=self.config.area_deletion_lambda_name)
         return response['Configuration']['Timeout']
 
-    def _serialize(self):
+    def _db_load(self):
+        data = self.db.get_pg_record('upload_area', self.uuid, column='uuid')
+        if data:
+            self.db_id = data['id']
+            self.status = data['status']
+
+    def _db_serialize(self):
         data = {
             "uuid": self.uuid,
             "bucket_name": self.bucket_name,
@@ -286,11 +286,11 @@ class UploadArea:
             data["id"] = self.db_id
         return data
 
-    def _create_record(self):
-        prop_vals_dict = self._serialize()
+    def _db_create(self):
+        prop_vals_dict = self._db_serialize()
         new_row_id = self.db.create_pg_record("upload_area", prop_vals_dict)
         return new_row_id
 
-    def _update_record(self):
-        prop_vals_dict = self._serialize()
+    def _db_update(self):
+        prop_vals_dict = self._db_serialize()
         self.db.update_pg_record("upload_area", prop_vals_dict)
