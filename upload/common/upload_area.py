@@ -182,7 +182,7 @@ class UploadArea:
         checksum_event.create_record()
         checksums = checksummer.checksum(report_progress=True)
         file.checksums = checksums
-        file.apply_tags_to_s3_object()
+        file.save_checksums_as_tags_on_s3_object()
         checksum_event.status = "CHECKSUMMED"
         checksum_event.checksums = checksums
         checksum_event.update_record()
