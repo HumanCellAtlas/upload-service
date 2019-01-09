@@ -58,7 +58,7 @@ class ValidationScheduler:
         return validation_id
 
     def _create_scheduled_validation_event(self, validator_docker_image, validation_id, orig_val_id):
-        validation_event = UploadedFileValidationEvent(file_id=self.file_key,
+        validation_event = UploadedFileValidationEvent(file_id=self.file.db_id,
                                                        validation_id=validation_id,
                                                        job_id=self.batch_job_id,
                                                        status="SCHEDULED",
