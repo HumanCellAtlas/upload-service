@@ -179,10 +179,11 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
 
     def test_ls__returns_info_on_all_files_in_upload_area(self):
         db_area = self._create_area()
-        o1 = self.mock_upload_file(db_area.uuid, 'file1.json', content_type='application/json; dcp-type="metadata/foo"')
-        o2 = self.mock_upload_file(db_area.uuid, 'file2.fastq.gz',
-                                   content_type='application/octet-stream; dcp-type=data',
-                                   checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
+        o1 = self.mock_upload_file_to_s3(db_area.uuid, 'file1.json',
+                                         content_type='application/json; dcp-type="metadata/foo"')
+        o2 = self.mock_upload_file_to_s3(db_area.uuid, 'file2.fastq.gz',
+                                         content_type='application/octet-stream; dcp-type=data',
+                                         checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
 
         area = UploadArea(uuid=db_area.uuid)
         data = area.ls()
@@ -212,8 +213,8 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
         db_area2 = self._create_area()
         area_1_files = ['file1', 'file2']
         area_2_files = ['file3', 'file4']
-        [self.mock_upload_file(db_area1.uuid, file) for file in area_1_files]
-        [self.mock_upload_file(db_area2.uuid, file) for file in area_2_files]
+        [self.mock_upload_file_to_s3(db_area1.uuid, file) for file in area_1_files]
+        [self.mock_upload_file_to_s3(db_area2.uuid, file) for file in area_2_files]
 
         data = UploadArea(uuid=db_area2.uuid).ls()
 
@@ -223,7 +224,7 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
         db_area = self._create_area()
         filename = "somefile.json"
         content = "sdfewrwer"
-        self.mock_upload_file(db_area.uuid, filename=filename, contents=content)
+        self.mock_upload_file_to_s3(db_area.uuid, filename=filename, contents=content)
 
         file = UploadArea(uuid=db_area.uuid).uploaded_file(filename)
 

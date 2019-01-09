@@ -24,14 +24,14 @@ class TestUploadedFileChecksummer(UploadTestCaseUsingMockAWS):
 
     def test_has_checksums_returns_false_for_file_with_no_checksums(self):
         filename = 'bar'
-        self.mock_upload_file(self.upload_area_id, filename, checksums={})
+        self.mock_upload_file_to_s3(self.upload_area_id, filename, checksums={})
         uf = self.upload_area.uploaded_file(filename)
 
         self.assertFalse(UploadedFileChecksummer(uploaded_file=uf).has_checksums())
 
     def test_has_checksums_returns_false_for_file_with_some_checksums(self):
         filename = 'bar'
-        self.mock_upload_file(self.upload_area_id, filename, checksums={
+        self.mock_upload_file_to_s3(self.upload_area_id, filename, checksums={
             'sha1': '1',
             'sha256': '2'
         })
@@ -41,7 +41,7 @@ class TestUploadedFileChecksummer(UploadTestCaseUsingMockAWS):
 
     def test_has_checksums_returns_true_for_file_with_all_checksums(self):
         filename = 'bar'
-        self.mock_upload_file(self.upload_area_id, filename, checksums={
+        self.mock_upload_file_to_s3(self.upload_area_id, filename, checksums={
             'sha1': '1',
             'sha256': '2',
             's3_etag': '3',
@@ -54,7 +54,7 @@ class TestUploadedFileChecksummer(UploadTestCaseUsingMockAWS):
     def test_checksum(self):
         filename = 'bar'
         file_contents = "exquisite corpse"
-        self.mock_upload_file(self.upload_area_id, filename, contents=file_contents)
+        self.mock_upload_file_to_s3(self.upload_area_id, filename, contents=file_contents)
         uf = self.upload_area.uploaded_file(filename)
 
         self.assertEqual(
