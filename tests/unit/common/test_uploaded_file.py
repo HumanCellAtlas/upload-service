@@ -30,30 +30,31 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         s3object = self.create_s3_object(object_key=f"{self.upload_area.uuid}/{filename}",
                                          content=file_content)
         s3_key = s3object.key
+        s3_etag = s3object.e_tag.strip('\"')
 
         with self.assertRaises(NoResultFound):
-            db.query(DbFile).filter(DbFile.id == s3_key).one()
+            db.query(DbFile).filter(DbFile.s3_key == s3_key, DbFile.s3_etag == s3object.e_tag).one()
 
         uf = UploadedFile.from_s3_key(upload_area=self.upload_area, s3_key=s3_key)
 
         self.assertEqual(filename, uf.name)
         self.assertEqual(self.upload_area, uf.upload_area)
-        self.assertEqual(s3object, uf.s3obj)
+        self.assertEqual(s3object, uf._s3obj)
 
-        record = db.query(DbFile).filter(DbFile.id == s3_key).one()
-        self.assertEqual(s3_key, record.id)
+        record = db.query(DbFile).filter(DbFile.s3_key == s3_key, DbFile.s3_etag == s3_etag).one()
+        self.assertEqual(s3_key, record.s3_key)
         self.assertEqual(filename, record.name)
         self.assertEqual(s3object.e_tag.strip('\"'), record.s3_etag)
         self.assertEqual(len(file_content), record.size)
         self.assertEqual(self.upload_area.db_id, record.upload_area_id)
 
-    def test_from_s3_key__loads_data_but_doesnt_creates_db_record_if_one_exists(self):
+    def test_from_s3_key__loads_data_but_doesnt_create_db_record_if_one_already_exists(self):
         db = self.db_session_maker.session()
         filename = "file2"
         file_content = "file2_body"
         s3object = self.create_s3_object(object_key=f"{self.upload_area.uuid}/{filename}",
                                          content=file_content)
-        record = DbFile(id=s3object.key, s3_etag=s3object.e_tag.strip('\"'),
+        record = DbFile(s3_key=s3object.key, s3_etag=s3object.e_tag.strip('\"'),
                         name=filename, upload_area_id=self.upload_area.db_id,
                         size=len(file_content))
         db.add(record)
@@ -96,17 +97,5 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         pass
 
     def test_s3url(self):
-        # TODO
-        pass
-
-    def test_size(self):
-        # TODO
-        pass
-
-    def test_save_tags(self):
-        # TODO
-        pass
-
-    def test_create_record(self):
         # TODO
         pass

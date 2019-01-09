@@ -15,7 +15,7 @@ class UploadDB:
     _record_type_table_map = None
 
     def __init__(self):
-        if self.record_type_table_map is None:
+        if self.__class__._record_type_table_map is None:
             config = UploadDbConfig()
             self.__class__._engine = create_engine(config.pgbouncer_uri, pool_size=1)
             meta = MetaData(self.engine)
@@ -32,13 +32,16 @@ class UploadDB:
     def engine(self):
         return self.__class__._engine
 
-    @property
-    def record_type_table_map(self):
-        return self.__class__._record_type_table_map
+    def table(self, table_name):
+        """
+        :param table_name: name of table
+        :return: SQLAlchemy Table object
+        """
+        return self.__class__._record_type_table_map[table_name]
 
     def create_pg_record(self, record_type, prop_vals_dict):
         prop_vals_dict["created_at"] = prop_vals_dict["updated_at"] = datetime.utcnow()
-        table = self.record_type_table_map[record_type]
+        table = self.table(table_name=record_type)
         ins = table.insert().values(prop_vals_dict)
         try:
             result = self.run_query(ins)
@@ -56,12 +59,12 @@ class UploadDB:
         record_id = prop_vals_dict[column]
         del prop_vals_dict[column]
         prop_vals_dict["updated_at"] = datetime.utcnow()
-        table = self.record_type_table_map[record_type]
+        table = self.table(table_name=record_type)
         update = table.update().where(table.columns[column] == record_id).values(prop_vals_dict)
         self.run_query(update)
 
     def get_pg_record(self, record_type, record_id, column='id'):
-        table = self.record_type_table_map[record_type]
+        table = self.table(table_name=record_type)
         select = table.select().where(table.columns[column] == record_id)
         result = self.run_query(select)
         column_keys = result.keys()
