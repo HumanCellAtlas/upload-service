@@ -11,7 +11,7 @@ from .waitfor import WaitFor
 from .. import fixture_file_path, FIXTURE_DATA_CHECKSUMS
 
 from upload.common.upload_config import UploadConfig
-from upload.common.database_orm import DbUploadArea, DbChecksum, DbValidation, DBSessionMaker
+from upload.common.database_orm import DbUploadArea, DbFile, DbChecksum, DbValidation, DBSessionMaker
 
 MINUTE_SEC = 60
 
@@ -138,9 +138,12 @@ class TestUploadService(unittest.TestCase):
 
     def _checksum_record(self, filename):
         db = self.db_session_maker.session()
-        file_id = f"{self.upload_area_uuid}/{filename}"
-        record = db.query(DbChecksum).filter(DbChecksum.file_id == file_id).one_or_none()
-        return record
+        s3_key = f"{self.upload_area_uuid}/{filename}"
+        file_record = db.query(DbFile).filter(DbFile.s3_key == s3_key).one_or_none()
+        if file_record is None:
+            return None
+        checksum_record = db.query(DbChecksum).filter(DbChecksum.file_id == file_record.id).one_or_none()
+        return checksum_record
 
     def _validation_record(self, validation_id):
         db = self.db_session_maker.session()

@@ -56,8 +56,8 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         area_uuid = self._create_area()
         s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
         upload_area = UploadArea(area_uuid)
-        UploadedFile(upload_area, s3object=s3obj)
-        checksum_event = ChecksumEvent(file_id=s3obj.key,
+        uploaded_file = UploadedFile(upload_area, s3object=s3obj)
+        checksum_event = ChecksumEvent(file_id=uploaded_file.db_id,
                                        checksum_id=checksum_id,
                                        job_id='12345',
                                        status="SCHEDULED")
@@ -73,7 +73,7 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
         upload_area = UploadArea(area_uuid)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        checksum_event = ChecksumEvent(file_id=s3obj.key,
+        checksum_event = ChecksumEvent(file_id=uploaded_file.db_id,
                                        checksum_id=checksum_id,
                                        job_id='12345',
                                        status="SCHEDULED")
@@ -99,7 +99,7 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
         upload_area = UploadArea(area_uuid)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        checksum_event = ChecksumEvent(file_id=s3obj.key,
+        checksum_event = ChecksumEvent(file_id=uploaded_file.db_id,
                                        checksum_id=checksum_id,
                                        job_id='12345',
                                        status="SCHEDULED")
@@ -133,21 +133,21 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         s3obj4 = self.mock_upload_file_to_s3(area_uuid, 'foo4.json')
         s3obj5 = self.mock_upload_file_to_s3(area_uuid, 'foo5.json')
 
-        UploadedFile(upload_area, s3object=s3obj1)
-        UploadedFile(upload_area, s3object=s3obj2)
-        UploadedFile(upload_area, s3object=s3obj3)
+        f1 = UploadedFile(upload_area, s3object=s3obj1)
+        f2 = UploadedFile(upload_area, s3object=s3obj2)
+        f3 = UploadedFile(upload_area, s3object=s3obj3)
         UploadedFile(upload_area, s3object=s3obj4)
         UploadedFile(upload_area, s3object=s3obj5)
 
-        checksum1_event = ChecksumEvent(file_id=s3obj1.key,
+        checksum1_event = ChecksumEvent(file_id=f1.db_id,
                                         checksum_id=checksum1_id,
                                         job_id='12345',
                                         status="SCHEDULED")
-        checksum2_event = ChecksumEvent(file_id=s3obj2.key,
+        checksum2_event = ChecksumEvent(file_id=f2.db_id,
                                         checksum_id=checksum2_id,
                                         job_id='23456',
                                         status="CHECKSUMMING")
-        checksum3_event = ChecksumEvent(file_id=s3obj3.key,
+        checksum3_event = ChecksumEvent(file_id=f3.db_id,
                                         checksum_id=checksum3_id,
                                         job_id='34567',
                                         status="CHECKSUMMED")
