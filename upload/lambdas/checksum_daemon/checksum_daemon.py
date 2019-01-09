@@ -135,7 +135,7 @@ class ChecksumDaemon:
         checksums = checksummer.checksum(report_progress=True)
 
         self.uploaded_file.checksums = checksums
-        tags = self.uploaded_file.apply_tags_to_s3_object()
+        tags = self.uploaded_file.save_checksums_as_tags_on_s3_object()
 
         checksum_event.status = "CHECKSUMMED"
         checksum_event.checksums = checksums

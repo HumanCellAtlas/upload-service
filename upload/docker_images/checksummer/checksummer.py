@@ -63,7 +63,7 @@ class Checksummer:
     def _checksum_file(self, checksummer, uploaded_file):
         checksums = checksummer.checksum(report_progress=True)
         uploaded_file.checksums = checksums
-        uploaded_file.apply_tags_to_s3_object()
+        uploaded_file.save_checksums_as_tags_on_s3_object()
         return checksums
 
 
