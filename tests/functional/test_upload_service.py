@@ -42,7 +42,7 @@ class TestUploadService(unittest.TestCase):
         self._verify_file_was_checksummed_inline(small_file_name)
 
         large_file_name = '10241MB_file'
-        self._copy_file_directly_to_upload_area(large_file_name)
+        self._upload_file_using_cli(f"s3://org-humancellatlas-dcp-test-data/upload_service/{large_file_name}")
         self._verify_file_is_checksummed_via_batch(large_file_name)
         self._validate_file(small_file_name)
 
@@ -62,11 +62,6 @@ class TestUploadService(unittest.TestCase):
     def _upload_file_using_cli(self, file_path):
         self._run("SELECT UPLOAD AREA", ['hca', 'upload', 'select', self.uri])
         self._run("UPLOAD FILE USING CLI", ['hca', 'upload', 'files', file_path])
-
-    def _copy_file_directly_to_upload_area(self, filename):
-        source_url = f"s3://org-humancellatlas-dcp-test-data/upload_service/{filename}"
-        target_url = self.uri + filename
-        self._run("COPY S3 FILE TO UPLOAD AREA", ['aws', 's3', 'cp', source_url, target_url])
 
     def _verify_file_was_checksummed_inline(self, filename):
         print("VERIFY FILE WAS CHECKSUMMED INLINE...")
