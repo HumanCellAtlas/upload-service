@@ -18,7 +18,8 @@ class UploadDB:
         if self.record_type_table_map is None:
             config = UploadDbConfig()
             self.__class__._engine = create_engine(config.pgbouncer_uri, pool_size=1)
-            meta = MetaData(self.engine, reflect=True)
+            meta = MetaData(self.engine)
+            meta.reflect()
             self.__class__._record_type_table_map = {
                 "upload_area": meta.tables['upload_area'],
                 "file": meta.tables['file'],
