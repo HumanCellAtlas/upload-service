@@ -53,7 +53,7 @@ class TestUploadApiClient(UploadTestCaseUsingMockAWS):
     def test_update_event_with_validation_event(self, mock_format_and_send_notification, mock_connect):
         validation_id = str(uuid.uuid4())
         area_id = self._create_area()
-        s3obj = self.mock_upload_file(area_id, 'foo.json')
+        s3obj = self.mock_upload_file_to_s3(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
         validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
@@ -84,7 +84,7 @@ class TestUploadApiClient(UploadTestCaseUsingMockAWS):
     def test_update_event_with_checksum_event(self, mock_format_and_send_notification, mock_connect):
         checksum_id = str(uuid.uuid4())
         area_uuid = self._create_area()
-        s3obj = self.mock_upload_file(area_uuid, 'foo.json')
+        s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
         upload_area = UploadArea(area_uuid)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
         checksum_event = UploadedFileChecksumEvent(file_id=s3obj.key,

@@ -253,8 +253,8 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
     def test_list_files(self):
         area_uuid = self._create_area()
-        self.mock_upload_file(area_uuid, 'file1')
-        self.mock_upload_file(area_uuid, 'file2')
+        self.mock_upload_file_to_s3(area_uuid, 'file1')
+        self.mock_upload_file_to_s3(area_uuid, 'file2')
 
         response = self.client.get(f"/v1/area/{area_uuid}")
 
@@ -264,7 +264,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
     def test_get_file_for_existing_file(self):
         area_uuid = self._create_area()
         filename = 'file1.json'
-        s3obj = self.mock_upload_file(area_uuid, filename)
+        s3obj = self.mock_upload_file_to_s3(area_uuid, filename)
 
         response = self.client.get(f"/v1/area/{area_uuid}/{filename}")
 
@@ -294,11 +294,12 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
     def test_put_files_info(self):
         area_uuid = self._create_area()
-        o1 = self.mock_upload_file(area_uuid, 'file1.json', content_type='application/json; dcp-type="metadata/foo"')
-        o2 = self.mock_upload_file(area_uuid, 'file2.fastq.gz',
-                                   content_type='application/octet-stream; dcp-type=data',
-                                   checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
-        self.mock_upload_file(area_uuid, 'a_file_in_the_same_area_that_we_will_not_attempt_to_list')
+        o1 = self.mock_upload_file_to_s3(area_uuid, 'file1.json',
+                                         content_type='application/json; dcp-type="metadata/foo"')
+        o2 = self.mock_upload_file_to_s3(area_uuid, 'file2.fastq.gz',
+                                         content_type='application/octet-stream; dcp-type=data',
+                                         checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
+        self.mock_upload_file_to_s3(area_uuid, 'a_file_in_the_same_area_that_we_will_not_attempt_to_list')
 
         response = self.client.put(f"/v1/area/{area_uuid}/files_info", content_type='application/json',
                                    data=(json.dumps(['file1.json', 'file2.fastq.gz'])))

@@ -44,7 +44,7 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_unscheduled_status_file_checksum(self, mock_format_and_send_notification, mock_connect):
         area_uuid = self._create_area()
-        s3obj = self.mock_upload_file(area_uuid, 'foo.json')
+        s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
         upload_area = UploadArea(area_uuid)
         UploadedFile(upload_area, s3object=s3obj)
         response = self.client.get(f"/v1/area/{area_uuid}/foo.json/checksum")
@@ -56,7 +56,7 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
     def test_scheduled_status_file_checksum(self, mock_format_and_send_notification, mock_connect):
         checksum_id = str(uuid.uuid4())
         area_uuid = self._create_area()
-        s3obj = self.mock_upload_file(area_uuid, 'foo.json')
+        s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
         upload_area = UploadArea(area_uuid)
         UploadedFile(upload_area, s3object=s3obj)
         checksum_event = UploadedFileChecksumEvent(file_id=s3obj.key,
@@ -73,7 +73,7 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
     def test_checksumming_status_file_checksum(self, mock_format_and_send_notification, mock_connect):
         checksum_id = str(uuid.uuid4())
         area_uuid = self._create_area()
-        s3obj = self.mock_upload_file(area_uuid, 'foo.json')
+        s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
         upload_area = UploadArea(area_uuid)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
         checksum_event = UploadedFileChecksumEvent(file_id=s3obj.key,
@@ -100,7 +100,7 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
     def test_checksummed_status_file_checksum(self, mock_format_and_send_notification, mock_connect):
         checksum_id = str(uuid.uuid4())
         area_uuid = self._create_area()
-        s3obj = self.mock_upload_file(area_uuid, 'foo.json')
+        s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
         upload_area = UploadArea(area_uuid)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
         checksum_event = UploadedFileChecksumEvent(file_id=s3obj.key,
@@ -132,11 +132,11 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         checksum2_id = str(uuid.uuid4())
         checksum3_id = str(uuid.uuid4())
 
-        s3obj1 = self.mock_upload_file(area_uuid, 'foo1.json')
-        s3obj2 = self.mock_upload_file(area_uuid, 'foo2.json')
-        s3obj3 = self.mock_upload_file(area_uuid, 'foo3.json')
-        s3obj4 = self.mock_upload_file(area_uuid, 'foo4.json')
-        s3obj5 = self.mock_upload_file(area_uuid, 'foo5.json')
+        s3obj1 = self.mock_upload_file_to_s3(area_uuid, 'foo1.json')
+        s3obj2 = self.mock_upload_file_to_s3(area_uuid, 'foo2.json')
+        s3obj3 = self.mock_upload_file_to_s3(area_uuid, 'foo3.json')
+        s3obj4 = self.mock_upload_file_to_s3(area_uuid, 'foo4.json')
+        s3obj5 = self.mock_upload_file_to_s3(area_uuid, 'foo5.json')
 
         UploadedFile(upload_area, s3object=s3obj1)
         UploadedFile(upload_area, s3object=s3obj2)
