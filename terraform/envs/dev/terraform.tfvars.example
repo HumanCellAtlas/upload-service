@@ -5,6 +5,7 @@ vpc_cidr_block = "xxx.xxx.xxx.xxx/xx"
 
 // S3
 bucket_name_prefix = "org-humancellatlas-upload-"
+staging_bucket_arn = "arn:aws:s3:::org-humancellatlas-upload-staging"
 
 // API Lambda
 upload_api_fqdn = "upload.<deployment_stage>.data.humancellatlas.org"

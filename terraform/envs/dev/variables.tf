@@ -18,6 +18,11 @@ variable "bucket_name_prefix" {
   type = "string"
 }
 
+variable "staging_bucket_arn" {
+  type = "string"
+}
+
+
 // API Lambda
 
 variable "upload_api_fqdn" {

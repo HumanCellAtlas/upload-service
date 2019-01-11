@@ -39,8 +39,8 @@ resource "aws_iam_policy" "upload_areas_submitter_access" {
                 "s3:List*"
             ],
             "Resource": [
-                "arn:aws:s3:::org-humancellatlas-upload-staging/*",
-                "arn:aws:s3:::org-humancellatlas-upload-staging"
+                "${var.staging_bucket_arn}/*",
+                "${var.staging_bucket_arn}"
             ]
         }
     ]
