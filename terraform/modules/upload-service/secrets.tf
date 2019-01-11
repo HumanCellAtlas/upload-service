@@ -16,7 +16,8 @@ resource "aws_secretsmanager_secret_version" "secrets" {
   "csum_job_role_arn": "${aws_iam_role.csum_job_role.arn}",
   "upload_submitter_role_arn": "${aws_iam_role.upload_submitter.arn}",
   "api_key": "${var.ingest_api_key}",
-  "slack_webhook": "${var.slack_webhook}"
+  "slack_webhook": "${var.slack_webhook}",
+  "staging_bucket_arn": "${var.staging_bucket_arn}"
 }
 SECRETS_JSON
 }

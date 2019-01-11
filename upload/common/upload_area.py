@@ -43,6 +43,12 @@ class UploadArea:
         return self.config.bucket_name
 
     @property
+    def staging_bucket_arn(self):
+        # The wranglers have been using staging for initial submissions.
+        # We need to give the upload submitter role access to this bucket to allow for cross bucket transfer
+        return self.config.staging_bucket_arn
+
+    @property
     def _deployment_stage(self):
         return os.environ['DEPLOYMENT_STAGE']
 
@@ -90,6 +96,17 @@ class UploadArea:
                     "Condition": {
                         "StringEquals": {"s3:prefix": f"{self.uuid}/"}
                     }
+                },
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "s3:Get*",
+                        "s3:List*"
+                    ],
+                    "Resource": [
+                        f"{self.staging_bucket_arn}/*",
+                        f"{self.staging_bucket_arn}"
+                    ]
                 }
             ]
         })

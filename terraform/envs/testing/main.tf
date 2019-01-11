@@ -29,6 +29,7 @@ module "upload-service" {
 
   // S3
   bucket_name_prefix = "${var.bucket_name_prefix}"
+  staging_bucket_arn = "${var.staging_bucket_arn}"
 
   // API Lambda
   upload_api_fqdn = "${var.upload_api_fqdn}"

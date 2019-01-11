@@ -21,7 +21,7 @@ resource "aws_iam_policy" "upload_areas_submitter_access" {
             ],
             "Resource": [
                 "arn:aws:s3:::${aws_s3_bucket.upload_areas_bucket.bucket}/*"
- ]
+            ]
         },
         {
             "Effect": "Allow",
@@ -30,6 +30,17 @@ resource "aws_iam_policy" "upload_areas_submitter_access" {
             ],
             "Resource": [
                 "arn:aws:s3:::${aws_s3_bucket.upload_areas_bucket.bucket}"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:Get*",
+                "s3:List*"
+            ],
+            "Resource": [
+                "${var.staging_bucket_arn}/*",
+                "${var.staging_bucket_arn}"
             ]
         }
     ]
