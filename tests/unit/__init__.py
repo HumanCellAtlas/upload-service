@@ -149,15 +149,6 @@ class UploadTestCaseUsingMockAWS(UploadTestCase):
         if self.deployment_stage == 'local':
             self.sts_mock.stop()
 
-    def create_s3_object(self, object_key, bucket_name=None,
-                         content_type="application/octet-stream",
-                         content="file_content"):
-        bucket_name = bucket_name or self.upload_config.bucket_name
-        s3 = boto3.resource('s3')
-        s3object = s3.Bucket(bucket_name).Object(object_key)
-        s3object.put(Body=content, ContentType=content_type)
-        return s3object
-
     """
     Simulate a file that has been uploaded to the S3 upload bucket by the HCA CLI,
     and (optionally) checksummed by the Upload Service (provide checksums={} to disable).
