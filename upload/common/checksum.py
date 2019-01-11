@@ -48,8 +48,7 @@ class UploadedFileChecksummer:
             checksums = sink.get_checksums()
             if len(self.CHECKSUM_NAMES) != len(checksums):
                 error = f"checksums {checksums} for {self.uploaded_file.s3obj.key} do not meet requirements"
-                raise UploadException(status=500,
-                                      details=error)
+                raise UploadException(status=500, title=error, detail=str(checksums))
             return checksums
 
     def _compute_checksums_progress_callback(self, bytes_transferred):

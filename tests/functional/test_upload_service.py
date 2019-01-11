@@ -33,7 +33,7 @@ class TestUploadService(unittest.TestCase):
     def testIt(self):
         print(f"\n\nUsing environment {self.deployment_stage} at URL {self.api_url}.\n")
 
-        self.upload_area_id = "deadbeef-dead-dead-dead-%012d" % random.randint(0, 999999999999)
+        self.upload_area_uuid = "deadbeef-dead-dead-dead-%012d" % random.randint(0, 999999999999)
         self._create_upload_area()
 
         small_file_name = 'small_file'
@@ -52,7 +52,7 @@ class TestUploadService(unittest.TestCase):
     def _create_upload_area(self):
         response = self._make_request(description="CREATE UPLOAD AREA",
                                       verb='POST',
-                                      url=f"{self.api_url}/area/{self.upload_area_id}",
+                                      url=f"{self.api_url}/area/{self.upload_area_uuid}",
                                       headers=self.auth_headers,
                                       expected_status=201)
         data = json.loads(response)
@@ -93,7 +93,7 @@ class TestUploadService(unittest.TestCase):
     def _validate_file(self, filename):
         response = self._make_request(description="VALIDATE",
                                       verb='PUT',
-                                      url=f"{self.api_url}/area/{self.upload_area_id}/{filename}/validate",
+                                      url=f"{self.api_url}/area/{self.upload_area_uuid}/{filename}/validate",
                                       expected_status=200,
                                       headers=self.auth_headers,
                                       json={"validator_image": "humancellatlas/upload-validator-example"})
@@ -110,12 +110,12 @@ class TestUploadService(unittest.TestCase):
         # TODO: check validation results
 
     def _forget_upload_area(self):
-        self._run("FORGET UPLOAD AREA", ['hca', 'upload', 'forget', self.upload_area_id])
+        self._run("FORGET UPLOAD AREA", ['hca', 'upload', 'forget', self.upload_area_uuid])
 
     def _delete_upload_area(self):
         self._make_request(description="DELETE UPLOAD AREA",
                            verb='DELETE',
-                           url=f"{self.api_url}/area/{self.upload_area_id}",
+                           url=f"{self.api_url}/area/{self.upload_area_uuid}",
                            headers=self.auth_headers,
                            expected_status=202)
         WaitFor(self._upload_area_record_status)\
@@ -139,11 +139,11 @@ class TestUploadService(unittest.TestCase):
 
     def _upload_area_record(self):
         db = self.db_session_maker.session()
-        return db.query(DbUploadArea).filter(DbUploadArea.id == self.upload_area_id).one_or_none()
+        return db.query(DbUploadArea).filter(DbUploadArea.uuid == self.upload_area_uuid).one_or_none()
 
     def _checksum_record(self, filename):
         db = self.db_session_maker.session()
-        file_id = f"{self.upload_area_id}/{filename}"
+        file_id = f"{self.upload_area_uuid}/{filename}"
         record = db.query(DbChecksum).filter(DbChecksum.file_id == file_id).one_or_none()
         return record
 

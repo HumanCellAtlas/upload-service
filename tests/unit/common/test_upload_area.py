@@ -21,63 +21,63 @@ class UploadAreaTest(UploadTestCaseUsingMockAWS):
         self.db = self.db_session_maker.session()
 
     def _create_area(self, status='UNLOCKED'):
-        area_id = str(uuid.uuid4())
-        db_area = DbUploadArea(id=area_id, bucket_name=self.upload_config.bucket_name, status=status)
+        area_uuid = str(uuid.uuid4())
+        db_area = DbUploadArea(uuid=area_uuid, bucket_name=self.upload_config.bucket_name, status=status)
         self.db.add(db_area)
         self.db.commit()
-        return area_id
+        return db_area
 
 
 class TestUploadAreaCreationExistenceAndDeletion(UploadAreaTest):
 
     def test_update_or_create__when_no_area_exists__creates_db_record(self):
-        area_id = str(uuid.uuid4())
+        area_uuid = str(uuid.uuid4())
         with self.assertRaises(NoResultFound):
-            self.db.query(DbUploadArea).filter(DbUploadArea.id == area_id).one()
+            self.db.query(DbUploadArea).filter(DbUploadArea.uuid == area_uuid).one()
 
-        UploadArea(uuid=area_id).update_or_create()
+        UploadArea(uuid=area_uuid).update_or_create()
 
-        record = self.db.query(DbUploadArea).filter(DbUploadArea.id == area_id).one()
-        self.assertEqual(area_id, record.id)
+        record = self.db.query(DbUploadArea).filter(DbUploadArea.uuid == area_uuid).one()
+        self.assertEqual(area_uuid, record.uuid)
         self.assertEqual(self.upload_config.bucket_name, record.bucket_name)
         self.assertEqual("UNLOCKED", record.status)
 
     def test_update_or_create__when_area_exists__retrieves_db_record(self):
-        area_id = self._create_area()
+        db_area = self._create_area()
 
-        area = UploadArea(uuid=area_id)
+        area = UploadArea(uuid=db_area.uuid)
         area.update_or_create()
 
-        self.assertEqual(area_id, area._db_record()['id'])
+        self.assertEqual(db_area.id, area.db_id)
 
     def test_is_extant__for_nonexistant_area__returns_false(self):
-        area_id = "an-area-that-will-not-exist"
+        area_uuid = "an-area-that-will-not-exist"
 
-        self.assertFalse(UploadArea(area_id).is_extant())
+        self.assertFalse(UploadArea(area_uuid).is_extant())
 
     def test_is_extant__for_deleted_area__returns_false(self):
-        area_id = self._create_area('DELETED')
+        db_area = self._create_area('DELETED')
 
-        self.assertFalse(UploadArea(area_id).is_extant())
+        self.assertFalse(UploadArea(db_area.uuid).is_extant())
 
     def test_is_extant__for_existing_area__returns_true(self):
-        area_id = self._create_area()
+        db_area = self._create_area()
 
-        self.assertTrue(UploadArea(area_id).is_extant())
+        self.assertTrue(UploadArea(db_area.uuid).is_extant())
         pass
 
     def test_delete__marks_area_delete_and_deletes_objects(self):
-        area_id = self._create_area()
-        obj = self.upload_bucket.Object(f'{area_id}/test_file')
+        db_area = self._create_area()
+        obj = self.upload_bucket.Object(f'{db_area.uuid}/test_file')
         obj.put(Body="foo")
 
         with patch('upload.common.upload_area.UploadArea._retrieve_upload_area_deletion_lambda_timeout') as mock_retr:
             mock_retr.return_value = 900
 
-            area = UploadArea(uuid=area_id)
+            area = UploadArea(uuid=db_area.uuid)
             area.delete()
 
-        db_area = self.db.query(DbUploadArea).get(area_id)
+        self.db.refresh(db_area)
         self.assertEqual("DELETED", db_area.status)
         with self.assertRaises(ClientError):
             obj.load()
@@ -87,16 +87,16 @@ class TestUploadAreaCredentials(UploadAreaTest):
 
     @mock_sts
     def test_with_deleted_upload_area__raises(self):
-        area_id = self._create_area('DELETED')
+        db_area = self._create_area('DELETED')
 
         with self.assertRaises(UploadException):
-            area = UploadArea(area_id)
+            area = UploadArea(db_area.uuid)
             area.credentials()
 
     @mock_sts
     def test_with_existing_locked_upload_area__raises(self):
-        area_id = self._create_area()
-        area = UploadArea(area_id)
+        db_area = self._create_area()
+        area = UploadArea(db_area.uuid)
         area.lock()
 
         with self.assertRaises(UploadException):
@@ -104,9 +104,9 @@ class TestUploadAreaCredentials(UploadAreaTest):
 
     @mock_sts
     def test_with_existing_unlocked_upload_area__returns_creds(self):
-        area_id = self._create_area()
+        db_area = self._create_area()
 
-        area = UploadArea(area_id)
+        area = UploadArea(db_area.uuid)
         creds = area.credentials()
 
         keys = list(creds.keys())
@@ -118,9 +118,8 @@ class TestUploadAreaLocking(UploadAreaTest):
 
     def setUp(self):
         super().setUp()
-        area_id = self._create_area()
-        self.area = UploadArea(uuid=area_id)
-        self.db_area = self.db.query(DbUploadArea).get(area_id)
+        self.db_area = self._create_area()
+        self.area = UploadArea(uuid=self.db_area.uuid)
 
     def test_lock__with_unlocked_area__locks_area(self):
         self.assertEqual("UNLOCKED", self.db_area.status)
@@ -144,24 +143,24 @@ class TestUploadAreaLocking(UploadAreaTest):
 class TestUploadAreaFileManipulation(UploadAreaTest):
 
     def test_store_file(self):
-        area_id = self._create_area()
-        area = UploadArea(uuid=area_id)
+        db_area = self._create_area()
+        area = UploadArea(uuid=db_area.uuid)
 
         filename = "some.json"
         content_type = 'application/json; dcp-type="metadata/sample"'
         content = "exquisite corpse"
         fileinfo = area.store_file(filename, content=content, content_type=content_type)
 
-        s3_key = f"{area_id}/some.json"
+        s3_key = f"{db_area.uuid}/some.json"
         o1 = self.upload_bucket.Object(s3_key)
         o1.load()
         self.assertEqual({
-            'upload_area_id': area_id,
+            'upload_area_id': db_area.uuid,
             'name': 'some.json',
             'size': 16,
             'last_modified': o1.last_modified.isoformat(),
             'content_type': 'application/json; dcp-type="metadata/sample"',
-            'url': f"s3://{self.upload_config.bucket_name}/{area_id}/some.json",
+            'url': f"s3://{self.upload_config.bucket_name}/{db_area.uuid}/some.json",
             'checksums': {
                 "crc32c": "FE9ADA52",
                 "s3_etag": "18f17fbfdd21cf869d664731e10d4ffd",
@@ -169,64 +168,65 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
                 "sha256": "29f5572dfbe07e1db9422a4c84e3f9e455aab9ac596f0bf3340be17841f26f70"
             }
         }, fileinfo)
-        obj = self.upload_bucket.Object(f"{area_id}/some.json")
+        obj = self.upload_bucket.Object(f"{db_area.uuid}/some.json")
         self.assertEqual("exquisite corpse".encode('utf8'), obj.get()['Body'].read())
 
         file_id = f"{area.uuid}/{filename}"
         db_file = self.db.query(DbFile).get(file_id)
         self.assertEqual(16, db_file.size)
-        self.assertEqual(area_id, db_file.upload_area_id)
+        self.assertEqual(db_area.id, db_file.upload_area_id)
         self.assertEqual("some.json", db_file.name)
 
     def test_ls__returns_info_on_all_files_in_upload_area(self):
-        area_id = self._create_area()
-        o1 = self.mock_upload_file(area_id, 'file1.json', content_type='application/json; dcp-type="metadata/foo"')
-        o2 = self.mock_upload_file(area_id, 'file2.fastq.gz',
-                                   content_type='application/octet-stream; dcp-type=data',
-                                   checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
+        db_area = self._create_area()
+        o1 = self.mock_upload_file_to_s3(db_area.uuid, 'file1.json',
+                                         content_type='application/json; dcp-type="metadata/foo"')
+        o2 = self.mock_upload_file_to_s3(db_area.uuid, 'file2.fastq.gz',
+                                         content_type='application/octet-stream; dcp-type=data',
+                                         checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
 
-        area = UploadArea(uuid=area_id)
+        area = UploadArea(uuid=db_area.uuid)
         data = area.ls()
 
         self.assertIn('size', data['files'][0].keys())  # moto file sizes are not accurate
         for fileinfo in data['files']:
             del fileinfo['size']
         self.assertEqual(data['files'][0], {
-            'upload_area_id': area_id,
+            'upload_area_id': db_area.uuid,
             'name': 'file1.json',
             'last_modified': o1.last_modified.isoformat(),
             'content_type': 'application/json; dcp-type="metadata/foo"',
-            'url': f"s3://{self.upload_config.bucket_name}/{area_id}/file1.json",
+            'url': f"s3://{self.upload_config.bucket_name}/{db_area.uuid}/file1.json",
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         })
         self.assertEqual(data['files'][1], {
-            'upload_area_id': area_id,
+            'upload_area_id': db_area.uuid,
             'name': 'file2.fastq.gz',
             'last_modified': o2.last_modified.isoformat(),
             'content_type': 'application/octet-stream; dcp-type=data',
-            'url': f"s3://{self.upload_config.bucket_name}/{area_id}/file2.fastq.gz",
+            'url': f"s3://{self.upload_config.bucket_name}/{db_area.uuid}/file2.fastq.gz",
             'checksums': {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'}
         })
 
     def test_ls__only_lists_files_in_this_upload_area(self):
-        area1_id = self._create_area()
-        area2_id = self._create_area()
+        db_area1 = self._create_area()
+        db_area2 = self._create_area()
         area_1_files = ['file1', 'file2']
         area_2_files = ['file3', 'file4']
-        [self.mock_upload_file(area1_id, file) for file in area_1_files]
-        [self.mock_upload_file(area2_id, file) for file in area_2_files]
+        [self.mock_upload_file_to_s3(db_area1.uuid, file) for file in area_1_files]
+        [self.mock_upload_file_to_s3(db_area2.uuid, file) for file in area_2_files]
 
-        data = UploadArea(uuid=area2_id).ls()
+        data = UploadArea(uuid=db_area2.uuid).ls()
 
         self.assertEqual(area_2_files, [file['name'] for file in data['files']])
 
     def test_uploaded_file(self):
-        area_id = self._create_area()
+        db_area = self._create_area()
         filename = "somefile.json"
         content = "sdfewrwer"
-        self.mock_upload_file(area_id, filename=filename, contents=content)
+        self.mock_upload_file_to_s3(db_area.uuid, filename=filename, contents=content)
 
-        file = UploadArea(uuid=area_id).uploaded_file(filename)
+        file = UploadArea(uuid=db_area.uuid).uploaded_file(filename)
 
         self.assertIs(UploadedFile, file.__class__)
         self.assertEqual(filename, file.name)

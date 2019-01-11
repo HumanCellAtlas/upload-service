@@ -21,6 +21,23 @@ from upload.lambdas.checksum_daemon import ChecksumDaemon  # noqa
 
 class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
 
+    class FixtureFile:
+
+        def __init__(self, name='foo', content_type='text/html'):
+            self.name = name
+            self.content_type = content_type
+            self.contents = 'exquisite corpse'
+            self.e_tag = 'fea79d4ad9be6cf1c76a219bb735f85a'
+
+        @property
+        def size(self):
+            return len(self.contents)
+
+    def _make_dbfile(self, upload_area, test_file):
+        s3_key = f"{upload_area.uuid}/{test_file.name}"
+        return DbFile(id=s3_key, upload_area_id=upload_area.db_id, name=test_file.name, size=test_file.size,
+                      s3_etag=test_file.e_tag)
+
     def setUp(self):
         super().setUp()
         # Environment
@@ -32,19 +49,18 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
         self.environmentor.enter()
 
         # Upload area
-        self.area_id = str(uuid.uuid4())
-        self.upload_area = UploadArea(self.area_id)
+        self.area_uuid = str(uuid.uuid4())
+        self.upload_area = UploadArea(self.area_uuid)
         self.upload_area.update_or_create()
         # daemon
         context = Mock()
         self.daemon = ChecksumDaemon(context)
         # File
-        self.content_type = 'text/html'
-        self.filename = 'foo'
-        self.file_key = f"{self.area_id}/{self.filename}"
+        self.test_file = self.__class__.FixtureFile('foo')
+        self.file_key = f"{self.area_uuid}/{self.test_file.name}"
         self.file_contents = "exquisite corpse"
         self.object = self.upload_bucket.Object(self.file_key)
-        self.object.put(Key=self.file_key, Body=self.file_contents, ContentType=self.content_type)
+        self.object.put(Key=self.file_key, Body=self.file_contents, ContentType=self.test_file.content_type)
         # Event
         self.event = {'Records': [
             {'eventVersion': '2.0', 'eventSource': 'aws:s3', 'awsRegion': 'us-east-1',
@@ -59,7 +75,7 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
                                'ownerIdentity': {'principalId': 'A29PZ5XRQWJUUM'},
                                'arn': f'arn:aws:s3:::{self.upload_config.bucket_name}'},
                     'object': {'key': self.file_key, 'size': 16,
-                               'eTag': 'fea79d4ad9be6cf1c76a219bb735f85a',
+                               'eTag': self.test_file.e_tag,
                                'sequencer': '0059BB193641C4EAB0'}}}]}
         self.db_session_maker = DBSessionMaker()
 
@@ -100,12 +116,12 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
         self.assertTrue(mock_format_and_send_notification.called,
                         'IngestNotifier.file_was_uploaded should have been called')
         mock_format_and_send_notification.assert_called_once_with({
-            'upload_area_id': self.area_id,
+            'upload_area_id': self.area_uuid,
             'name': os.path.basename(self.file_key),
             'size': 16,
             'last_modified': self.object.last_modified.isoformat(),
-            'content_type': self.content_type,
-            'url': f"s3://{self.upload_config.bucket_name}/{self.area_id}/{self.filename}",
+            'content_type': self.test_file.content_type,
+            'url': f"s3://{self.upload_config.bucket_name}/{self.area_uuid}/{self.test_file.name}",
             'checksums': FIXTURE_DATA_CHECKSUMS[self.file_contents]['checksums']
         })
 
@@ -113,7 +129,7 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon._schedule_checksumming')
     def test_when_a_large_file_has_not_been_checksummed_a_batch_job_is_scheduled(self, mock_schedule_checksumming):
         session = self.db_session_maker.session()
-        file = DbFile(id=self.file_key, upload_area_id=self.upload_area.uuid, name=self.filename, size=123)
+        file = self._make_dbfile(self.upload_area, self.test_file)
         checksum_time = self.object.last_modified - timedelta(minutes=5)
         checksum = DbChecksum(id=str(uuid.uuid4()), file_id=self.file_key, status='CHECKSUMMED',
                               checksum_started_at=checksum_time, checksum_ended_at=checksum_time,
@@ -130,11 +146,11 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon._checksum_file')
-    def test_if_the_file_is_checksumming_since_last_change_it_is_not_summed_again(self, mock_checksum_file,
+    def test_if_the_file_has_been_summed_since_last_change_it_is_not_summed_again(self, mock_checksum_file,
                                                                                   mock_format_and_send_notification,
                                                                                   mock_connect):
         session = self.db_session_maker.session()
-        file = DbFile(id=self.file_key, upload_area_id=self.upload_area.uuid, name=self.filename, size=123)
+        file = self._make_dbfile(self.upload_area, self.test_file)
         checksum_time = datetime.utcnow() + timedelta(minutes=5)
         checksum = DbChecksum(id=str(uuid.uuid4()), file_id=self.file_key, status='CHECKSUMMING',
                               checksum_started_at=checksum_time, checksum_ended_at=checksum_time,
@@ -154,11 +170,11 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon._checksum_file')
-    def test_if_the_file_has_been_summed_since_last_change_it_is_summed_again(self, mock_checksum_file,
-                                                                              mock_format_and_send_notification,
-                                                                              mock_connect):
+    def test_if_the_file_has_not_been_summed_since_last_change_it_is_summed_again(self, mock_checksum_file,
+                                                                                  mock_format_and_send_notification,
+                                                                                  mock_connect):
         session = self.db_session_maker.session()
-        file = DbFile(id=self.file_key, upload_area_id=self.upload_area.uuid, name=self.filename, size=123)
+        file = self._make_dbfile(self.upload_area, self.test_file)
         checksum_time = datetime.utcnow() + timedelta(minutes=5)
         checksum = DbChecksum(id=str(uuid.uuid4()), file_id=self.file_key, status='CHECKSUMMED',
                               checksum_started_at=checksum_time, checksum_ended_at=checksum_time,

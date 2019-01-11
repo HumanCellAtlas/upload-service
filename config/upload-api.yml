@@ -35,7 +35,7 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /v1/area/{upload_area_id}:
+  /v1/area/{upload_area_uuid}:
 
     head:
       summary: Check if an upload area exists
@@ -45,7 +45,7 @@ paths:
       tags:
         - For Ingestion Service Use Only
       parameters:
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true
@@ -67,7 +67,7 @@ paths:
       security:
         - api_key: []
       parameters:
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true
@@ -107,7 +107,7 @@ paths:
       security:
         - api_key: []
       parameters:
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true
@@ -141,7 +141,7 @@ paths:
       tags:
         - All
       parameters:
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true
@@ -167,7 +167,7 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /v1/area/{upload_area_id}/credentials:
+  /v1/area/{upload_area_uuid}/credentials:
 
     post:
       summary: Create credentials for access to this upload area
@@ -177,7 +177,7 @@ paths:
       tags:
         - All
       parameters:
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true
@@ -192,7 +192,7 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /v1/area/{upload_area_id}/lock:
+  /v1/area/{upload_area_uuid}/lock:
 
     post:
       summary: Lock an Upload Area
@@ -204,7 +204,7 @@ paths:
       security:
         - api_key: []
       parameters:
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true
@@ -236,7 +236,7 @@ paths:
       security:
         - api_key: []
       parameters:
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true
@@ -258,7 +258,7 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /v1/area/{upload_area_id}/validations:
+  /v1/area/{upload_area_uuid}/validations:
 
     get:
       summary: Get count of validation statuses for all files in upload_area
@@ -269,7 +269,7 @@ paths:
       tags:
         - All
       parameters:
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true
@@ -291,7 +291,7 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /v1/area/{upload_area_id}/checksums:
+  /v1/area/{upload_area_uuid}/checksums:
 
     get:
       summary: Get count of checksum statuses for all files in upload_area
@@ -302,7 +302,7 @@ paths:
       tags:
         - All
       parameters:
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true
@@ -330,7 +330,7 @@ paths:
             $ref: '#/definitions/Error'
 
 
-  /v1/area/{upload_area_id}/{filename}:
+  /v1/area/{upload_area_uuid}/{filename}:
 
     post:
       summary: Notify upload of uploaded file
@@ -339,7 +339,7 @@ paths:
       tags:
         - All
       parameters:
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true
@@ -370,7 +370,7 @@ paths:
       security:
         - api_key: []
       parameters:
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true
@@ -410,7 +410,7 @@ paths:
       tags:
         - All
       parameters:
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true
@@ -434,7 +434,7 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /v1/area/{upload_area_id}/{filename}/checksum:
+  /v1/area/{upload_area_uuid}/{filename}/checksum:
 
     get:
       summary: Get status and results of latest checksum job for a file
@@ -444,7 +444,7 @@ paths:
       tags:
         - All
       parameters:
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true
@@ -468,7 +468,7 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /v1/area/{upload_area_id}/{filename}/validate:
+  /v1/area/{upload_area_uuid}/{filename}/validate:
 
     put:
       summary: Validate a staged file
@@ -486,7 +486,7 @@ paths:
           description: An authentication token provided by the service provider.
           required: true
           type: string
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true
@@ -551,7 +551,7 @@ paths:
       tags:
         - All
       parameters:
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true
@@ -575,7 +575,7 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /v1/area/{upload_area_id}/files_info:
+  /v1/area/{upload_area_uuid}/files_info:
     put:
       summary: Get information about files
       operationId: upload.lambdas.api_server.v1.area.files_info
@@ -587,7 +587,7 @@ paths:
       tags:
         - All
       parameters:
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true
@@ -619,7 +619,7 @@ paths:
             $ref: '#/definitions/Error'
 
 
-  /v1/area/{upload_area_id}/update_checksum/{checksum_id}:
+  /v1/area/{upload_area_uuid}/update_checksum/{checksum_id}:
     post:
       summary: Notify upload of checksummed file
       operationId: upload.lambdas.api_server.v1.area.update_checksum_event
@@ -630,7 +630,7 @@ paths:
       security:
         - api_key: []
       parameters:
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true
@@ -672,7 +672,7 @@ paths:
             $ref: '#/definitions/Error'
 
 
-  /v1/area/{upload_area_id}/update_validation/{validation_id}:
+  /v1/area/{upload_area_uuid}/update_validation/{validation_id}:
     post:
       summary: Notify upload of validated file
       operationId: upload.lambdas.api_server.v1.area.update_validation_event
@@ -683,7 +683,7 @@ paths:
       security:
         - api_key: []
       parameters:
-        - name: upload_area_id
+        - name: upload_area_uuid
           in: path
           description: A RFC4122-compliant ID for the upload area.
           required: true

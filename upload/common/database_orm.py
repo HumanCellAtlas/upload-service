@@ -12,7 +12,8 @@ Base = declarative_base()
 
 class DbUploadArea(Base):
     __tablename__ = 'upload_area'
-    id = Column(String(), primary_key=True)
+    id = Column(Integer(), primary_key=True)
+    uuid = Column(String(), nullable=False)
     bucket_name = Column(String(), nullable=False)
     status = Column(String(), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -22,7 +23,7 @@ class DbUploadArea(Base):
 class DbFile(Base):
     __tablename__ = 'file'
     id = Column(String(), primary_key=True)
-    upload_area_id = Column(String(), ForeignKey('upload_area.id'), nullable=False)
+    upload_area_id = Column(Integer(), ForeignKey('upload_area.id'), nullable=False)
     name = Column(String(), nullable=False)
     size = Column(Integer(), nullable=False)
     s3_etag = Column(String(), nullable=True)

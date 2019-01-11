@@ -18,7 +18,8 @@ class UploadDB:
         if self.record_type_table_map is None:
             config = UploadDbConfig()
             self.__class__._engine = create_engine(config.pgbouncer_uri, pool_size=1)
-            meta = MetaData(self.engine, reflect=True)
+            meta = MetaData(self.engine)
+            meta.reflect()
             self.__class__._record_type_table_map = {
                 "upload_area": meta.tables['upload_area'],
                 "file": meta.tables['file'],
@@ -36,12 +37,13 @@ class UploadDB:
         return self.__class__._record_type_table_map
 
     def create_pg_record(self, record_type, prop_vals_dict):
-        prop_vals_dict["created_at"] = datetime.utcnow()
-        prop_vals_dict["updated_at"] = datetime.utcnow()
+        prop_vals_dict["created_at"] = prop_vals_dict["updated_at"] = datetime.utcnow()
         table = self.record_type_table_map[record_type]
         ins = table.insert().values(prop_vals_dict)
         try:
-            self.run_query(ins)
+            result = self.run_query(ins)
+            assert len(result.inserted_primary_key) == 1
+            return result.inserted_primary_key[0]
         except IntegrityError as e:
             if re.search("duplicate key value violates unique constraint", e.orig.pgerror):
                 raise UploadException(status=requests.codes.conflict,
@@ -50,17 +52,17 @@ class UploadDB:
             else:
                 raise e
 
-    def update_pg_record(self, record_type, prop_vals_dict):
-        record_id = prop_vals_dict["id"]
-        del prop_vals_dict["id"]
+    def update_pg_record(self, record_type, prop_vals_dict, column='id'):
+        record_id = prop_vals_dict[column]
+        del prop_vals_dict[column]
         prop_vals_dict["updated_at"] = datetime.utcnow()
         table = self.record_type_table_map[record_type]
-        update = table.update().where(table.c.id == record_id).values(prop_vals_dict)
+        update = table.update().where(table.columns[column] == record_id).values(prop_vals_dict)
         self.run_query(update)
 
-    def get_pg_record(self, record_type, record_id):
+    def get_pg_record(self, record_type, record_id, column='id'):
         table = self.record_type_table_map[record_type]
-        select = table.select().where(table.c.id == record_id)
+        select = table.select().where(table.columns[column] == record_id)
         result = self.run_query(select)
         column_keys = result.keys()
         rows = result.fetchall()

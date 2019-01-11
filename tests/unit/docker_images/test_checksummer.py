@@ -44,9 +44,9 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
         filename = "foo"
         file_contents = "exquisite corpse"
         file_s3_key = f"{self.upload_area_id}/{filename}"
-        self.mock_upload_file(self.upload_area_id, filename, contents=file_contents,
-                              content_type='application/json; dcp_type=metadata',
-                              checksums={})
+        self.mock_upload_file_to_s3(self.upload_area_id, filename, contents=file_contents,
+                                    content_type='application/json; dcp_type=metadata',
+                                    checksums={})
         s3_url = f"s3://{self.upload_bucket_name}/{file_s3_key}"
 
         Checksummer([s3_url])

@@ -153,7 +153,8 @@ class UploadTestCaseUsingMockAWS(UploadTestCase):
     Simulate a file that has been uploaded to the S3 upload bucket by the HCA CLI,
     and (optionally) checksummed by the Upload Service (provide checksums={} to disable).
     """
-    def mock_upload_file(self, area_id, filename, contents="foo", content_type="application/json", checksums=None):
+    def mock_upload_file_to_s3(self, area_id, filename, contents="foo", content_type="application/json",
+                               checksums=None):
         if checksums is None:
             checksums = {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         file1_key = f"{area_id}/{filename}"
