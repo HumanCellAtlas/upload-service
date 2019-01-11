@@ -152,7 +152,6 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
         fileinfo = area.store_file(filename, content=content, content_type=content_type)
 
         s3_key = f"{db_area.uuid}/some.json"
-        s3_etag = "18f17fbfdd21cf869d664731e10d4ffd"
         o1 = self.upload_bucket.Object(s3_key)
         o1.load()
         self.assertEqual({
@@ -164,7 +163,7 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
             'url': f"s3://{self.upload_config.bucket_name}/{db_area.uuid}/some.json",
             'checksums': {
                 "crc32c": "FE9ADA52",
-                "s3_etag": s3_etag,
+                "s3_etag": "18f17fbfdd21cf869d664731e10d4ffd",
                 "sha1": "b1b101e21cf9cf8a4729da44d7818f935eec0ce8",
                 "sha256": "29f5572dfbe07e1db9422a4c84e3f9e455aab9ac596f0bf3340be17841f26f70"
             }
@@ -172,7 +171,8 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
         obj = self.upload_bucket.Object(f"{db_area.uuid}/some.json")
         self.assertEqual("exquisite corpse".encode('utf8'), obj.get()['Body'].read())
 
-        db_file = self.db.query(DbFile).filter(DbFile.s3_key == s3_key, DbFile.s3_etag == s3_etag).one()
+        file_id = f"{area.uuid}/{filename}"
+        db_file = self.db.query(DbFile).get(file_id)
         self.assertEqual(16, db_file.size)
         self.assertEqual(db_area.id, db_file.upload_area_id)
         self.assertEqual("some.json", db_file.name)
@@ -191,22 +191,22 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
         self.assertIn('size', data['files'][0].keys())  # moto file sizes are not accurate
         for fileinfo in data['files']:
             del fileinfo['size']
-        self.assertEqual({
+        self.assertEqual(data['files'][0], {
             'upload_area_id': db_area.uuid,
             'name': 'file1.json',
             'last_modified': o1.last_modified.isoformat(),
             'content_type': 'application/json; dcp-type="metadata/foo"',
             'url': f"s3://{self.upload_config.bucket_name}/{db_area.uuid}/file1.json",
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
-        }, data['files'][0])
-        self.assertEqual({
+        })
+        self.assertEqual(data['files'][1], {
             'upload_area_id': db_area.uuid,
             'name': 'file2.fastq.gz',
             'last_modified': o2.last_modified.isoformat(),
             'content_type': 'application/octet-stream; dcp-type=data',
             'url': f"s3://{self.upload_config.bucket_name}/{db_area.uuid}/file2.fastq.gz",
             'checksums': {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'}
-        }, data['files'][1])
+        })
 
     def test_ls__only_lists_files_in_this_upload_area(self):
         db_area1 = self._create_area()

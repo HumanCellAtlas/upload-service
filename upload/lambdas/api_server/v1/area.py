@@ -122,17 +122,15 @@ def retrieve_checksum_status_count(upload_area_uuid: str):
 
 @return_exceptions_as_http_errors
 def update_checksum_event(upload_area_uuid: str, checksum_id: str, body: str):
-    upload_area = _load_upload_area(upload_area_uuid)
+    _load_upload_area(upload_area_uuid)
     body = json.loads(body)
     status = body["status"]
     job_id = body["job_id"]
     payload = body["payload"]
-    # TODO we need to be passing file IDs back from the checksummer, not filenames
     file_name = payload["name"]
-    file_record = upload_area.uploaded_file(file_name)
+    file_key = f"{upload_area_uuid}/{file_name}"
 
-    checksum_event = UploadedFileChecksumEvent(file_id=file_record.db_id, checksum_id=checksum_id,
-                                               job_id=job_id, status=status)
+    checksum_event = UploadedFileChecksumEvent(file_id=file_key, checksum_id=checksum_id, job_id=job_id, status=status)
     if checksum_event.status == "CHECKSUMMED":
         checksum_event.checksums = payload["checksums"]
         _notify_ingest(payload, "file_uploaded")
@@ -143,15 +141,15 @@ def update_checksum_event(upload_area_uuid: str, checksum_id: str, body: str):
 
 @return_exceptions_as_http_errors
 def update_validation_event(upload_area_uuid: str, validation_id: str, body: str):
-    upload_area = _load_upload_area(upload_area_uuid)
+    _load_upload_area(upload_area_uuid)
     body = json.loads(body)
     status = body["status"]
     job_id = body["job_id"]
     payload = body["payload"]
     file_name = payload["name"]
-    file_record = upload_area.uploaded_file(file_name)
+    file_key = f"{upload_area_uuid}/{file_name}"
 
-    validation_event = UploadedFileValidationEvent(file_id=file_record.db_id,
+    validation_event = UploadedFileValidationEvent(file_id=file_key,
                                                    validation_id=validation_id,
                                                    job_id=job_id,
                                                    status=status)

@@ -21,7 +21,7 @@ class Checksummer:
         self._parse_args(argv)
         upload_area, uploaded_file = self._find_file()
         checksummer = UploadedFileChecksummer(uploaded_file)
-        checksum_event = UploadedFileChecksumEvent(file_id=uploaded_file.s3_key,
+        checksum_event = UploadedFileChecksumEvent(file_id=uploaded_file.s3obj.key,
                                                    checksum_id=os.environ['CHECKSUM_ID'],
                                                    job_id=os.environ['AWS_BATCH_JOB_ID'],
                                                    status="CHECKSUMMING")
@@ -63,7 +63,7 @@ class Checksummer:
     def _checksum_file(self, checksummer, uploaded_file):
         checksums = checksummer.checksum(report_progress=True)
         uploaded_file.checksums = checksums
-        uploaded_file.apply_tags_to_s3_object()
+        uploaded_file.save_tags()
         return checksums
 
 

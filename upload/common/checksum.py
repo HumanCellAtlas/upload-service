@@ -22,7 +22,7 @@ class UploadedFileChecksummer:
         self.bytes_checksummed = 0
         self.start_time = None
         self.last_diag_output_time = None
-        self.multipart_chunksize = get_s3_multipart_chunk_size(self.uploaded_file.size)
+        self.multipart_chunksize = get_s3_multipart_chunk_size(self.uploaded_file.s3obj.content_length)
 
     def has_checksums(self):
         return sorted(tuple(self.uploaded_file.checksums.keys())) == sorted(self.CHECKSUM_NAMES)
@@ -42,12 +42,12 @@ class UploadedFileChecksummer:
     def _compute_checksums(self, progress_callback=None):
         with ChecksummingSink(self.multipart_chunksize) as sink:
             s3client.download_fileobj(self.uploaded_file.upload_area.bucket_name,
-                                      self.uploaded_file.s3_key, sink,
+                                      self.uploaded_file.s3obj.key, sink,
                                       Callback=progress_callback,
                                       Config=self._transfer_config())
             checksums = sink.get_checksums()
             if len(self.CHECKSUM_NAMES) != len(checksums):
-                error = f"checksums {checksums} for {self.uploaded_file.s3_key} do not meet requirements"
+                error = f"checksums {checksums} for {self.uploaded_file.s3obj.key} do not meet requirements"
                 raise UploadException(status=500, title=error, detail=str(checksums))
             return checksums
 

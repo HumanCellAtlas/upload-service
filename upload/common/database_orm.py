@@ -22,8 +22,7 @@ class DbUploadArea(Base):
 
 class DbFile(Base):
     __tablename__ = 'file'
-    id = Column(Integer(), primary_key=True)
-    s3_key = Column(String(), nullable=False)
+    id = Column(String(), primary_key=True)
     upload_area_id = Column(Integer(), ForeignKey('upload_area.id'), nullable=False)
     name = Column(String(), nullable=False)
     size = Column(Integer(), nullable=False)

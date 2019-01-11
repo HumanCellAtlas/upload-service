@@ -56,7 +56,7 @@ class TestUploadApiClient(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file_to_s3(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        validation_event = UploadedFileValidationEvent(file_id=uploaded_file.db_id,
+        validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
                                                        validation_id=validation_id,
                                                        job_id='12345',
                                                        status="SCHEDULED")
@@ -87,7 +87,7 @@ class TestUploadApiClient(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
         upload_area = UploadArea(area_uuid)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        checksum_event = UploadedFileChecksumEvent(file_id=uploaded_file.db_id,
+        checksum_event = UploadedFileChecksumEvent(file_id=s3obj.key,
                                                    checksum_id=checksum_id,
                                                    job_id='12345',
                                                    status="SCHEDULED")

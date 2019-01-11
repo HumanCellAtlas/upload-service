@@ -58,7 +58,7 @@ class ChecksumDaemon:
                 continue
             file_key = record['s3']['object']['key']
             self._find_file(file_key)
-            checksum_status = self._find_checksum_status_of_event_newer_than_file_last_modified()
+            checksum_status = self._find_checksum_status_of_event_newer_than_file_last_modified(file_key)
             if checksum_status:
                 logger.debug("File already (being) checksummed and has not changed.")
                 if checksum_status == "CHECKSUMMED":
@@ -102,32 +102,32 @@ class ChecksumDaemon:
     def _check_content_type(self):
         naps_left = self.CHECK_CONTENT_TYPE_TIMES
         while naps_left > 0 and '; dcp-type=' not in self.uploaded_file.content_type:
-            logger.debug(f"No dcp-type in content_type of file {self.uploaded_file.s3_key},"
+            logger.debug(f"No dcp-type in content_type of file {self.uploaded_file.s3key},"
                          f" checking {naps_left} more times")
             time.sleep(self.CHECK_CONTENT_TYPE_INTERVAL)
             naps_left -= 1
             self.uploaded_file.refresh()
         if '; dcp-type=' not in self.uploaded_file.content_type:
-            logger.warning(f"Still no dcp-type in content_type of file {self.uploaded_file.s3_key} after 30s")
+            logger.warning(f"Still no dcp-type in content_type of file {self.uploaded_file.s3key} after 30s")
 
-    def _find_checksum_status_of_event_newer_than_file_last_modified(self):
+    def _find_checksum_status_of_event_newer_than_file_last_modified(self, file_key):
         checksum_status = None
         db_session = DBSessionMaker().session()
-        checksums = db_session.query(DbChecksum).filter(DbChecksum.file_id == self.uploaded_file.db_id).all()
+        checksums = db_session.query(DbChecksum).filter(DbChecksum.file_id == file_key).all()
         for csum in checksums:
-            if csum.status == "CHECKSUMMED" and csum.updated_at >= self.uploaded_file.s3_last_modified:
+            if csum.status == "CHECKSUMMED" and csum.updated_at >= self.uploaded_file.s3obj.last_modified:
                 logger.debug(f"Found a completed checksum ({csum.id}) which is newer ({csum.updated_at}) than "
-                             f"the file data ({self.uploaded_file.s3_last_modified})")
+                             f"the file data ({self.uploaded_file.s3obj.last_modified})")
                 checksum_status = "CHECKSUMMED"
-            elif csum.status == "CHECKSUMMING" and csum.updated_at >= self.uploaded_file.s3_last_modified:
+            elif csum.status == "CHECKSUMMING" and csum.updated_at >= self.uploaded_file.s3obj.last_modified:
                 logger.debug(f"Found an in progress checksum event ({csum.id}) which is newer ({csum.updated_at}) than "
-                             f"the file data ({self.uploaded_file.s3_last_modified})")
+                             f"the file data ({self.uploaded_file.s3obj.last_modified})")
                 checksum_status = "CHECKSUMMING"
         return checksum_status
 
     def _checksum_file_now(self):
         checksum_event = UploadedFileChecksumEvent(checksum_id=str(uuid.uuid4()),
-                                                   file_id=self.uploaded_file.db_id,
+                                                   file_id=self.uploaded_file.s3obj.key,
                                                    status="CHECKSUMMING")
         checksum_event.create_record()
 
@@ -135,7 +135,7 @@ class ChecksumDaemon:
         checksums = checksummer.checksum(report_progress=True)
 
         self.uploaded_file.checksums = checksums
-        tags = self.uploaded_file.apply_tags_to_s3_object()
+        tags = self.uploaded_file.save_tags()
 
         checksum_event.status = "CHECKSUMMED"
         checksum_event.checksums = checksums
@@ -162,7 +162,7 @@ class ChecksumDaemon:
                                          job_defn=self._find_or_create_job_definition(),
                                          command=command,
                                          environment=environment)
-        checksum_event = UploadedFileChecksumEvent(file_id=self.uploaded_file.db_id,
+        checksum_event = UploadedFileChecksumEvent(file_id=self.uploaded_file.s3obj.key,
                                                    checksum_id=checksum_id,
                                                    job_id=job_id,
                                                    status="SCHEDULED")

@@ -27,15 +27,16 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
             self.name = name
             self.content_type = content_type
             self.contents = 'exquisite corpse'
-            self.e_tag = '18f17fbfdd21cf869d664731e10d4ffd'
+            self.e_tag = 'fea79d4ad9be6cf1c76a219bb735f85a'
 
         @property
         def size(self):
             return len(self.contents)
 
     def _make_dbfile(self, upload_area, test_file):
-        return DbFile(s3_key=f"{upload_area.uuid}/{test_file.name}", s3_etag=test_file.e_tag,
-                      upload_area_id=upload_area.db_id, name=test_file.name, size=test_file.size)
+        s3_key = f"{upload_area.uuid}/{test_file.name}"
+        return DbFile(id=s3_key, upload_area_id=upload_area.db_id, name=test_file.name, size=test_file.size,
+                      s3_etag=test_file.e_tag)
 
     def setUp(self):
         super().setUp()
@@ -100,8 +101,7 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
             )
 
             session = self.db_session_maker.session()
-            file = self.upload_area.uploaded_file(self.test_file.name)
-            db_checksum = session.query(DbChecksum).filter(DbChecksum.file_id == file.db_id).one()
+            db_checksum = session.query(DbChecksum).filter(DbChecksum.file_id == self.file_key).one()
             self.assertEqual(FIXTURE_DATA_CHECKSUMS[self.file_contents]['checksums'], db_checksum.checksums)
 
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.CHECK_CONTENT_TYPE_TIMES', 0)
@@ -130,12 +130,11 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
     def test_when_a_large_file_has_not_been_checksummed_a_batch_job_is_scheduled(self, mock_schedule_checksumming):
         session = self.db_session_maker.session()
         file = self._make_dbfile(self.upload_area, self.test_file)
-        session.add(file)
-        session.commit()
         checksum_time = self.object.last_modified - timedelta(minutes=5)
-        checksum = DbChecksum(id=str(uuid.uuid4()), file_id=file.id, status='CHECKSUMMED',
+        checksum = DbChecksum(id=str(uuid.uuid4()), file_id=self.file_key, status='CHECKSUMMED',
                               checksum_started_at=checksum_time, checksum_ended_at=checksum_time,
                               updated_at=checksum_time)
+        session.add(file)
         session.add(checksum)
         session.commit()
 
@@ -152,12 +151,11 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
                                                                                   mock_connect):
         session = self.db_session_maker.session()
         file = self._make_dbfile(self.upload_area, self.test_file)
-        session.add(file)
-        session.commit()
         checksum_time = datetime.utcnow() + timedelta(minutes=5)
-        checksum = DbChecksum(id=str(uuid.uuid4()), file_id=file.id, status='CHECKSUMMING',
+        checksum = DbChecksum(id=str(uuid.uuid4()), file_id=self.file_key, status='CHECKSUMMING',
                               checksum_started_at=checksum_time, checksum_ended_at=checksum_time,
                               updated_at=checksum_time)
+        session.add(file)
         session.add(checksum)
         session.commit()
 
@@ -177,12 +175,11 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
                                                                                   mock_connect):
         session = self.db_session_maker.session()
         file = self._make_dbfile(self.upload_area, self.test_file)
-        session.add(file)
-        session.commit()
         checksum_time = datetime.utcnow() + timedelta(minutes=5)
-        checksum = DbChecksum(id=str(uuid.uuid4()), file_id=file.id, status='CHECKSUMMED',
+        checksum = DbChecksum(id=str(uuid.uuid4()), file_id=self.file_key, status='CHECKSUMMED',
                               checksum_started_at=checksum_time, checksum_ended_at=checksum_time,
                               updated_at=checksum_time)
+        session.add(file)
         session.add(checksum)
         session.commit()
 

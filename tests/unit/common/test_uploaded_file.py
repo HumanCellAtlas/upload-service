@@ -38,32 +38,32 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         file_content = "file1_body"
         s3object = self._create_s3_object(filename, content=file_content)
         s3_key = s3object.key
-        s3_etag = s3object.e_tag.strip('\"')
 
         with self.assertRaises(NoResultFound):
-            db.query(DbFile).filter(DbFile.s3_key == s3_key, DbFile.s3_etag == s3object.e_tag).one()
+            db.query(DbFile).filter(DbFile.id == s3_key).one()
 
         uf = UploadedFile.from_s3_key(upload_area=self.upload_area, s3_key=s3_key)
 
         self.assertEqual(filename, uf.name)
         self.assertEqual(self.upload_area, uf.upload_area)
-        self.assertEqual(s3object, uf._s3obj)
+        self.assertEqual(s3object, uf.s3obj)
 
-        record = db.query(DbFile).filter(DbFile.s3_key == s3_key, DbFile.s3_etag == s3_etag).one()
-        self.assertEqual(s3_key, record.s3_key)
+        record = db.query(DbFile).filter(DbFile.id == s3_key).one()
+        self.assertEqual(s3_key, record.id)
         self.assertEqual(filename, record.name)
         self.assertEqual(s3object.e_tag.strip('\"'), record.s3_etag)
         self.assertEqual(len(file_content), record.size)
         self.assertEqual(self.upload_area.db_id, record.upload_area_id)
 
-    def test_from_s3_key__loads_data_but_doesnt_create_db_record_if_one_already_exists(self):
+    def test_from_s3_key__loads_data_but_doesnt_creates_db_record_if_one_exists(self):
         db = self.db_session_maker.session()
         filename = "file2"
         file_content = "file2_body"
         s3object = self._create_s3_object(filename, content=file_content)
-        record = DbFile(s3_key=s3object.key, s3_etag=s3object.e_tag.strip('\"'),
-                        name=filename, upload_area_id=self.upload_area.db_id,
-                        size=len(file_content))
+        record = DbFile(id=s3object.key, name=filename,
+                        upload_area_id=self.upload_area.db_id,
+                        size=len(file_content),
+                        s3_etag=s3object.e_tag)
         db.add(record)
         db.commit()
         record_count_before = db.query(DbFile).count()
