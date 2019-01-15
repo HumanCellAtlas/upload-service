@@ -8,7 +8,6 @@ import boto3
 from six.moves import urllib
 
 from ...common.batch import JobDefinition
-from ...common.checksum import UploadedFileChecksummer
 from ...common.checksum_event import ChecksumEvent
 from ...common.database_orm import DBSessionMaker, DbChecksum
 from ...common.ingest_notifier import IngestNotifier
@@ -130,25 +129,21 @@ class ChecksumDaemon:
                                        status="CHECKSUMMING")
         checksum_event.create_record()
 
-        checksummer = UploadedFileChecksummer(self.uploaded_file)
-        checksums = checksummer.checksum(report_progress=True)
-
-        self.uploaded_file.checksums = checksums
-        tags = self.uploaded_file.apply_tags_to_s3_object()
+        checksums = self.uploaded_file.checksums
+        checksums.compute()
+        checksums.save_as_tags_on_s3_object()
 
         checksum_event.status = "CHECKSUMMED"
-        checksum_event.checksums = checksums
+        checksum_event.checksums = dict(checksums)
         checksum_event.update_record()
 
-        logger.info(f"Checksummed and tagged with: {tags}")
+        logger.info(f"Checksummed and tagged. Checksums = {dict(checksums)}")
         self._notify_ingest()
 
     def _schedule_checksumming(self):
         checksum_id = str(uuid.uuid4())
         command = ['python', '/checksummer.py', self.uploaded_file.s3url]
         environment = {
-            'BUCKET_NAME': self.config.bucket_name,
-            'DEPLOYMENT_STAGE': self.deployment_stage,
             'API_HOST': self.api_host,
             'CHECKSUM_ID': checksum_id,
             'CONTAINER': 'DOCKER'

@@ -1,11 +1,10 @@
 import os
-from functools import reduce
 
 import boto3
 from botocore.exceptions import ClientError
 from sqlalchemy.sql import and_
-from tenacity import retry, wait_fixed, stop_after_attempt
 
+from .dss_checksums import DssChecksums
 from .exceptions import UploadException
 if not os.environ.get("CONTAINER"):
     from .database import UploadDB
@@ -21,8 +20,6 @@ class UploadedFile:
 
     If the parameters to __init__() include 'name', 'data', 'content_type': a new S3 object will be created.
     """
-
-    CHECKSUM_TAGS = ('hca-dss-sha1', 'hca-dss-sha256', 'hca-dss-crc32c', 'hca-dss-s3_etag')
 
     @classmethod
     def from_s3_key(cls, upload_area, s3_key):
@@ -40,7 +37,6 @@ class UploadedFile:
             "size": None
         }
         self.upload_area = upload_area
-        self.checksums = {}
         # internals
         self._s3obj = None
         # utility:
@@ -60,6 +56,8 @@ class UploadedFile:
                 self._db_create()
         else:
             raise RuntimeError("you must provide s3object, or name, content_type and data")
+
+        self.checksums = DssChecksums(s3_object=self._s3obj)
 
     @property
     def db_id(self):
@@ -101,23 +99,12 @@ class UploadedFile:
             'size': self.size,
             'content_type': self.content_type,
             'url': self.s3url,
-            'checksums': self.checksums,
+            'checksums': dict(self.checksums),
             'last_modified': self.s3_last_modified.isoformat()
         }
 
     def refresh(self):
         self._s3obj.reload()
-
-    @retry(wait=wait_fixed(2), stop=stop_after_attempt(5))
-    def apply_tags_to_s3_object(self):
-        tags = {f"hca-dss-{csum}": self.checksums[csum] for csum in self.checksums.keys()}
-        tagging = dict(TagSet=self._encode_tags(tags))
-        s3client.put_object_tagging(Bucket=self.upload_area.bucket_name, Key=self._s3obj.key, Tagging=tagging)
-        self.checksums = self._dcp_tags_of_s3_object()
-        if len(self.CHECKSUM_TAGS) != len(self.checksums.keys()):
-            raise UploadException(status=500,
-                                  detail=f"Tags {tags} did not stick to {self._s3obj.key}")
-        return self.checksums
 
     def retrieve_latest_file_validation_status_and_results(self):
         status = "UNSCHEDULED"
@@ -163,34 +150,6 @@ class UploadedFile:
             'name': self._s3obj.key[self.upload_area.key_prefix_length:],  # cut off upload-area-id/
             'size': self._s3obj.content_length
         }
-        self.checksums = self._dcp_tags_of_s3_object()
-
-    def _dcp_tags_of_s3_object(self):
-        try:
-            tagging = s3client.get_object_tagging(Bucket=self.upload_area.bucket_name, Key=self._s3obj.key)
-        except ClientError as e:
-            if e.response['Error']['Code'] == 'NoSuchKey':
-                raise UploadException(status=404, title="No such file",
-                                      detail=f"No such file in that upload area")
-            else:
-                raise e
-        tags = {}
-        if 'TagSet' in tagging:
-            tag_set = self._decode_tags(tagging['TagSet'])
-            # k[8:] = cut off "hca-dss-" in tag name
-            tags = {k[8:]: v for k, v in tag_set.items() if k in self.CHECKSUM_TAGS}
-        return tags
-
-    @staticmethod
-    def _encode_tags(tags: dict) -> list:
-        return [dict(Key=k, Value=v) for k, v in tags.items()]
-
-    @staticmethod
-    def _decode_tags(tags: list) -> dict:
-        if not tags:
-            return {}
-        simplified_dicts = list({tag['Key']: tag['Value']} for tag in tags)
-        return reduce(lambda x, y: dict(x, **y), simplified_dicts)
 
     def _db_load(self, s3_key, s3_etag):
         sql_table = self._db.table('file')
