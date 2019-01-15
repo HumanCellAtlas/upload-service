@@ -1,24 +1,16 @@
 #!/usr/bin/env python3.6
 
-import os, sys
 import uuid
 from unittest.mock import patch
-
-import boto3
 
 from ... import UploadTestCaseUsingMockAWS, EnvironmentSetup
 from . import client_for_test_api_server
 
-from upload.common.upload_api_client import update_event
 from upload.common.uploaded_file import UploadedFile
 from upload.common.upload_area import UploadArea
 from upload.common.validation_event import UploadedFileValidationEvent
 from upload.common.checksum_event import UploadedFileChecksumEvent
 from upload.common.database import UploadDB
-
-if __name__ == '__main__':
-    pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
-    sys.path.insert(0, pkg_root)  # noqa
 
 
 class TestUploadApiClient(UploadTestCaseUsingMockAWS):
@@ -30,7 +22,8 @@ class TestUploadApiClient(UploadTestCaseUsingMockAWS):
         self.environment = {
             'INGEST_API_KEY': self.api_key,
             'INGEST_AMQP_SERVER': 'foo',
-            'CSUM_DOCKER_IMAGE': 'bogoimage'
+            'CSUM_DOCKER_IMAGE': 'bogoimage',
+            'API_HOST': 'bogohost'
         }
         self.environmentor = EnvironmentSetup(self.environment)
         self.environmentor.enter()
@@ -50,6 +43,8 @@ class TestUploadApiClient(UploadTestCaseUsingMockAWS):
 
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_update_event_with_validation_event(self, mock_format_and_send_notification):
+        from upload.common.upload_api_client import update_event
+
         validation_id = str(uuid.uuid4())
         area_id = self._create_area()
         s3obj = self.mock_upload_file_to_s3(area_id, 'foo.json')
@@ -80,6 +75,8 @@ class TestUploadApiClient(UploadTestCaseUsingMockAWS):
 
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_update_event_with_checksum_event(self, mock_format_and_send_notification):
+        from upload.common.upload_api_client import update_event
+
         checksum_id = str(uuid.uuid4())
         area_uuid = self._create_area()
         s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')

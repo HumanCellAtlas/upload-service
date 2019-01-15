@@ -21,13 +21,13 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
         super().setUp()
         UploadConfig.use_env = True
         # Setup environment
-        self.upload_bucket_name = 'bogobucket'
-        self.checksum_id = str(uuid.uuid4())
         self.environment = {
-            'BUCKET_NAME': self.upload_bucket_name,
+            'BUCKET_NAME': self.upload_bucket.name,
             'AWS_BATCH_JOB_ID': '1',
             'INGEST_AMQP_SERVER': 'bogoamqp',
-            'CHECKSUM_ID': self.checksum_id
+            'API_HOST': 'bogohost',
+            'CHECKSUM_ID': str(uuid.uuid4()),
+            'CONTAINER': 'yes'
         }
         self.environmentor = EnvironmentSetup(self.environment)
         self.environmentor.enter()
@@ -47,11 +47,11 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
         self.mock_upload_file_to_s3(self.upload_area_id, filename, contents=file_contents,
                                     content_type='application/json; dcp_type=metadata',
                                     checksums={})
-        s3_url = f"s3://{self.upload_bucket_name}/{file_s3_key}"
+        s3_url = f"s3://{self.upload_bucket.name}/{file_s3_key}"
 
         Checksummer([s3_url])
 
-        tagging = boto3.client('s3').get_object_tagging(Bucket=self.upload_bucket_name, Key=file_s3_key)
+        tagging = boto3.client('s3').get_object_tagging(Bucket=self.upload_bucket.name, Key=file_s3_key)
         self.assertEqual(
             sorted(tagging['TagSet'], key=lambda x: x['Key']),
             sorted(FIXTURE_DATA_CHECKSUMS[file_contents]['s3_tagset'], key=lambda x: x['Key'])
