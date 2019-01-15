@@ -11,6 +11,9 @@ from upload.common.upload_config import UploadConfig, UploadDbConfig, UploadVers
 
 os.environ['LOG_LEVEL'] = 'CRITICAL'
 # logging.basicConfig(level=logging.DEBUG)
+# logging.getLogger('connexion').setLevel(logging.WARNING)
+# logging.getLogger('s3transfer').setLevel(logging.WARNING)
+# logging.getLogger('swagger_spec_validator').setLevel(logging.WARNING)
 # logging.getLogger('botocore').setLevel(logging.WARNING)
 # logging.getLogger('boto3').setLevel(logging.WARNING)
 
@@ -41,9 +44,11 @@ class EnvironmentSetup:
         for k, v in self.env_vars.items():
             if k in os.environ:
                 old_value = os.environ[k]
-                self.saved_vars[k] = os.environ[k]
             else:
                 old_value = None
+
+            self.saved_vars[k] = old_value
+
             if v:
                 os.environ[k] = v
                 self.logger.debug(f"temporarily changing {k} from {old_value} to {v}")
@@ -55,7 +60,10 @@ class EnvironmentSetup:
     def exit(self):
         for k, v in self.saved_vars.items():
             self.logger.debug(f"resetting {k} back to {v}")
-            os.environ[k] = v
+            if v:
+                os.environ[k] = v
+            else:
+                del os.environ[k]
 
     def __enter__(self):
         self.enter()
