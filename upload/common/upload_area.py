@@ -38,6 +38,9 @@ class UploadArea:
         self.db = UploadDB()
         self._db_load()
 
+    def __str__(self):
+        return f"UploadArea(id={self.db_id}, uuid={self.uuid}, status={self.status})"
+
     @property
     def bucket_name(self):
         return self.config.bucket_name
