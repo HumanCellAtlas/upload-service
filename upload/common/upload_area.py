@@ -8,7 +8,6 @@ from tenacity import retry, wait_fixed, stop_after_attempt
 
 from dcplib.media_types import DcpMediaType
 
-from .checksum import UploadedFileChecksummer
 from .uploaded_file import UploadedFile
 from .checksum_event import ChecksumEvent
 from .exceptions import UploadException
@@ -194,17 +193,16 @@ class UploadArea:
 
         file = UploadedFile(upload_area=self, name=filename, content_type=str(media_type), data=content)
 
-        checksummer = UploadedFileChecksummer(uploaded_file=file)
         checksum_id = str(uuid.uuid4())
         checksum_event = ChecksumEvent(file_id=file.db_id,
                                        checksum_id=checksum_id,
                                        status="CHECKSUMMING")
         checksum_event.create_record()
-        checksums = checksummer.checksum(report_progress=True)
-        file.checksums = checksums
-        file.apply_tags_to_s3_object()
+        checksums = file.checksums
+        checksums.compute(report_progress=True)
+        checksums.save_as_tags_on_s3_object()
         checksum_event.status = "CHECKSUMMED"
-        checksum_event.checksums = checksums
+        checksum_event.checksums = dict(checksums)
         checksum_event.update_record()
         return file.info()
 

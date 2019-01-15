@@ -4,9 +4,11 @@ import argparse
 import os
 import sys
 from urllib3.util import parse_url
-from upload.common.upload_area import UploadArea
+
+import boto3
+
 from upload.common.logging import get_logger
-from upload.common.checksum import UploadedFileChecksummer
+from upload.common.dss_checksums import DssChecksums
 from upload.common.checksum_event import ChecksumEvent
 from upload.common.upload_api_client import update_event
 from upload.common.upload_config import UploadConfig
@@ -17,28 +19,28 @@ logger = get_logger(f"CHECKSUMMER [{os.environ.get('AWS_BATCH_JOB_ID')}]")
 class Checksummer:
 
     def __init__(self, argv):
+        self.bucket_name = None
+        self.s3_object_key = None
+        self.upload_area_id = None
+        self.file_name = None
         UploadConfig.use_env = True  # AWS Secrets are not available to batch jobs, use environment
         self._parse_args(argv)
-        upload_area, uploaded_file = self._find_file()
-        checksummer = UploadedFileChecksummer(uploaded_file)
-        checksum_event = ChecksumEvent(file_id=uploaded_file.s3_key,
-                                       checksum_id=os.environ['CHECKSUM_ID'],
-                                       job_id=os.environ['AWS_BATCH_JOB_ID'],
-                                       status="CHECKSUMMING")
-        if checksummer.has_checksums():
-            logger.info(f"File {uploaded_file.name} is already checksummed.")
-            checksum_event.status = "CHECKSUMMED"
-            if not self.args.test:
-                update_event(checksum_event, uploaded_file.info())
+        s3 = boto3.resource('s3')
+        s3obj = s3.Bucket(self.bucket_name).Object(self.s3_object_key)
+        self.checksums = DssChecksums(s3obj)
+
+        self.checksum_event = ChecksumEvent(checksum_id=os.environ['CHECKSUM_ID'],
+                                            job_id=os.environ['AWS_BATCH_JOB_ID'])
+        if self.checksums.are_present():
+            logger.info(f"File {self.s3_object_key} is already checksummed.")
+            self._update_checksum_event(status="CHECKSUMMED")
         else:
-            logger.info(f"Checksumming {uploaded_file.name}...")
-            if not self.args.test:
-                update_event(checksum_event, uploaded_file.info())
-            checksums = self._checksum_file(checksummer, uploaded_file)
-            logger.info(f"Checksums {checksums} used to tag file {upload_area.uuid}/{uploaded_file.name}")
-            checksum_event.status = "CHECKSUMMED"
-            if not self.args.test:
-                update_event(checksum_event, uploaded_file.info())
+            logger.info(f"Checksumming {self.s3_object_key}...")
+            self._update_checksum_event(status="CHECKSUMMING")
+            self.checksums.compute(report_progress=True)
+            self.checksums.save_as_tags_on_s3_object()
+            self._update_checksum_event(status="CHECKSUMMED")
+            logger.info(f"Checksums {dict(self.checksums)} used to tag file {self.s3_object_key}")
 
     def _parse_args(self, argv):
         parser = argparse.ArgumentParser()
@@ -46,25 +48,23 @@ class Checksummer:
         parser.add_argument('-t', '--test', action='store_true', help="Test only, do not submit results to Upload API")
         self.args = parser.parse_args(args=argv)
         url_bits = parse_url(self.args.s3_url)
+        if url_bits.scheme != 's3':
+            raise RuntimeError(f"This is not an S3 URL: {self.args.s3_url}")
         self.bucket_name = url_bits.netloc
         self.s3_object_key = url_bits.path.lstrip('/')
-        logger.debug(f"bucket_name {self.bucket_name}")
-        logger.debug(f"s3_object_key {self.s3_object_key}")
+        path_parts = self.s3_object_key.split('/')
+        self.upload_area_id = path_parts.pop(0)
+        self.file_name = "/".join(path_parts)
+        logger.debug("url={url} bucket={bucket} s3_key={key} area={area} file={filename}".format(
+            url=self.args.s3_url, bucket=self.bucket_name, key=self.s3_object_key, area=self.upload_area_id,
+            filename=self.file_name))
 
-    def _find_file(self):
-        key_parts = self.s3_object_key.split('/')
-        upload_area_id = key_parts.pop(0)
-        filename = "/".join(key_parts)
-        logger.debug(f"upload_area_id {upload_area_id}")
-        logger.debug(f"filename {filename}")
-        upload_area = UploadArea(upload_area_id)
-        return upload_area, upload_area.uploaded_file(filename)
-
-    def _checksum_file(self, checksummer, uploaded_file):
-        checksums = checksummer.checksum(report_progress=True)
-        uploaded_file.checksums = checksums
-        uploaded_file.apply_tags_to_s3_object()
-        return checksums
+    def _update_checksum_event(self, status):
+        self.checksum_event.status = status
+        if not self.args.test:
+            update_event(self.checksum_event, {'upload_area_id': self.upload_area_id,
+                                               'name': self.file_name,
+                                               'checksums': dict(self.checksums)})
 
 
 if __name__ == '__main__':
