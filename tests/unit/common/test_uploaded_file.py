@@ -23,20 +23,12 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         super().tearDown()
         pass
 
-    def _create_s3_object(self, filename,
-                          content_type="application/octet-stream",
-                          content="file_content"):
-        s3 = boto3.resource('s3')
-        s3_key = f"{self.upload_area_id}/{filename}"
-        s3object = s3.Bucket(self.upload_config.bucket_name).Object(s3_key)
-        s3object.put(Body=content, ContentType=content_type)
-        return s3object
-
     def test_from_s3_key__loads_data_and_creates_db_record_if_none_exists(self):
         db = self.db_session_maker.session()
         filename = "file1"
         file_content = "file1_body"
-        s3object = self._create_s3_object(filename, content=file_content)
+        s3object = self.create_s3_object(object_key=f"{self.upload_area.uuid}/{filename}",
+                                         content=file_content)
         s3_key = s3object.key
 
         with self.assertRaises(NoResultFound):
@@ -59,11 +51,11 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         db = self.db_session_maker.session()
         filename = "file2"
         file_content = "file2_body"
-        s3object = self._create_s3_object(filename, content=file_content)
-        record = DbFile(id=s3object.key, name=filename,
-                        upload_area_id=self.upload_area.db_id,
-                        size=len(file_content),
-                        s3_etag=s3object.e_tag)
+        s3object = self.create_s3_object(object_key=f"{self.upload_area.uuid}/{filename}",
+                                         content=file_content)
+        record = DbFile(id=s3object.key, s3_etag=s3object.e_tag.strip('\"'),
+                        name=filename, upload_area_id=self.upload_area.db_id,
+                        size=len(file_content))
         db.add(record)
         db.commit()
         record_count_before = db.query(DbFile).count()
@@ -84,7 +76,8 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         filename = "file3"
         old_content_type = "application/octet-stream"  # missing dcp-type
         new_content_type = "application/octet-stream; dcp-type=data"
-        s3object = self._create_s3_object(filename, old_content_type)
+        s3object = self.create_s3_object(object_key=f"{self.upload_area.uuid}/{filename}",
+                                         content_type=old_content_type)
         # create UploadedFile
         uf = UploadedFile.from_s3_key(upload_area=self.upload_area, s3_key=s3object.key)
         # Change media type on S3 object
