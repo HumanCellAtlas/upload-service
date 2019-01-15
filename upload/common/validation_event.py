@@ -15,9 +15,11 @@ class UploadedFileValidationEvent:
         self.job_id = kwargs["job_id"]
         self.file_id = kwargs["file_id"]
         self.status = kwargs["status"]
+        self.results = None
         self.docker_image = kwargs.get("docker_image")
         self.original_validation_id = kwargs.get("original_validation_id")
-        self.db = UploadDB()
+        if not os.environ.get("CONTAINER"):
+            self.db = UploadDB()
 
     def _format_prop_vals_dict(self):
         vals_dict = {

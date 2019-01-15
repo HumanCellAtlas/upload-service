@@ -25,6 +25,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
             'INGEST_API_KEY': self.api_key,
             'INGEST_AMQP_SERVER': 'foo',
             'CSUM_DOCKER_IMAGE': 'bogo_image',
+            'API_HOST': 'bogohost'
         }
         self.environmentor = EnvironmentSetup(self.environment)
         self.environmentor.enter()
