@@ -86,7 +86,8 @@ class ChecksumDaemon:
     def _notify_ingest(self):
         self._check_content_type()
         file_info = self.uploaded_file.info()
-        status = IngestNotifier('file_uploaded').format_and_send_notification(file_info)
+        notifier = IngestNotifier('file_uploaded', file_id=self.uploaded_file.db_id)
+        status = notifier.format_and_send_notification(file_info)
         logger.info(f"Notified Ingest: file_info={file_info}, status={status}")
 
     CHECK_CONTENT_TYPE_INTERVAL = 6

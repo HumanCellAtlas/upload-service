@@ -48,8 +48,7 @@ class ValidatorHarness:
 
         self._stage_file_to_be_validated()
 
-        validation_event = ValidationEvent(file_id=self.s3_object_key,
-                                           validation_id=self.validation_id,
+        validation_event = ValidationEvent(validation_id=self.validation_id,
                                            job_id=self.job_id,
                                            status="VALIDATING")
         if not test_only:

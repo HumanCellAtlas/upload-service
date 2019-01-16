@@ -10,10 +10,22 @@ logger = get_logger(__name__)
 
 class ValidationEvent:
 
+    @classmethod
+    def load(cls, db_id):
+        db = UploadDB()
+        prop_vals_dict = db.get_pg_record("validation", db_id)
+        return cls(
+            validation_id=db_id,
+            job_id=prop_vals_dict['job_id'],
+            file_id=prop_vals_dict['file_id'],
+            status=prop_vals_dict['status'],
+            docker_image=prop_vals_dict['docker_image']
+        )
+
     def __init__(self, **kwargs):
         self.id = kwargs["validation_id"]
         self.job_id = kwargs["job_id"]
-        self.file_id = kwargs["file_id"]
+        self.file_id = kwargs.get("file_id")
         self.status = kwargs["status"]
         self.results = None
         self.docker_image = kwargs.get("docker_image")
