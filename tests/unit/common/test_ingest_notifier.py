@@ -33,7 +33,7 @@ class TestIngestNotifier(UploadTestCaseUsingMockAWS):
 
     def _create_area(self):
         area_uuid = str(uuid.uuid4())
-        response = self.client.post(f"/v1/area/{area_uuid}", headers=self.authentication_header)
+        self.client.post(f"/v1/area/{area_uuid}", headers=self.authentication_header)
         return area_uuid
 
     def test_init(self):
@@ -71,7 +71,7 @@ class TestIngestNotifier(UploadTestCaseUsingMockAWS):
         area_uuid = self._create_area()
         headers = {'Content-Type': 'application/json; dcp-type="metadata/sample"'}
         headers.update(self.authentication_header)
-        response = self.client.put(f"/v1/area/{area_uuid}/test_file_name", data="exquisite corpse", headers=headers)
+        self.client.put(f"/v1/area/{area_uuid}/test_file_name", data="exquisite corpse", headers=headers)
 
         test_payload = {'name': "test_file_name", 'upload_area_id': area_uuid}
         notification_id = ingest_notifier.format_and_send_notification(test_payload)
