@@ -191,7 +191,7 @@ class UploadArea:
                                   detail="Content-Type is missing parameter 'dcp-type',"
                                          " e.g. 'application/json; dcp-type=\"metadata/sample\"'.")
 
-        file = UploadedFile(upload_area=self, name=filename, content_type=str(media_type), data=content)
+        file = UploadedFile.create(upload_area=self, name=filename, content_type=str(media_type), data=content)
 
         checksum_id = str(uuid.uuid4())
         checksum_event = ChecksumEvent(file_id=file.db_id,

@@ -17,16 +17,39 @@ class UploadedFile:
 
     """
     The UploadedFile class represents newly-uploaded or previously uploaded files.
-
-    If the parameters to __init__() include 'name', 'data', 'content_type': a new S3 object will be created.
     """
+
+    @classmethod
+    def create(cls, upload_area, name=None, content_type=None, data=None):
+        s3object = upload_area.s3_object_for_file(name)
+        s3object.put(Body=data, ContentType=content_type)
+        return cls(upload_area, s3object=s3object)
 
     @classmethod
     def from_s3_key(cls, upload_area, s3_key):
         s3object = s3.Bucket(upload_area.bucket_name).Object(s3_key)
         return cls(upload_area, s3object=s3object)
 
-    def __init__(self, upload_area, name=None, content_type=None, data=None, s3object=None):
+    @classmethod
+    def from_db_id(cls, db_id):
+        db = UploadDB()
+        file_props = db.get_pg_record('file', record_id=db_id)
+        area_props = db.get_pg_record('upload_area', record_id=file_props['upload_area_id'])
+        from .upload_area import UploadArea
+        upload_area = UploadArea(area_props['uuid'])
+        s3object = upload_area.s3_object_for_file(file_props['name'])
+        return cls(upload_area, s3object=s3object)
+
+    def __init__(self, upload_area, s3object):
+        """
+        The object of init() is to:
+        - populate properties from the S3 object
+        - create a DB record for this file of one does not exist
+        - initialize a DssChecksums object
+        """
+        self.upload_area = upload_area
+        self._s3obj = s3object
+
         # Properties persisted in DB
         self._properties = {
             "id": None,
@@ -36,26 +59,14 @@ class UploadedFile:
             "name": None,
             "size": None
         }
-        self.upload_area = upload_area
-        # internals
-        self._s3obj = None
-        # utility:
+
+        self._s3_load()
+        self._populate_properties_from_s3_object()
+
         self._db = UploadDB()
-
-        if name and data and content_type:
-            self._s3_create(name, data, content_type)
-            self._populate_properties_from_s3_object()
+        e_tag = self._s3obj.e_tag.strip('\"')
+        if self._db_load(self._s3obj.key, e_tag) is None:
             self._db_create()
-
-        elif s3object:
-            self._s3obj = s3object
-            self._s3_load()
-            e_tag = self._s3obj.e_tag.strip('\"')
-            if self._db_load(self._s3obj.key, e_tag) is None:
-                self._populate_properties_from_s3_object()
-                self._db_create()
-        else:
-            raise RuntimeError("you must provide s3object, or name, content_type and data")
 
         self.checksums = DssChecksums(s3_object=self._s3obj)
 
@@ -127,10 +138,6 @@ class UploadedFile:
             status = rows[0][0]
             checksums = rows[0][1]
         return status, checksums
-
-    def _s3_create(self, name, data, content_type):
-        self._s3obj = self.upload_area.s3_object_for_file(name)
-        self._s3obj.put(Body=data, ContentType=content_type)
 
     def _s3_load(self):
         try:
