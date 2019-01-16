@@ -149,7 +149,7 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
         filename = "some.json"
         content_type = 'application/json; dcp-type="metadata/sample"'
         content = "exquisite corpse"
-        fileinfo = area.store_file(filename, content=content, content_type=content_type)
+        file = area.store_file(filename, content=content, content_type=content_type)
 
         s3_key = f"{db_area.uuid}/some.json"
         s3_etag = "18f17fbfdd21cf869d664731e10d4ffd"
@@ -168,7 +168,7 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
                 "sha1": "b1b101e21cf9cf8a4729da44d7818f935eec0ce8",
                 "sha256": "29f5572dfbe07e1db9422a4c84e3f9e455aab9ac596f0bf3340be17841f26f70"
             }
-        }, fileinfo)
+        }, file.info())
         obj = self.upload_bucket.Object(f"{db_area.uuid}/some.json")
         self.assertEqual("exquisite corpse".encode('utf8'), obj.get()['Body'].read())
 
