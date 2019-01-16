@@ -7,7 +7,7 @@ import json
 import boto3
 from moto import mock_iam, mock_s3, mock_sts, mock_sqs
 
-from upload.common.upload_config import UploadConfig, UploadDbConfig, UploadVersion, UploadAuthConfig
+from upload.common.upload_config import UploadConfig, UploadDbConfig, UploadVersion, UploadOutgoingIngestAuthConfig
 
 os.environ['LOG_LEVEL'] = 'CRITICAL'
 # logging.basicConfig(level=logging.DEBUG)
@@ -85,9 +85,9 @@ class UploadTestCase(unittest.TestCase):
         'private_key': 'test_private_key'
     }
 
-    AUTH_CONFIG = {
-        'service_credentials': base64.b64encode(json.dumps(TEST_SERVICE_CREDS).encode()),
-        'auth_audience': 'test_auth_audience'
+    UPLOAD_OUTGOING_INGEST_AUTH_CONFIG = {
+        'gcp_service_acct_creds': base64.b64encode(json.dumps(TEST_SERVICE_CREDS).encode()),
+        'dcp_auth0_audience': 'test_dcp_auth0_audience'
     }
 
     def setUp(self):
@@ -107,8 +107,8 @@ class UploadTestCase(unittest.TestCase):
         self.upload_config.set(self.__class__.BOGO_CONFIG)
 
         # AuthConfig
-        self.upload_auth_config = UploadAuthConfig()
-        self.upload_auth_config.set(self.__class__.AUTH_CONFIG)
+        self.upload_auth_config = UploadOutgoingIngestAuthConfig()
+        self.upload_auth_config.set(self.__class__.UPLOAD_OUTGOING_INGEST_AUTH_CONFIG)
 
         # UploadVersion
         self.upload_version = UploadVersion()

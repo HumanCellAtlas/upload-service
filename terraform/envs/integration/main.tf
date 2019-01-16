@@ -52,8 +52,8 @@ module "upload-service" {
   ingest_api_host = "${var.ingest_api_host}"
 
   // AUTH
-  auth_audience = "${var.auth_audience}"
-  service_credentials = "${var.service_credentials}"
+  dcp_auth0_audience = "${var.dcp_auth0_audience}"
+  gcp_service_acct_creds = "${var.gcp_service_acct_creds}"
 
   // Slack
   slack_webhook = "${var.slack_webhook}"

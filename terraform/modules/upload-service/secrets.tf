@@ -23,16 +23,16 @@ resource "aws_secretsmanager_secret_version" "secrets" {
 SECRETS_JSON
 }
 
-resource "aws_secretsmanager_secret" "auth" {
-  name = "dcp/upload/${var.deployment_stage}/auth"
+resource "aws_secretsmanager_secret" "outgoing_ingest_auth" {
+  name = "dcp/upload/${var.deployment_stage}/outgoing_ingest_auth"
 }
 
-resource "aws_secretsmanager_secret_version" "auth" {
-  secret_id = "${aws_secretsmanager_secret.auth.id}"
+resource "aws_secretsmanager_secret_version" "outgoing_ingest_auth" {
+  secret_id = "${aws_secretsmanager_secret.outgoing_ingest_auth.id}"
   secret_string = <<SECRETS_JSON
 {
-  "auth_audience": "${var.auth_audience}",
-  "service_credentials": "${var.service_credentials}"
+  "dcp_auth0_audience": "${var.dcp_auth0_audience}",
+  "gcp_service_acct_creds": "${var.gcp_service_acct_creds}"
 }
 SECRETS_JSON
 }

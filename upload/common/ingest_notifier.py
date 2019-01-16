@@ -1,35 +1,30 @@
 import json
 import os
 import uuid
-import requests
-import jwt
 import time
 import base64
 
+import requests
+import jwt
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from .exceptions import UploadException
 from .logging import get_logger
 from .database import UploadDB
-from .upload_config import UploadConfig, UploadAuthConfig
+from .upload_config import UploadConfig, UploadOutgoingIngestAuthConfig
 
 logger = get_logger(__name__)
 
 
 class IngestNotifier:
 
-    FILE_UPLOADED_ENDPOINT = "messaging/fileUploadInfo"
-    FILE_VALIDATED_ENDPOINT = "messaging/fileValidationResult"
+    INGEST_ENDPOINTS = {"file_uploaded": "messaging/fileUploadInfo",
+                        "file_validated": "messaging/fileValidationResult"}
 
     def __init__(self, notification_type):
         self.upload_config = UploadConfig()
-        self.auth_config = UploadAuthConfig()
-        if notification_type == "file_uploaded":
-            self.ingest_notification_url = f"https://{self.ingest_api_host}/{self.FILE_UPLOADED_ENDPOINT}"
-        elif notification_type == "file_validated":
-            self.ingest_notification_url = f"https://{self.ingest_api_host}/{self.FILE_VALIDATED_ENDPOINT}"
-        else:
-            raise Exception("Unknown notification type for ingest")
+        self.outgoing_ingest_auth_config = UploadOutgoingIngestAuthConfig()
+        self.ingest_notification_url = f"https://{self.ingest_api_host}/{self.INGEST_ENDPOINTS[notification_type]}"
         self.db = UploadDB()
 
     @property
@@ -37,12 +32,12 @@ class IngestNotifier:
         return self.upload_config.ingest_api_host
 
     @property
-    def auth_audience(self):
-        return self.auth_config.auth_audience
+    def dcp_auth0_audience(self):
+        return self.outgoing_ingest_auth_config.dcp_auth0_audience
 
     @property
-    def service_credentials(self):
-        encoded_creds = self.auth_config.service_credentials
+    def gcp_service_acct_creds(self):
+        encoded_creds = self.outgoing_ingest_auth_config.gcp_service_acct_creds
         return json.loads(base64.b64decode(encoded_creds).decode())
 
     def format_and_send_notification(self, payload):
@@ -67,20 +62,21 @@ class IngestNotifier:
 
     def get_service_jwt(self):
         # This function is taken directly from auth best practice docs in hca gitlab
+        # https://allspark.dev.data.humancellatlas.org/dcp-ops/docs/wikis/Security/Authentication%20and%20Authorization/Setting%20up%20DCP%20Auth
         iat = time.time()
         exp = iat + 3600
-        payload = {'iss': self.service_credentials["client_email"],
-                   'sub': self.service_credentials["client_email"],
-                   'aud': self.auth_audience,
+        payload = {'iss': self.gcp_service_acct_creds["client_email"],
+                   'sub': self.gcp_service_acct_creds["client_email"],
+                   'aud': self.dcp_auth0_audience,
                    'iat': iat,
                    'exp': exp,
-                   'https://auth.data.humancellatlas.org/email': self.service_credentials["client_email"],
+                   'https://auth.data.humancellatlas.org/email': self.gcp_service_acct_creds["client_email"],
                    'https://auth.data.humancellatlas.org/group': 'hca',
                    'scope': ["openid", "email", "offline_access"]
                    }
-        additional_headers = {'kid': self.service_credentials["private_key_id"]}
-        signed_jwt = jwt.encode(payload, self.service_credentials["private_key"], headers=additional_headers,
-                                algorithm='RS256').decode()
+        additional_headers = {'kid': self.gcp_service_acct_creds["private_key_id"]}
+        signed_jwt = jwt.encode(payload, self.gcp_service_acct_creds["private_key"],
+                                headers=additional_headers, algorithm='RS256').decode()
         return signed_jwt
 
     def _create_or_update_db_notification(self, notification_id, status, payload):

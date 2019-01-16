@@ -76,10 +76,10 @@ variable "ingest_api_host" {
 
 // AUTH
 
-variable "auth_audience" {
+variable "dcp_auth0_audience" {
   type = "string"
 }
 
-variable "service_credentials" {
+variable "gcp_service_acct_creds" {
   type = "string"
 }

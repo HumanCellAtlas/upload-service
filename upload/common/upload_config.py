@@ -12,7 +12,7 @@ class UploadDbConfig(Config):
         super().__init__(component_name='upload', secret_name='database', **kwargs)
 
 
-class UploadAuthConfig(Config):
+class UploadOutgoingIngestAuthConfig(Config):
     def __init__(self, *args, **kwargs):
         super().__init__(component_name='upload', secret_name='auth', **kwargs)
 

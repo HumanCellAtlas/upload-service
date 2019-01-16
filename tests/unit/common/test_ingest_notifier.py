@@ -2,39 +2,14 @@ import uuid
 
 from unittest.mock import patch
 
-from .. import UploadTestCaseUsingMockAWS, EnvironmentSetup
 from upload.common.ingest_notifier import IngestNotifier
+from upload.common.upload_area import UploadArea
 from upload.common.database import UploadDB
 from ..lambdas.api_server import client_for_test_api_server
+from .. import UploadTestCaseUsingMockAWS
 
 
 class TestIngestNotifier(UploadTestCaseUsingMockAWS):
-
-    def setUp(self):
-        super().setUp()
-        # Environment
-        self.api_key = "foo"
-        self.environment = {
-            'INGEST_API_KEY': self.api_key,
-            'INGEST_AMQP_SERVER': 'foo',
-            'CSUM_DOCKER_IMAGE': 'bogo_image',
-        }
-        self.environmentor = EnvironmentSetup(self.environment)
-        self.environmentor.enter()
-
-        # Authentication
-        self.authentication_header = {'Api-Key': self.api_key}
-        # Setup app
-        self.client = client_for_test_api_server()
-
-    def tearDown(self):
-        super().tearDown()
-        self.environmentor.exit()
-
-    def _create_area(self):
-        area_uuid = str(uuid.uuid4())
-        self.client.post(f"/v1/area/{area_uuid}", headers=self.authentication_header)
-        return area_uuid
 
     def test_init(self):
         ingest_notifier_one = IngestNotifier("file_uploaded")
@@ -51,27 +26,28 @@ class TestIngestNotifier(UploadTestCaseUsingMockAWS):
         ingest_api_host = ingest_notifier.ingest_api_host
         self.assertEqual(ingest_api_host, "test_ingest_api_host")
 
-    def test_auth_audience(self):
+    def test_dcp_auth0_audience(self):
         ingest_notifier = IngestNotifier("file_uploaded")
-        auth_audience = ingest_notifier.auth_audience
-        self.assertEqual(auth_audience, "test_auth_audience")
+        dcp_auth0_audience = ingest_notifier.dcp_auth0_audience
+        self.assertEqual(dcp_auth0_audience, "test_dcp_auth0_audience")
 
-    def test_service_credentials(self):
+    def test_gcp_service_acct_creds(self):
         ingest_notifier = IngestNotifier("file_uploaded")
 
-        service_credentials = ingest_notifier.service_credentials
+        gcp_service_acct_creds = ingest_notifier.gcp_service_acct_creds
 
-        self.assertEqual(service_credentials["private_key"], "test_private_key")
-        self.assertEqual(service_credentials["private_key_id"], "test_private_key_id")
-        self.assertEqual(service_credentials["client_email"], "test_client_email")
+        self.assertEqual(gcp_service_acct_creds["private_key"], "test_private_key")
+        self.assertEqual(gcp_service_acct_creds["private_key_id"], "test_private_key_id")
+        self.assertEqual(gcp_service_acct_creds["client_email"], "test_client_email")
 
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier._send_notification')
     def test_format_and_send_notification(self, mock_send_notification):
         ingest_notifier = IngestNotifier("file_uploaded")
-        area_uuid = self._create_area()
-        headers = {'Content-Type': 'application/json; dcp-type="metadata/sample"'}
-        headers.update(self.authentication_header)
-        self.client.put(f"/v1/area/{area_uuid}/test_file_name", data="exquisite corpse", headers=headers)
+        area_uuid = str(uuid.uuid4())
+        upload_area = UploadArea(area_uuid)
+        upload_area.update_or_create()
+        upload_area._db_load()
+        upload_area.store_file("test_file_name", "test_file_content", "application/json; dcp-type=data")
 
         test_payload = {'name': "test_file_name", 'upload_area_id': area_uuid}
         notification_id = ingest_notifier.format_and_send_notification(test_payload)
