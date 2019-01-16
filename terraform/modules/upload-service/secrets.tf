@@ -17,7 +17,22 @@ resource "aws_secretsmanager_secret_version" "secrets" {
   "upload_submitter_role_arn": "${aws_iam_role.upload_submitter.arn}",
   "api_key": "${var.ingest_api_key}",
   "slack_webhook": "${var.slack_webhook}",
-  "staging_bucket_arn": "${var.staging_bucket_arn}"
+  "staging_bucket_arn": "${var.staging_bucket_arn}",
+  "ingest_api_host": "${var.ingest_api_host}"
+}
+SECRETS_JSON
+}
+
+resource "aws_secretsmanager_secret" "auth" {
+  name = "dcp/upload/${var.deployment_stage}/auth"
+}
+
+resource "aws_secretsmanager_secret_version" "auth" {
+  secret_id = "${aws_secretsmanager_secret.auth.id}"
+  secret_string = <<SECRETS_JSON
+{
+  "auth_audience": "${var.auth_audience}",
+  "service_credentials": "${var.service_credentials}"
 }
 SECRETS_JSON
 }

@@ -43,9 +43,8 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         self.client.post(f"/v1/area/{area_id}", headers=self.authentication_header)
         return area_id
 
-    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_validation_statuses_for_upload_area(self, mock_format_and_send_notification, mock_connect):
+    def test_validation_statuses_for_upload_area(self, mock_format_and_send_notification):
         area_id = self._create_area()
         upload_area = UploadArea(area_id)
 
@@ -91,10 +90,8 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         assert response.get_json() == expected_data
 
     @patch('upload.common.uploaded_file.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES + 1)
-    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_schedule_file_validation_raises_error_if_file_too_large(self, mock_format_and_send_notification,
-                                                                     mock_connect):
+    def test_schedule_file_validation_raises_error_if_file_too_large(self, mock_format_and_send_notification):
         area_id = self._create_area()
         self.mock_upload_file_to_s3(area_id, 'foo.json')
         response = self.client.put(
@@ -109,10 +106,9 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
 
     @patch('upload.common.upload_area.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES - 1)
     @patch('upload.lambdas.api_server.v1.area.ValidationScheduler.schedule_validation')
-    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_schedule_file_validation_doesnt_raise_error_for_correct_file_size(self, mock_format_and_send_notification,
-                                                                               mock_connect, mock_validate):
+                                                                               mock_validate):
         mock_validate.return_value = 4472093160
         area_id = self._create_area()
         self.mock_upload_file_to_s3(area_id, 'foo.json')
@@ -125,10 +121,9 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
 
     @patch('upload.common.upload_area.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES - 1)
     @patch('upload.lambdas.api_server.v1.area.ValidationScheduler.schedule_validation')
-    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_schedule_file_validation_works_for_hash_percent_encoding(self, mock_format_and_send_notification,
-                                                                      mock_connect, mock_validate):
+                                                                      mock_validate):
         mock_validate.return_value = 4472093160
         area_id = self._create_area()
         filename = 'green#.json'
@@ -141,9 +136,8 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         )
         self.assertEqual(200, response.status_code)
 
-    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_unscheduled_status_file_validation(self, mock_format_and_send_notification, mock_connect):
+    def test_unscheduled_status_file_validation(self, mock_format_and_send_notification):
         area_id = self._create_area()
         s3obj = self.mock_upload_file_to_s3(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
@@ -152,9 +146,8 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         validation_status = response.get_json()['validation_status']
         self.assertEqual(validation_status, "UNSCHEDULED")
 
-    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_scheduled_status_file_validation(self, mock_format_and_send_notification, mock_connect):
+    def test_scheduled_status_file_validation(self, mock_format_and_send_notification):
         validation_id = str(uuid.uuid4())
         area_id = self._create_area()
         s3obj = self.mock_upload_file_to_s3(area_id, 'foo.json')
@@ -169,9 +162,8 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         validation_status = response.get_json()['validation_status']
         self.assertEqual(validation_status, "SCHEDULED")
 
-    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_validating_status_file_validation(self, mock_format_and_send_notification, mock_connect):
+    def test_validating_status_file_validation(self, mock_format_and_send_notification):
         validation_id = str(uuid.uuid4())
         orig_val_id = str(uuid.uuid4())
         area_id = self._create_area()
@@ -207,9 +199,8 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(validation_status, "VALIDATING")
         mock_format_and_send_notification.assert_not_called()
 
-    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_validated_status_file_validation(self, mock_format_and_send_notification, mock_connect):
+    def test_validated_status_file_validation(self, mock_format_and_send_notification):
         validation_id = str(uuid.uuid4())
         area_id = self._create_area()
         s3obj = self.mock_upload_file_to_s3(area_id, 'foo.json')

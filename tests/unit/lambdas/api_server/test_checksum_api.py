@@ -40,9 +40,8 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         self.client.post(f"/v1/area/{area_uuid}", headers=self.authentication_header)
         return area_uuid
 
-    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_unscheduled_status_file_checksum(self, mock_format_and_send_notification, mock_connect):
+    def test_unscheduled_status_file_checksum(self, mock_format_and_send_notification):
         area_uuid = self._create_area()
         s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
         upload_area = UploadArea(area_uuid)
@@ -51,9 +50,8 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         checksum_status = response.get_json()['checksum_status']
         self.assertEqual(checksum_status, "UNSCHEDULED")
 
-    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_scheduled_status_file_checksum(self, mock_format_and_send_notification, mock_connect):
+    def test_scheduled_status_file_checksum(self, mock_format_and_send_notification):
         checksum_id = str(uuid.uuid4())
         area_uuid = self._create_area()
         s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
@@ -68,9 +66,8 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         checksum_status = response.get_json()['checksum_status']
         self.assertEqual(checksum_status, "SCHEDULED")
 
-    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_checksumming_status_file_checksum(self, mock_format_and_send_notification, mock_connect):
+    def test_checksumming_status_file_checksum(self, mock_format_and_send_notification):
         checksum_id = str(uuid.uuid4())
         area_uuid = self._create_area()
         s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
@@ -95,9 +92,8 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         checksum_status = response.get_json()['checksum_status']
         self.assertEqual(checksum_status, "CHECKSUMMING")
 
-    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_checksummed_status_file_checksum(self, mock_format_and_send_notification, mock_connect):
+    def test_checksummed_status_file_checksum(self, mock_format_and_send_notification):
         checksum_id = str(uuid.uuid4())
         area_uuid = self._create_area()
         s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
@@ -122,9 +118,8 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         checksum_status = response.get_json()['checksum_status']
         self.assertEqual(checksum_status, "CHECKSUMMED")
 
-    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_checksum_statuses_for_upload_area(self, mock_format_and_send_notification, mock_connect):
+    def test_checksum_statuses_for_upload_area(self, mock_format_and_send_notification):
         area_uuid = self._create_area()
         upload_area = UploadArea(area_uuid)
 

@@ -70,6 +70,16 @@ variable "db_instance_count" {
 
 // DCP Ingest
 
-variable "ingest_amqp_server" {
+variable "ingest_api_host" {
+  type = "string"
+}
+
+// AUTH
+
+variable "auth_audience" {
+  type = "string"
+}
+
+variable "service_credentials" {
   type = "string"
 }

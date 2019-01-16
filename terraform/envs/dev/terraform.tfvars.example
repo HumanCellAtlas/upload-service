@@ -29,7 +29,11 @@ db_password = "xxxxxxxxxxxxx"
 db_instance_count = 1
 
 // DCP Ingest
-ingest_amqp_server = "amqp.ingest.<deployment_stage>.data.humancellatlas.org"
+ingest_api_host = "api.ingest.<deployment_stage>.data.humancellatlas.org"
+
+// AUTH
+auth_audience = "https://dev.data.humancellatlas.org/"
+service_credentials = "service-credentials-b64-encoded-string"
 
 // Slack
 slack_webhook = "https://hooks.slack.com/services/<some-secret-stuff>"

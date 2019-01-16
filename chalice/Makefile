@@ -2,7 +2,6 @@ include ../common.mk
 
 export EXPORT_ENV_VARS_TO_LAMBDA=DEPLOYMENT_STAGE \
 			INGEST_API_KEY \
-			INGEST_AMQP_SERVER \
 			API_HOST
 
 clean:

@@ -48,9 +48,8 @@ class TestUploadApiClient(UploadTestCaseUsingMockAWS):
         self.client.post(f"/v1/area/{area_uuid}", headers=self.authentication_header)
         return area_uuid
 
-    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_update_event_with_validation_event(self, mock_format_and_send_notification, mock_connect):
+    def test_update_event_with_validation_event(self, mock_format_and_send_notification):
         validation_id = str(uuid.uuid4())
         area_id = self._create_area()
         s3obj = self.mock_upload_file_to_s3(area_id, 'foo.json')
@@ -79,9 +78,8 @@ class TestUploadApiClient(UploadTestCaseUsingMockAWS):
         self.assertEqual("<class 'datetime.datetime'>", str(type(record.get("validation_ended_at"))))
         self.assertEqual(uploaded_file.info(), record.get("results"))
 
-    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.connect')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_update_event_with_checksum_event(self, mock_format_and_send_notification, mock_connect):
+    def test_update_event_with_checksum_event(self, mock_format_and_send_notification):
         checksum_id = str(uuid.uuid4())
         area_uuid = self._create_area()
         s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
