@@ -1,11 +1,13 @@
 import logging
 import os
 import unittest
+import base64
+import json
 
 import boto3
 from moto import mock_iam, mock_s3, mock_sts, mock_sqs
 
-from upload.common.upload_config import UploadConfig, UploadDbConfig, UploadVersion
+from upload.common.upload_config import UploadConfig, UploadDbConfig, UploadVersion, UploadOutgoingIngestAuthConfig
 
 os.environ['LOG_LEVEL'] = 'CRITICAL'
 # logging.basicConfig(level=logging.DEBUG)
@@ -73,7 +75,19 @@ class UploadTestCase(unittest.TestCase):
         'upload_submitter_role_arn': 'bogo_submitter_role_arn',
         'slack_webhook': 'bogo_slack_url',
         'area_deletion_lambda_name': 'delete_lambda_name',
-        'staging_bucket_arn': 'staging_bucket_arn'
+        'staging_bucket_arn': 'staging_bucket_arn',
+        'ingest_api_host': 'test_ingest_api_host'
+    }
+
+    TEST_SERVICE_CREDS = {
+        'client_email': 'test_client_email',
+        'private_key_id': 'test_private_key_id',
+        'private_key': 'test_private_key'
+    }
+
+    UPLOAD_OUTGOING_INGEST_AUTH_CONFIG = {
+        'gcp_service_acct_creds': base64.b64encode(json.dumps(TEST_SERVICE_CREDS).encode()),
+        'dcp_auth0_audience': 'test_dcp_auth0_audience'
     }
 
     def setUp(self):
@@ -91,6 +105,10 @@ class UploadTestCase(unittest.TestCase):
         # UploadConfig
         self.upload_config = UploadConfig()
         self.upload_config.set(self.__class__.BOGO_CONFIG)
+
+        # AuthConfig
+        self.upload_auth_config = UploadOutgoingIngestAuthConfig()
+        self.upload_auth_config.set(self.__class__.UPLOAD_OUTGOING_INGEST_AUTH_CONFIG)
 
         # UploadVersion
         self.upload_version = UploadVersion()

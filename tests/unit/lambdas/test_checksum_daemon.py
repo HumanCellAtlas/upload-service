@@ -87,11 +87,9 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
         mock_checksum_file.assert_called()
 
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.CHECK_CONTENT_TYPE_TIMES', 0)
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     def test_that_if_a_small_file_has_not_been_checksummed_it_is_checksummed_inline(self,
-                                                                                    mock_format_and_send_notification,
-                                                                                    mock_connect):
+                                                                                    mock_format_and_send_notification):
             self.daemon.consume_event(self.event)
 
             tagging = boto3.client('s3').get_object_tagging(Bucket=self.upload_config.bucket_name, Key=self.file_key)
@@ -105,14 +103,11 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
             self.assertEqual(FIXTURE_DATA_CHECKSUMS[self.file_contents]['checksums'], db_checksum.checksums)
 
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.CHECK_CONTENT_TYPE_TIMES', 0)
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     def test_when_a_small_is_checksummed_inline_ingest_is_notified(self,
-                                                                   mock_format_and_send_notification,
-                                                                   mock_connect):
+                                                                   mock_format_and_send_notification):
         self.daemon.consume_event(self.event)
 
-        self.assertTrue(mock_connect.called, 'IngestNotifier.connect should have been called')
         self.assertTrue(mock_format_and_send_notification.called,
                         'IngestNotifier.file_was_uploaded should have been called')
         mock_format_and_send_notification.assert_called_once_with({
@@ -143,12 +138,10 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
         mock_schedule_checksumming.assert_called()
 
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.CHECK_CONTENT_TYPE_TIMES', 0)
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon._checksum_file')
     def test_if_the_file_has_been_summed_since_last_change_it_is_not_summed_again(self, mock_checksum_file,
-                                                                                  mock_format_and_send_notification,
-                                                                                  mock_connect):
+                                                                                  mock_format_and_send_notification):
         session = self.db_session_maker.session()
         file = self._make_dbfile(self.upload_area, self.test_file)
         checksum_time = datetime.utcnow() + timedelta(minutes=5)
@@ -167,12 +160,10 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
                          'IngestNotifier.file_was_uploaded should not have been called')
 
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.CHECK_CONTENT_TYPE_TIMES', 0)
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.connect')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon._checksum_file')
     def test_if_the_file_has_not_been_summed_since_last_change_it_is_summed_again(self, mock_checksum_file,
-                                                                                  mock_format_and_send_notification,
-                                                                                  mock_connect):
+                                                                                  mock_format_and_send_notification):
         session = self.db_session_maker.session()
         file = self._make_dbfile(self.upload_area, self.test_file)
         checksum_time = datetime.utcnow() + timedelta(minutes=5)

@@ -48,7 +48,6 @@ class ChecksumDaemon:
     def _read_environment(self):
         self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
         self.docker_image = os.environ['CSUM_DOCKER_IMAGE']
-        self.ingest_amqp_server = os.environ['INGEST_AMQP_SERVER']
         self.api_host = os.environ["API_HOST"]
 
     def consume_event(self, event):
@@ -150,7 +149,6 @@ class ChecksumDaemon:
         environment = {
             'BUCKET_NAME': self.config.bucket_name,
             'DEPLOYMENT_STAGE': self.deployment_stage,
-            'INGEST_AMQP_SERVER': self.ingest_amqp_server,
             'API_HOST': self.api_host,
             'CHECKSUM_ID': checksum_id,
             'CONTAINER': 'DOCKER'

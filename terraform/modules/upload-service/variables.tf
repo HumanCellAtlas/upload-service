@@ -73,7 +73,17 @@ variable "db_instance_count" {
 
 # DCP Ingest
 
-variable "ingest_amqp_server" {
+variable "ingest_api_host" {
+  type = "string"
+}
+
+# Auth
+
+variable "dcp_auth0_audience" {
+  type = "string"
+}
+
+variable "gcp_service_acct_creds" {
   type = "string"
 }
 

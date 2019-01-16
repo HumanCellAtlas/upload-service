@@ -49,7 +49,11 @@ module "upload-service" {
   db_instance_count = "${var.db_instance_count}"
 
   // DCP Ingest
-  ingest_amqp_server = "${var.ingest_amqp_server}"
+  ingest_api_host = "${var.ingest_api_host}"
+
+  // AUTH
+  dcp_auth0_audience = "${var.dcp_auth0_audience}"
+  gcp_service_acct_creds = "${var.gcp_service_acct_creds}"
 
   // Slack
   slack_webhook = "${var.slack_webhook}"
