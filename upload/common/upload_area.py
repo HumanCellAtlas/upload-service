@@ -204,7 +204,7 @@ class UploadArea:
         checksum_event.status = "CHECKSUMMED"
         checksum_event.checksums = dict(checksums)
         checksum_event.update_record()
-        return file.info()
+        return file
 
     def uploaded_file(self, filename):
         key = f"{self.key_prefix}{filename}"

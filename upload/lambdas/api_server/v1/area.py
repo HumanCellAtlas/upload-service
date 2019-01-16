@@ -63,8 +63,8 @@ def unlock(upload_area_uuid: str):
 def put_file(upload_area_uuid: str, filename: str, body: str):
     upload_area = _load_upload_area(upload_area_uuid)
     content_type = connexion.request.headers['Content-Type']
-    fileinfo = upload_area.store_file(filename, content=body, content_type=content_type)
-    return fileinfo, requests.codes.created
+    file = upload_area.store_file(filename, content=body, content_type=content_type)
+    return file.info(), requests.codes.created
 
 
 @return_exceptions_as_http_errors
