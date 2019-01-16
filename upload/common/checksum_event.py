@@ -9,13 +9,25 @@ logger = get_logger(__name__)
 
 class ChecksumEvent:
 
+    @classmethod
+    def load(cls, db_id):
+        db = UploadDB()
+        prop_vals_dict = db.get_pg_record("checksum", db_id)
+        return cls(
+            checksum_id=db_id,
+            job_id=prop_vals_dict['job_id'],
+            file_id=prop_vals_dict['file_id'],
+            status=prop_vals_dict['status']
+        )
+
     def __init__(self, **kwargs):
         self.job_id = kwargs.get("job_id")
         self.id = kwargs["checksum_id"]
-        self.file_id = kwargs["file_id"]
-        self.status = kwargs["status"]
+        self.file_id = kwargs.get("file_id")
+        self.status = kwargs.get("status")
         self.checksums = None
-        self.db = UploadDB()
+        if not os.environ.get('CONTAINER'):
+            self.db = UploadDB()
 
     def _format_prop_vals_dict(self):
         vals_dict = {

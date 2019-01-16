@@ -21,8 +21,9 @@ class IngestNotifier:
     INGEST_ENDPOINTS = {"file_uploaded": "messaging/fileUploadInfo",
                         "file_validated": "messaging/fileValidationResult"}
 
-    def __init__(self, notification_type):
+    def __init__(self, notification_type, file_id):
         self.upload_config = UploadConfig()
+        self.file_id = file_id
         self.outgoing_ingest_auth_config = UploadOutgoingIngestAuthConfig()
         self.ingest_notification_url = f"https://{self.ingest_api_host}/{self.INGEST_ENDPOINTS[notification_type]}"
         self.db = UploadDB()
@@ -94,11 +95,9 @@ class IngestNotifier:
             self.db.create_pg_record("notification", notification_props)
 
     def _format_notification_props(self, notification_id, status, payload):
-        upload_area_id = payload["upload_area_id"]
-        file_name = payload["name"]
         notification_props = {
             "id": notification_id,
-            "file_id": f"{upload_area_id}/{file_name}",
+            "file_id": self.file_id,
             "payload": payload,
             "status": status
         }

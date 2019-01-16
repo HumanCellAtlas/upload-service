@@ -122,20 +122,17 @@ def retrieve_checksum_status_count(upload_area_uuid: str):
 
 @return_exceptions_as_http_errors
 def update_checksum_event(upload_area_uuid: str, checksum_id: str, body: str):
-    upload_area = _load_upload_area(upload_area_uuid)
+    _load_upload_area(upload_area_uuid)  # security check
     body = json.loads(body)
-    status = body["status"]
-    job_id = body["job_id"]
     payload = body["payload"]
-    # TODO we need to be passing file IDs back from the checksummer, not filenames
-    file_name = payload["name"]
-    file_record = upload_area.uploaded_file(file_name)
 
-    checksum_event = ChecksumEvent(file_id=file_record.db_id, checksum_id=checksum_id,
-                                   job_id=job_id, status=status)
+    checksum_event = ChecksumEvent.load(db_id=checksum_id)
+    checksum_event.status = body['status']
+    checksum_event.job_id = body['job_id']
+
     if checksum_event.status == "CHECKSUMMED":
         checksum_event.checksums = payload["checksums"]
-        _notify_ingest(payload, "file_uploaded")
+        _notify_ingest(checksum_event.file_id, payload, "file_uploaded")
     checksum_event.update_record()
 
     return None, requests.codes.no_content
@@ -143,21 +140,19 @@ def update_checksum_event(upload_area_uuid: str, checksum_id: str, body: str):
 
 @return_exceptions_as_http_errors
 def update_validation_event(upload_area_uuid: str, validation_id: str, body: str):
-    upload_area = _load_upload_area(upload_area_uuid)
+    _load_upload_area(upload_area_uuid)  # security check
     body = json.loads(body)
     status = body["status"]
     job_id = body["job_id"]
     payload = body["payload"]
-    file_name = payload["name"]
-    file_record = upload_area.uploaded_file(file_name)
 
-    validation_event = ValidationEvent(file_id=file_record.db_id,
-                                       validation_id=validation_id,
-                                       job_id=job_id,
-                                       status=status)
+    validation_event = ValidationEvent.load(db_id=validation_id)
+    validation_event.job_id = job_id
+    validation_event.status = status
+
     if validation_event.status == "VALIDATED":
         validation_event.results = payload
-        _notify_ingest(payload, "file_validated")
+        _notify_ingest(validation_event.file_id, payload, "file_validated")
     validation_event.update_record()
 
     return None, requests.codes.no_content
@@ -194,6 +189,6 @@ def _load_upload_area(upload_area_uuid: str):
     return upload_area
 
 
-def _notify_ingest(payload, notification_type):
-    status = IngestNotifier(notification_type).format_and_send_notification(payload)
+def _notify_ingest(file_id, payload, notification_type):
+    status = IngestNotifier(notification_type, file_id).format_and_send_notification(payload)
     logger.info(f"Notified Ingest: payload={payload}, status={status}")
