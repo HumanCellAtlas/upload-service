@@ -7,7 +7,7 @@ if not os.environ.get("CONTAINER"):
 logger = get_logger(__name__)
 
 
-class UploadedFileChecksumEvent:
+class ChecksumEvent:
 
     def __init__(self, **kwargs):
         self.job_id = kwargs.get("job_id")

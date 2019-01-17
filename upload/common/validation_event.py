@@ -8,7 +8,7 @@ if not os.environ.get("CONTAINER"):
 logger = get_logger(__name__)
 
 
-class UploadedFileValidationEvent:
+class ValidationEvent:
 
     def __init__(self, **kwargs):
         self.id = kwargs["validation_id"]

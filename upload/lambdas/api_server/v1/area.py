@@ -5,8 +5,8 @@ import requests
 from .. import return_exceptions_as_http_errors, require_authenticated
 from ..validation_scheduler import ValidationScheduler
 from ....common.upload_area import UploadArea
-from ....common.checksum_event import UploadedFileChecksumEvent
-from ....common.validation_event import UploadedFileValidationEvent
+from ....common.checksum_event import ChecksumEvent
+from ....common.validation_event import ValidationEvent
 from ....common.exceptions import UploadException
 from ....common.ingest_notifier import IngestNotifier
 from ....common.logging import get_logger
@@ -130,7 +130,7 @@ def update_checksum_event(upload_area_uuid: str, checksum_id: str, body: str):
     file_name = payload["name"]
     file_key = f"{upload_area_uuid}/{file_name}"
 
-    checksum_event = UploadedFileChecksumEvent(file_id=file_key, checksum_id=checksum_id, job_id=job_id, status=status)
+    checksum_event = ChecksumEvent(file_id=file_key, checksum_id=checksum_id, job_id=job_id, status=status)
     if checksum_event.status == "CHECKSUMMED":
         checksum_event.checksums = payload["checksums"]
         _notify_ingest(payload, "file_uploaded")
@@ -149,10 +149,10 @@ def update_validation_event(upload_area_uuid: str, validation_id: str, body: str
     file_name = payload["name"]
     file_key = f"{upload_area_uuid}/{file_name}"
 
-    validation_event = UploadedFileValidationEvent(file_id=file_key,
-                                                   validation_id=validation_id,
-                                                   job_id=job_id,
-                                                   status=status)
+    validation_event = ValidationEvent(file_id=file_key,
+                                       validation_id=validation_id,
+                                       job_id=job_id,
+                                       status=status)
     if validation_event.status == "VALIDATED":
         validation_event.results = payload
         _notify_ingest(payload, "file_validated")

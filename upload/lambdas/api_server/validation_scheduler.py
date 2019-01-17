@@ -8,7 +8,7 @@ import boto3
 from ...common.uploaded_file import UploadedFile
 from ...common.batch import JobDefinition
 from ...common.retry import retry_on_aws_too_many_requests
-from ...common.validation_event import UploadedFileValidationEvent
+from ...common.validation_event import ValidationEvent
 from ...common.upload_config import UploadConfig
 
 batch = boto3.client('batch')
@@ -57,12 +57,12 @@ class ValidationScheduler:
         return validation_id
 
     def _create_scheduled_validation_event(self, validator_docker_image, validation_id, orig_val_id):
-        validation_event = UploadedFileValidationEvent(file_id=self.file_key,
-                                                       validation_id=validation_id,
-                                                       job_id=self.batch_job_id,
-                                                       status="SCHEDULED",
-                                                       docker_image=validator_docker_image,
-                                                       original_validation_id=orig_val_id)
+        validation_event = ValidationEvent(file_id=self.file_key,
+                                           validation_id=validation_id,
+                                           job_id=self.batch_job_id,
+                                           status="SCHEDULED",
+                                           docker_image=validator_docker_image,
+                                           original_validation_id=orig_val_id)
         validation_event.create_record()
         return validation_event
 

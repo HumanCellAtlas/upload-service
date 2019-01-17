@@ -10,7 +10,7 @@ from dcplib.media_types import DcpMediaType
 
 from .checksum import UploadedFileChecksummer
 from .uploaded_file import UploadedFile
-from .checksum_event import UploadedFileChecksumEvent
+from .checksum_event import ChecksumEvent
 from .exceptions import UploadException
 from .upload_config import UploadConfig
 from .logging import get_logger
@@ -196,9 +196,9 @@ class UploadArea:
 
         checksummer = UploadedFileChecksummer(uploaded_file=file)
         checksum_id = str(uuid.uuid4())
-        checksum_event = UploadedFileChecksumEvent(file_id=f"{self.key_prefix}{filename}",
-                                                   checksum_id=checksum_id,
-                                                   status="CHECKSUMMING")
+        checksum_event = ChecksumEvent(file_id=f"{self.key_prefix}{filename}",
+                                       checksum_id=checksum_id,
+                                       status="CHECKSUMMING")
         checksum_event.create_record()
         checksums = checksummer.checksum(report_progress=True)
         file.checksums = checksums
