@@ -8,8 +8,8 @@ from . import client_for_test_api_server
 
 from upload.common.uploaded_file import UploadedFile
 from upload.common.upload_area import UploadArea
-from upload.common.validation_event import UploadedFileValidationEvent
-from upload.common.checksum_event import UploadedFileChecksumEvent
+from upload.common.validation_event import ValidationEvent
+from upload.common.checksum_event import ChecksumEvent
 from upload.common.database import UploadDB
 
 
@@ -50,10 +50,10 @@ class TestUploadApiClient(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file_to_s3(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
-                                                       validation_id=validation_id,
-                                                       job_id='12345',
-                                                       status="SCHEDULED")
+        validation_event = ValidationEvent(file_id=s3obj.key,
+                                           validation_id=validation_id,
+                                           job_id='12345',
+                                           status="SCHEDULED")
         validation_event.create_record()
         validation_event.status = "VALIDATING"
         response = update_event(validation_event, uploaded_file.info(), self.client)
@@ -82,10 +82,10 @@ class TestUploadApiClient(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
         upload_area = UploadArea(area_uuid)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        checksum_event = UploadedFileChecksumEvent(file_id=s3obj.key,
-                                                   checksum_id=checksum_id,
-                                                   job_id='12345',
-                                                   status="SCHEDULED")
+        checksum_event = ChecksumEvent(file_id=s3obj.key,
+                                       checksum_id=checksum_id,
+                                       job_id='12345',
+                                       status="SCHEDULED")
         checksum_event.create_record()
 
         checksum_event.status = "CHECKSUMMING"

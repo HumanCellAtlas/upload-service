@@ -7,7 +7,7 @@ from urllib3.util import parse_url
 from upload.common.upload_area import UploadArea
 from upload.common.logging import get_logger
 from upload.common.checksum import UploadedFileChecksummer
-from upload.common.checksum_event import UploadedFileChecksumEvent
+from upload.common.checksum_event import ChecksumEvent
 from upload.common.upload_api_client import update_event
 from upload.common.upload_config import UploadConfig
 
@@ -21,10 +21,10 @@ class Checksummer:
         self._parse_args(argv)
         upload_area, uploaded_file = self._find_file()
         checksummer = UploadedFileChecksummer(uploaded_file)
-        checksum_event = UploadedFileChecksumEvent(file_id=uploaded_file.s3obj.key,
-                                                   checksum_id=os.environ['CHECKSUM_ID'],
-                                                   job_id=os.environ['AWS_BATCH_JOB_ID'],
-                                                   status="CHECKSUMMING")
+        checksum_event = ChecksumEvent(file_id=uploaded_file.s3obj.key,
+                                       checksum_id=os.environ['CHECKSUM_ID'],
+                                       job_id=os.environ['AWS_BATCH_JOB_ID'],
+                                       status="CHECKSUMMING")
         if checksummer.has_checksums():
             logger.info(f"File {uploaded_file.name} is already checksummed.")
             checksum_event.status = "CHECKSUMMED"

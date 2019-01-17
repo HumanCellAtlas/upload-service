@@ -12,9 +12,9 @@ header = {'Content-type': 'application/json'}
 
 def update_event(event, file_payload, client=requests):
     event_type = type(event).__name__
-    if event_type == "UploadedFileValidationEvent":
+    if event_type == "ValidationEvent":
         action = 'update_validation'
-    elif event_type == "UploadedFileChecksumEvent":
+    elif event_type == "ChecksumEvent":
         action = 'update_checksum'
 
     data = {"status": event.status,

@@ -7,7 +7,7 @@ import boto3
 
 from upload.common.upload_area import UploadArea
 from upload.common.uploaded_file import UploadedFile
-from upload.common.validation_event import UploadedFileValidationEvent
+from upload.common.validation_event import ValidationEvent
 from upload.lambdas.api_server.validation_scheduler import MAX_FILE_SIZE_IN_BYTES
 from upload.common.database import UploadDB
 
@@ -64,22 +64,22 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         UploadedFile(upload_area, s3object=s3obj3)
         UploadedFile(upload_area, s3object=s3obj4)
 
-        validation_event1 = UploadedFileValidationEvent(file_id=s3obj1.key,
-                                                        validation_id=validation1_id,
-                                                        job_id='12345',
-                                                        status="SCHEDULED")
-        validation_event2 = UploadedFileValidationEvent(file_id=s3obj2.key,
-                                                        validation_id=validation2_id,
-                                                        job_id='23456',
-                                                        status="VALIDATING")
-        validation_event3 = UploadedFileValidationEvent(file_id=s3obj3.key,
-                                                        validation_id=validation3_id,
-                                                        job_id='34567',
-                                                        status="VALIDATED")
-        validation_event4 = UploadedFileValidationEvent(file_id=s3obj4.key,
-                                                        validation_id=validation4_id,
-                                                        job_id='45678',
-                                                        status="VALIDATING")
+        validation_event1 = ValidationEvent(file_id=s3obj1.key,
+                                            validation_id=validation1_id,
+                                            job_id='12345',
+                                            status="SCHEDULED")
+        validation_event2 = ValidationEvent(file_id=s3obj2.key,
+                                            validation_id=validation2_id,
+                                            job_id='23456',
+                                            status="VALIDATING")
+        validation_event3 = ValidationEvent(file_id=s3obj3.key,
+                                            validation_id=validation3_id,
+                                            job_id='34567',
+                                            status="VALIDATED")
+        validation_event4 = ValidationEvent(file_id=s3obj4.key,
+                                            validation_id=validation4_id,
+                                            job_id='45678',
+                                            status="VALIDATING")
         validation_event3.results = 'VALID'
         validation_event1.create_record()
         validation_event2.create_record()
@@ -154,10 +154,10 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file_to_s3(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         UploadedFile(upload_area, s3object=s3obj)
-        validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
-                                                       validation_id=validation_id,
-                                                       job_id='12345',
-                                                       status="SCHEDULED")
+        validation_event = ValidationEvent(file_id=s3obj.key,
+                                           validation_id=validation_id,
+                                           job_id='12345',
+                                           status="SCHEDULED")
         validation_event.create_record()
         response = self.client.get(f"/v1/area/{area_id}/foo.json/validate")
         validation_status = response.get_json()['validation_status']
@@ -171,12 +171,12 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file_to_s3(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
-                                                       validation_id=validation_id,
-                                                       job_id='12345',
-                                                       status="SCHEDULED",
-                                                       docker_image="test_docker_image",
-                                                       original_validation_id=orig_val_id)
+        validation_event = ValidationEvent(file_id=s3obj.key,
+                                           validation_id=validation_id,
+                                           job_id='12345',
+                                           status="SCHEDULED",
+                                           docker_image="test_docker_image",
+                                           original_validation_id=orig_val_id)
         validation_event.create_record()
         data = {
             "status": "VALIDATING",
@@ -207,11 +207,11 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file_to_s3(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        validation_event = UploadedFileValidationEvent(file_id=s3obj.key,
-                                                       validation_id=validation_id,
-                                                       job_id='12345',
-                                                       status="SCHEDULED",
-                                                       docker_image="test_docker_image")
+        validation_event = ValidationEvent(file_id=s3obj.key,
+                                           validation_id=validation_id,
+                                           job_id='12345',
+                                           status="SCHEDULED",
+                                           docker_image="test_docker_image")
         validation_event.create_record()
         data = {
             "status": "VALIDATING",

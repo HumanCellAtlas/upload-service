@@ -10,7 +10,7 @@ import boto3
 from urllib3.util import parse_url
 from tenacity import retry, stop_after_attempt, before_log, before_sleep_log, wait_exponential, TryAgain
 
-from upload.common.validation_event import UploadedFileValidationEvent
+from upload.common.validation_event import ValidationEvent
 from upload.common.logging import get_logger
 from upload.common.upload_api_client import update_event
 
@@ -48,10 +48,10 @@ class ValidatorHarness:
 
         self._stage_file_to_be_validated()
 
-        validation_event = UploadedFileValidationEvent(file_id=self.s3_object_key,
-                                                       validation_id=self.validation_id,
-                                                       job_id=self.job_id,
-                                                       status="VALIDATING")
+        validation_event = ValidationEvent(file_id=self.s3_object_key,
+                                           validation_id=self.validation_id,
+                                           job_id=self.job_id,
+                                           status="VALIDATING")
         if not test_only:
             update_event(validation_event, {"upload_area_id": upload_area_id, "name": file_name})
 

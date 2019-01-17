@@ -9,7 +9,7 @@ from six.moves import urllib
 
 from ...common.batch import JobDefinition
 from ...common.checksum import UploadedFileChecksummer
-from ...common.checksum_event import UploadedFileChecksumEvent
+from ...common.checksum_event import ChecksumEvent
 from ...common.database_orm import DBSessionMaker, DbChecksum
 from ...common.ingest_notifier import IngestNotifier
 from ...common.logging import get_logger
@@ -125,9 +125,9 @@ class ChecksumDaemon:
         return checksum_status
 
     def _checksum_file_now(self):
-        checksum_event = UploadedFileChecksumEvent(checksum_id=str(uuid.uuid4()),
-                                                   file_id=self.uploaded_file.s3obj.key,
-                                                   status="CHECKSUMMING")
+        checksum_event = ChecksumEvent(checksum_id=str(uuid.uuid4()),
+                                       file_id=self.uploaded_file.s3obj.key,
+                                       status="CHECKSUMMING")
         checksum_event.create_record()
 
         checksummer = UploadedFileChecksummer(self.uploaded_file)
@@ -160,10 +160,10 @@ class ChecksumDaemon:
                                          job_defn=self._find_or_create_job_definition(),
                                          command=command,
                                          environment=environment)
-        checksum_event = UploadedFileChecksumEvent(file_id=self.uploaded_file.s3obj.key,
-                                                   checksum_id=checksum_id,
-                                                   job_id=job_id,
-                                                   status="SCHEDULED")
+        checksum_event = ChecksumEvent(file_id=self.uploaded_file.s3obj.key,
+                                       checksum_id=checksum_id,
+                                       job_id=job_id,
+                                       status="SCHEDULED")
         checksum_event.create_record()
 
     def _find_or_create_job_definition(self):
