@@ -5,7 +5,7 @@ import time
 import base64
 
 import requests
-import jwt
+from jwt import encode
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from .exceptions import UploadException
@@ -51,14 +51,21 @@ class IngestNotifier:
 
     @retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
     def _send_notification(self, notification_id, body):
-        jwt_token = self.get_service_jwt()
-        headers = {'Authorization': f"Bearer {jwt_token}"}
-        response = requests.post(self.ingest_notification_url, headers=headers, json=body)
-        if not response.status_code == requests.codes.accepted:
+        try:
+            logger.info(f"attempting notification_id:{notification_id}, payload:{body}, \
+                          url:{self.ingest_notification_url}")
+            jwt_token = self.get_service_jwt()
+            headers = {'Authorization': f"Bearer {jwt_token}"}
+            response = requests.post(self.ingest_notification_url, headers=headers, json=body)
+            if not response.status_code == requests.codes.accepted:
+                self._create_or_update_db_notification(notification_id, "FAILED", json.loads(body))
+                logger.info(f"failed notification_id:{notification_id}, payload:{body}, \
+                              response:{response.status_code}, url:{self.ingest_notification_url}")
+            logger.info(f"successfully sent notification_id:{notification_id}, payload:{body}, \
+                          url:{self.ingest_notification_url}")
+        except Exception as e:
             self._create_or_update_db_notification(notification_id, "FAILED", json.loads(body))
-            raise UploadException(status=response.status_code,
-                                  title=f"Failed Notification",
-                                  detail=f"Notification {body} failed to post")
+            logger.info(f"failed to send notification {notification_id} with payload {body} and error {str(e)}")
 
     def get_service_jwt(self):
         # This function is taken directly from auth best practice docs in hca gitlab
@@ -75,8 +82,8 @@ class IngestNotifier:
                    'scope': ["openid", "email", "offline_access"]
                    }
         additional_headers = {'kid': self.gcp_service_acct_creds["private_key_id"]}
-        signed_jwt = jwt.encode(payload, self.gcp_service_acct_creds["private_key"],
-                                headers=additional_headers, algorithm='RS256').decode()
+        signed_jwt = encode(payload, self.gcp_service_acct_creds["private_key"],
+                            headers=additional_headers, algorithm='RS256').decode()
         return signed_jwt
 
     def _create_or_update_db_notification(self, notification_id, status, payload):

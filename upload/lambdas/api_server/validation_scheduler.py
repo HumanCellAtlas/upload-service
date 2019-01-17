@@ -36,7 +36,6 @@ class ValidationScheduler:
         validation_id = str(uuid.uuid4())
         job_defn = self._find_or_create_job_definition_for_image(validator_docker_image)
         environment['DEPLOYMENT_STAGE'] = os.environ['DEPLOYMENT_STAGE']
-        environment['INGEST_AMQP_SERVER'] = os.environ['INGEST_AMQP_SERVER']
         environment['INGEST_API_KEY'] = os.environ['INGEST_API_KEY']
         environment['API_HOST'] = os.environ['API_HOST']
         environment['CONTAINER'] = 'DOCKER'

@@ -57,7 +57,7 @@ class TestIngestNotifier(UploadTestCaseUsingMockAWS):
         self.assertEqual(record['file_id'], f"{area_uuid}/test_file_name")
         self.assertEqual(record['payload'], test_payload)
 
-    @patch('jwt.encode')
+    @patch('upload.common.ingest_notifier.encode')
     def test_get_service_jwt(self, mock_encode):
         ingest_notifier = IngestNotifier("file_uploaded")
         mock_encode.return_value = b"test_jwt"
