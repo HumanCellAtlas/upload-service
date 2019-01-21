@@ -13,7 +13,7 @@ It contains a Docker `ENTRYPOINT` that runs a harness script that:
 To build a validator that uses this base, construct a Dockerfile like this:
 
 ```Dockerfile
-FROM humancellatlas/upload-validator-base-alpine
+FROM humancellatlas/upload-validator-base-alpine:<version>
 
 # Install packages needed by your validator.
 
@@ -46,7 +46,7 @@ AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY. Alternatively you can mount
 your AWS credentials in the container with option `-v ~/.aws:/root/.aws`.
 
 The `-t` option is passed into the container.  It tells the harness not
-to attempt to contact Ingest. 
+to attempt to contact Ingest.
 
 ```bash
 docker build -t myvalidator .
@@ -70,3 +70,16 @@ curl -X PUT -H "Api-Key: look-it-up" \
             https://upload.dev.data.humancellatlas.org/v1/area/<uuid>/<filename>/validate
 ```
 4. Use the AWS Batch UI to find your job and look at its logs.
+
+## Notes for Upload Development Team
+
+The primary user of this Docker image is the DCP Ingest team's `fastq_utils`
+docker image.  To update their image to use a newer version of this base
+image, update the first line of its [Dockerfile](https://github.com/HumanCellAtlas/fastq_utils/blob/master/Dockerfile#L1):
+```
+FROM humancellatlas/upload-validator-base-alpine:17
+```
+Then submit a PR.
+
+For reference, the version of the validator image used in each environment
+is set [here](https://github.com/HumanCellAtlas/ingest-validator/blob/master/config/default.json#L53).
