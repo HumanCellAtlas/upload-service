@@ -25,7 +25,6 @@ class ChecksumEvent:
         self.id = kwargs["checksum_id"]
         self.file_id = kwargs.get("file_id")
         self.status = kwargs.get("status")
-        self.checksums = None
         if not os.environ.get('CONTAINER'):
             self.db = UploadDB()
 
@@ -41,7 +40,6 @@ class ChecksumEvent:
             vals_dict["checksum_started_at"] = datetime.utcnow()
         elif self.status == "CHECKSUMMED":
             vals_dict["checksum_ended_at"] = datetime.utcnow()
-            vals_dict["checksums"] = self.checksums
 
         return vals_dict
 

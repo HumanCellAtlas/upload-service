@@ -57,7 +57,8 @@ class UploadedFile:
             "s3_etag": None,
             "upload_area_id": upload_area.db_id,
             "name": None,
-            "size": None
+            "size": None,
+            "checksums": None
         }
 
         self._s3_load()
@@ -67,8 +68,6 @@ class UploadedFile:
         e_tag = self.s3object.e_tag.strip('\"')
         if self._db_load(self.s3object.key, e_tag) is None:
             self._db_create()
-
-        self.checksums = DssChecksums(s3_object=self.s3object)
 
     def __str__(self):
         return f"UploadedFile(id={self.db_id}, s3_key={self.s3_key}, etag={self.s3_etag})"
@@ -94,6 +93,15 @@ class UploadedFile:
         return self._properties['size']
 
     @property
+    def checksums(self):
+        return self._properties['checksums']
+
+    @checksums.setter
+    def checksums(self, newval):
+        self._properties['checksums'] = newval
+        self._db_update()
+
+    @property
     def s3url(self):
         return f"s3://{self.upload_area.bucket_name}/{self.s3_key}"
 
@@ -113,7 +121,7 @@ class UploadedFile:
             'size': self.size,
             'content_type': self.content_type,
             'url': self.s3url,
-            'checksums': dict(self.checksums),
+            'checksums': self.checksums,
             'last_modified': self.s3_last_modified.isoformat()
         }
 
@@ -133,14 +141,12 @@ class UploadedFile:
 
     def retrieve_latest_file_checksum_status_and_values(self):
         status = "UNSCHEDULED"
-        checksums = None
-        query_results = self._db.run_query_with_params("SELECT status, checksums FROM checksum \
+        query_results = self._db.run_query_with_params("SELECT status FROM checksum \
             WHERE file_id = %s ORDER BY created_at DESC LIMIT 1;", (self.db_id,))
         rows = query_results.fetchall()
         if len(rows) > 0:
             status = rows[0][0]
-            checksums = rows[0][1]
-        return status, checksums
+        return status, self.checksums
 
     def _s3_load(self):
         try:
@@ -153,12 +159,14 @@ class UploadedFile:
                 raise e
 
     def _populate_properties_from_s3_object(self):
+        checksums = DssChecksums(self.s3object)
         self._properties = {
             **self._properties,
             's3_key': self.s3object.key,
             's3_etag': self.s3object.e_tag.strip('\"'),
             'name': self.s3object.key[self.upload_area.key_prefix_length:],  # cut off upload-area-id/
-            'size': self.s3object.content_length
+            'size': self.s3object.content_length,
+            'checksums': dict(checksums) if checksums.are_present() else None
         }
 
     def _db_load(self, s3_key, s3_etag):
@@ -183,7 +191,8 @@ class UploadedFile:
                 's3_key': s3_key,
                 's3_etag': s3_etag,
                 'name': rows[0][result.keys().index('name')],
-                'size': rows[0][result.keys().index('size')]
+                'size': rows[0][result.keys().index('size')],
+                'checksums': rows[0][result.keys().index('checksums')]
             }
             return True
 
