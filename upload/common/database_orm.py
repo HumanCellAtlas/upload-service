@@ -24,10 +24,11 @@ class DbFile(Base):
     __tablename__ = 'file'
     id = Column(Integer(), primary_key=True)
     s3_key = Column(String(), nullable=False)
+    s3_etag = Column(String(), nullable=True)
     upload_area_id = Column(Integer(), ForeignKey('upload_area.id'), nullable=False)
     name = Column(String(), nullable=False)
     size = Column(Integer(), nullable=False)
-    s3_etag = Column(String(), nullable=True)
+    checksums = Column(JSON(), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, nullable=False, onupdate=datetime.utcnow)
 
@@ -40,13 +41,12 @@ class DbChecksum(Base):
     file_id = Column(String(), ForeignKey('file.id'), nullable=False)
     job_id = Column(String(), nullable=False)
     status = Column(String(), nullable=False)
-    checksums = Column(String(), nullable=False)
     checksum_started_at = Column(DateTime(), nullable=False)
     checksum_ended_at = Column(DateTime(), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, nullable=False, onupdate=datetime.utcnow)
 
-    file = relationship("DbFile", back_populates='checksums')
+    file = relationship("DbFile", back_populates='checksum_records')
 
 
 class DbValidation(Base):
@@ -77,9 +77,9 @@ class DbNotification(Base):
 
 
 DbUploadArea.files = relationship('DbFile', order_by=DbFile.id, back_populates='upload_area')
-DbFile.checksums = relationship('DbChecksum', order_by=DbChecksum.created_at,
-                                back_populates='file',
-                                cascade='all, delete, delete-orphan')
+DbFile.checksum_records = relationship('DbChecksum', order_by=DbChecksum.created_at,
+                                       back_populates='file',
+                                       cascade='all, delete, delete-orphan')
 DbFile.validations = relationship('DbValidation',
                                   order_by=DbValidation.created_at,
                                   back_populates='file',

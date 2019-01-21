@@ -23,12 +23,13 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         self.upload_area = UploadArea(self.upload_area_id)
         self.upload_area.update_or_create()
 
-    def create_file_record(self, s3object):
+    def create_file_record(self, s3object, checksums=None):
         record = DbFile(s3_key=s3object.key,
                         s3_etag=s3object.e_tag.strip('\"'),
                         name=os.path.basename(s3object.key),
                         upload_area_id=self.upload_area.db_id,
-                        size=s3object.content_length)
+                        size=s3object.content_length,
+                        checksums=checksums)
         self.db.add(record)
         self.db.commit()
         return record
@@ -71,8 +72,6 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         # Links to objects
         self.assertEqual(s3object, uf.s3object)
         self.assertEqual(self.upload_area, uf.upload_area)
-        self.assertIsInstance(uf.checksums, DssChecksums)
-        self.assertEqual(s3object, uf.checksums._s3obj)
         # Persisted properties
         self.assertEqual(file_record.id, uf.db_id)
         self.assertEqual(s3object.key, uf.s3_key)
@@ -149,12 +148,21 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
 
         self.assertEqual(new_content_type, uf.content_type)
 
+    def test_checksums_setter_saves_db_record(self):
+        s3object = self.create_s3_object(f"{self.upload_area_id}/foo")
+        file_record = self.create_file_record(s3object)
+        uf = UploadedFile.from_db_id(file_record.id)
+
+        uf.checksums = {'foo': 'bar'}
+
+        self.db.refresh(file_record)
+        self.assertEqual({'foo': 'bar'}, file_record.checksums)
+
     def test_info(self):
         test_file = FixtureFile.factory("foo")
         s3object = self.create_s3_object(f"{self.upload_area_id}/foo", content=test_file.contents)
-        file_record = self.create_file_record(s3object)
+        file_record = self.create_file_record(s3object, checksums=test_file.checksums)
         uf = UploadedFile(self.upload_area, s3object=s3object)
-        uf.checksums.compute()
 
         self.assertEqual({
             'upload_area_id': self.upload_area.uuid,
