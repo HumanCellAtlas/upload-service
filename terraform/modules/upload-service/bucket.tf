@@ -40,7 +40,9 @@ resource "aws_iam_policy" "upload_areas_submitter_access" {
             ],
             "Resource": [
                 "${var.staging_bucket_arn}/*",
-                "${var.staging_bucket_arn}"
+                "${var.staging_bucket_arn}",
+                "arn:aws:s3:::org-humancellatlas-dcp-test-data",
+                "arn:aws:s3:::org-humancellatlas-dcp-test-data/*"
             ]
         }
     ]

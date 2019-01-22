@@ -107,7 +107,9 @@ class UploadArea:
                     ],
                     "Resource": [
                         f"{self.staging_bucket_arn}/*",
-                        f"{self.staging_bucket_arn}"
+                        f"{self.staging_bucket_arn}",
+                        "arn:aws:s3:::org-humancellatlas-dcp-test-data",
+                        "arn:aws:s3:::org-humancellatlas-dcp-test-data/*"
                     ]
                 }
             ]
