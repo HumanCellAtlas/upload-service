@@ -1,10 +1,10 @@
-from datetime import datetime, timedelta
 import os
 import sys
 from unittest.mock import Mock, patch
 import uuid
 
 import boto3
+from sqlalchemy.orm.exc import NoResultFound
 
 from .. import UploadTestCaseUsingMockAWS, EnvironmentSetup
 from ... import FixtureFile
@@ -18,12 +18,15 @@ if __name__ == '__main__':
 
 from upload.lambdas.checksum_daemon import ChecksumDaemon  # noqa
 
+# Add checksums
 
-class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
 
-    def _make_dbfile(self, upload_area, test_file):
+class ChecksumDaemonTest(UploadTestCaseUsingMockAWS):
+
+    def _make_dbfile(self, upload_area, test_file, checksums=None):
         return DbFile(s3_key=f"{upload_area.uuid}/{test_file.name}", s3_etag=test_file.e_tag,
-                      upload_area_id=upload_area.db_id, name=test_file.name, size=test_file.size)
+                      upload_area_id=upload_area.db_id, name=test_file.name, size=test_file.size,
+                      checksums=checksums)
 
     def setUp(self):
         super().setUp()
@@ -43,12 +46,12 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
         context = Mock()
         self.daemon = ChecksumDaemon(context)
         # File
-        self.test_file = FixtureFile.factory('foo')
-        self.file_key = f"{self.area_uuid}/{self.test_file.name}"
+        self.small_file = FixtureFile.factory('foo')
+        self.file_key = f"{self.area_uuid}/{self.small_file.name}"
         self.object = self.upload_bucket.Object(self.file_key)
-        self.object.put(Key=self.file_key, Body=self.test_file.contents, ContentType=self.test_file.content_type)
+        self.object.put(Key=self.file_key, Body=self.small_file.contents, ContentType=self.small_file.content_type)
         # Event
-        self.event = {'Records': [
+        self.events = {'Records': [
             {'eventVersion': '2.0', 'eventSource': 'aws:s3', 'awsRegion': 'us-east-1',
              'eventTime': '2017-09-15T00:05:10.378Z', 'eventName': 'ObjectCreated:Put',
              'userIdentity': {'principalId': 'AWS:AROAI4WRRXW2K3Y2IFL6Q:upload-api-dev'},
@@ -60,113 +63,135 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
                     'bucket': {'name': self.upload_config.bucket_name,
                                'ownerIdentity': {'principalId': 'A29PZ5XRQWJUUM'},
                                'arn': f'arn:aws:s3:::{self.upload_config.bucket_name}'},
-                    'object': {'key': self.file_key, 'size': 16,
-                               'eTag': self.test_file.e_tag,
+                    'object': {'key': self.file_key,
+                               'size': self.small_file.size,
+                               'eTag': self.small_file.e_tag,
                                'sequencer': '0059BB193641C4EAB0'}}}]}
         self.db_session_maker = DBSessionMaker()
+        self.db = self.db_session_maker.session()
 
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon._checksum_file')
-    def test_that_if_the_file_has_not_been_checksummed_it_will_be_checksummed(self, mock_checksum_file):
 
-        self.daemon.consume_event(self.event)
+class TestChecksumDaemonSeeingS3ObjectsForTheFirstTime(ChecksumDaemonTest):
 
-        mock_checksum_file.assert_called()
+    """
+    Scenario: a file is uploaded for the first time
+    """
 
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.CHECK_CONTENT_TYPE_TIMES', 0)
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
-    def test_that_if_a_small_file_has_not_been_checksummed_it_is_checksummed_inline(self,
+    def test_when_an_s3_object_is_seen_for_the_first_time__a_file_record_is_created(self,
                                                                                     mock_format_and_send_notification):
-            self.daemon.consume_event(self.event)
+        with self.assertRaises(NoResultFound):
+            self.db.query(DbFile).filter(DbFile.s3_key == self.file_key,
+                                         DbFile.s3_etag == self.small_file.e_tag).one()
 
-            tagging = boto3.client('s3').get_object_tagging(Bucket=self.upload_config.bucket_name, Key=self.file_key)
-            self.assertEqual(
-                sorted(tagging['TagSet'], key=lambda x: x['Key']),
-                self.test_file.s3_tagset
-            )
+        self.daemon.consume_events(self.events)
 
-            session = self.db_session_maker.session()
-            file = self.upload_area.uploaded_file(self.test_file.name)
-            db_checksum = session.query(DbChecksum).filter(DbChecksum.file_id == file.db_id).one()
-            self.assertEqual(self.test_file.checksums, db_checksum.checksums)
+        file_record = self.db.query(DbFile).filter(DbFile.s3_key == self.file_key,
+                                                   DbFile.s3_etag == self.small_file.e_tag).one()
 
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.CHECK_CONTENT_TYPE_TIMES', 0)
+        self.assertEqual(self.upload_area.db_id, file_record.upload_area_id)
+        self.assertEqual(self.small_file.name, file_record.name)
+        self.assertEqual(self.small_file.size, file_record.size)
+
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
-    def test_when_a_small_is_checksummed_inline_ingest_is_notified(self,
-                                                                   mock_format_and_send_notification):
-        self.daemon.consume_event(self.event)
+    def test_for_a_small_s3_object__csums_are_computed_in_the_lambda(self, mock_send_notif):
+
+        self.daemon.consume_events(self.events)
+
+        file_record = self.db.query(DbFile).filter(DbFile.s3_key == self.file_key,
+                                                   DbFile.s3_etag == self.small_file.e_tag).one()
+        self.assertEqual(self.small_file.checksums, file_record.checksums)
+
+        tagging = boto3.client('s3').get_object_tagging(Bucket=self.upload_config.bucket_name, Key=self.file_key)
+        self.assertEqual(self.small_file.s3_tagset, sorted(tagging['TagSet'], key=lambda x: x['Key']))
+
+        checksum_record = self.db.query(DbChecksum).filter(DbChecksum.file_id == file_record.id).one()
+        self.assertEqual("CHECKSUMMED", checksum_record.status)
+
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
+    def test_when_a_small_s3_object_is_checksummed_inline_ingest_is_notified(self,
+                                                                             mock_format_and_send_notification):
+        self.daemon.consume_events(self.events)
 
         self.assertTrue(mock_format_and_send_notification.called,
                         'IngestNotifier.file_was_uploaded should have been called')
+
         mock_format_and_send_notification.assert_called_once_with({
             'upload_area_id': self.area_uuid,
             'name': os.path.basename(self.file_key),
             'size': 16,
             'last_modified': self.object.last_modified.isoformat(),
-            'content_type': self.test_file.content_type,
-            'url': f"s3://{self.upload_config.bucket_name}/{self.area_uuid}/{self.test_file.name}",
-            'checksums': self.test_file.checksums
+            'content_type': self.small_file.content_type,
+            'url': f"s3://{self.upload_config.bucket_name}/{self.area_uuid}/{self.small_file.name}",
+            'checksums': self.small_file.checksums
         })
 
     @patch('upload.common.upload_area.UploadedFile.size', 100 * 1024 * 1024 * 1024)
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon._schedule_checksumming')
-    def test_when_a_large_file_has_not_been_checksummed_a_batch_job_is_scheduled(self, mock_schedule_checksumming):
-        session = self.db_session_maker.session()
-        file = self._make_dbfile(self.upload_area, self.test_file)
-        session.add(file)
-        session.commit()
-        checksum_time = self.object.last_modified - timedelta(minutes=5)
-        checksum = DbChecksum(id=str(uuid.uuid4()), file_id=file.id, status='CHECKSUMMED',
-                              checksum_started_at=checksum_time, checksum_ended_at=checksum_time,
-                              updated_at=checksum_time)
-        session.add(checksum)
-        session.commit()
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon._enqueue_batch_job')
+    def test_for_a_large_s3_object__a_checksumming_batch_job_is_scheduled(self, mock_enqueue_batch_job):
+        mock_enqueue_batch_job.return_value = "fake-batch-job-id"
+        file = self._make_dbfile(self.upload_area, self.small_file)  # note patch for .size above
+        self.db.add(file)
+        self.db.commit()
 
-        self.daemon.consume_event(self.event)
+        self.daemon.consume_events(self.events)
 
-        mock_schedule_checksumming.assert_called()
+        mock_enqueue_batch_job.assert_called()
+        checksum_record = self.db.query(DbChecksum).filter(DbChecksum.file_id == file.id).one()
+        self.assertEqual("SCHEDULED", checksum_record.status)
+        self.assertEqual("fake-batch-job-id", checksum_record.job_id)
 
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.CHECK_CONTENT_TYPE_TIMES', 0)
+
+class TestChecksumDaemonSeeingS3ObjectsForWhichAFileRecordAlreadyExists(ChecksumDaemonTest):
+
+    """
+    Scenario: a file is re-uploaded using identical contents
+    """
+
+    def setUp(self):
+        super().setUp()
+        dbfile = self._make_dbfile(self.upload_area, self.small_file, checksums=self.small_file.checksums)
+        self.db.add(dbfile)
+        self.db.commit()
+
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon._checksum_file')
-    def test_if_the_file_has_been_summed_since_last_change_it_is_not_summed_again(self, mock_checksum_file,
-                                                                                  mock_format_and_send_notification):
-        session = self.db_session_maker.session()
-        file = self._make_dbfile(self.upload_area, self.test_file)
-        session.add(file)
-        session.commit()
-        checksum_time = datetime.utcnow() + timedelta(minutes=5)
-        checksum = DbChecksum(id=str(uuid.uuid4()), file_id=file.id, status='CHECKSUMMING',
-                              checksum_started_at=checksum_time, checksum_ended_at=checksum_time,
-                              updated_at=checksum_time)
-        session.add(checksum)
-        session.commit()
+    def test_that_a_new_file_record_is_not_created(self, mock_fasn):
+        record_count_before = self.db.query(DbFile).count()
 
-        self.daemon.consume_event(self.event)
+        self.daemon.consume_events(self.events)
 
-        mock_checksum_file.assert_not_called()
+        self.assertEqual(record_count_before, self.db.query(DbFile).count())
 
-        self.assertFalse(mock_format_and_send_notification.called,
-                         'IngestNotifier.file_was_uploaded should not have been called')
-
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.CHECK_CONTENT_TYPE_TIMES', 0)
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.DssChecksums.compute')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
-    @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon._checksum_file')
-    def test_if_the_file_has_not_been_summed_since_last_change_it_is_summed_again(self, mock_checksum_file,
-                                                                                  mock_format_and_send_notification):
-        session = self.db_session_maker.session()
-        file = self._make_dbfile(self.upload_area, self.test_file)
-        session.add(file)
-        session.commit()
-        checksum_time = datetime.utcnow() + timedelta(minutes=5)
-        checksum = DbChecksum(id=str(uuid.uuid4()), file_id=file.id, status='CHECKSUMMED',
-                              checksum_started_at=checksum_time, checksum_ended_at=checksum_time,
-                              updated_at=checksum_time)
-        session.add(checksum)
-        session.commit()
+    def test_when_the_file_record_contains_checksums__they_are_not_recomputed(self, mock_fasn, mock_compute):
 
-        self.daemon.consume_event(self.event)
+        self.daemon.consume_events(self.events)
 
-        mock_checksum_file.assert_not_called()
+        mock_compute.assert_not_called()
+
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
+    def test_when_the_file_record_contains_checksums__they_are_applied_as_tags(self, mock_fasn):
+
+        self.daemon.consume_events(self.events)
+
+        tagging = boto3.client('s3').get_object_tagging(Bucket=self.upload_config.bucket_name, Key=self.file_key)
+        self.assertEqual(self.small_file.s3_tagset, sorted(tagging['TagSet'], key=lambda x: x['Key']))
+
+    @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
+    def test_when_the_file_is_tagged_ingest_is_notified(self, mock_format_and_send_notification):
+
+        self.daemon.consume_events(self.events)
 
         self.assertTrue(mock_format_and_send_notification.called,
                         'IngestNotifier.file_was_uploaded should have been called')
+
+        mock_format_and_send_notification.assert_called_once_with({
+            'upload_area_id': self.area_uuid,
+            'name': os.path.basename(self.file_key),
+            'size': 16,
+            'last_modified': self.object.last_modified.isoformat(),
+            'content_type': self.small_file.content_type,
+            'url': f"s3://{self.upload_config.bucket_name}/{self.area_uuid}/{self.small_file.name}",
+            'checksums': self.small_file.checksums
+        })
