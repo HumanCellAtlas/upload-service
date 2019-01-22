@@ -5,8 +5,8 @@ from upload.lambdas.checksum_daemon import ChecksumDaemon
 # This lambda function is invoked by messages in the the pre_checksum_upload_queue (AWS SQS).
 # The queue and the lambda function are connected via aws_lambda_event_source_mapping
 def call_checksum_daemon(event, context):
-    unwrapped_event = json.loads(event["Records"][0]["body"])
-    ChecksumDaemon(context).consume_event(unwrapped_event)
+    unwrapped_events = json.loads(event["Records"][0]["body"])
+    ChecksumDaemon(context).consume_events(unwrapped_events)
 
 
 """
