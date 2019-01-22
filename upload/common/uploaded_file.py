@@ -48,7 +48,7 @@ class UploadedFile:
         - initialize a DssChecksums object
         """
         self.upload_area = upload_area
-        self._s3obj = s3object
+        self.s3object = s3object
 
         # Properties persisted in DB
         self._properties = {
@@ -64,11 +64,11 @@ class UploadedFile:
         self._populate_properties_from_s3_object()
 
         self._db = UploadDB()
-        e_tag = self._s3obj.e_tag.strip('\"')
-        if self._db_load(self._s3obj.key, e_tag) is None:
+        e_tag = self.s3object.e_tag.strip('\"')
+        if self._db_load(self.s3object.key, e_tag) is None:
             self._db_create()
 
-        self.checksums = DssChecksums(s3_object=self._s3obj)
+        self.checksums = DssChecksums(s3_object=self.s3object)
 
     def __str__(self):
         return f"UploadedFile(id={self.db_id}, s3_key={self.s3_key}, etag={self.s3_etag})"
@@ -99,11 +99,11 @@ class UploadedFile:
 
     @property
     def content_type(self):
-        return self._s3obj.content_type
+        return self.s3object.content_type
 
     @property
     def s3_last_modified(self):
-        return self._s3obj.last_modified
+        return self.s3object.last_modified
 
     def info(self):
         return {
@@ -118,7 +118,7 @@ class UploadedFile:
         }
 
     def refresh(self):
-        self._s3obj.reload()
+        self.s3object.reload()
 
     def retrieve_latest_file_validation_status_and_results(self):
         status = "UNSCHEDULED"
@@ -144,7 +144,7 @@ class UploadedFile:
 
     def _s3_load(self):
         try:
-            self._s3obj.load()
+            self.s3object.load()
         except ClientError as e:
             if e.response['Error']['Code'] == '404':
                 raise UploadException(status=404, title="No such file",
@@ -155,10 +155,10 @@ class UploadedFile:
     def _populate_properties_from_s3_object(self):
         self._properties = {
             **self._properties,
-            's3_key': self._s3obj.key,
-            's3_etag': self._s3obj.e_tag.strip('\"'),
-            'name': self._s3obj.key[self.upload_area.key_prefix_length:],  # cut off upload-area-id/
-            'size': self._s3obj.content_length
+            's3_key': self.s3object.key,
+            's3_etag': self.s3object.e_tag.strip('\"'),
+            'name': self.s3object.key[self.upload_area.key_prefix_length:],  # cut off upload-area-id/
+            'size': self.s3object.content_length
         }
 
     def _db_load(self, s3_key, s3_etag):
@@ -173,10 +173,10 @@ class UploadedFile:
             raise UploadException(status=500, title=">1 match for File query",
                                   detail=f"{len(rows)} matched query for {s3_key} {s3_etag}")
         elif len(rows) == 1:
-            if self._s3obj:
+            if self.s3object:
                 # Sanity checks:
                 assert rows[0][result.keys().index('name')] == os.path.basename(s3_key)  # Yes, !Windows :)
-                assert rows[0][result.keys().index('size')] == self._s3obj.content_length
+                assert rows[0][result.keys().index('size')] == self.s3object.content_length
             self._properties = {
                 **self._properties,
                 'id': rows[0][result.keys().index('id')],
