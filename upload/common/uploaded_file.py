@@ -70,6 +70,9 @@ class UploadedFile:
 
         self.checksums = DssChecksums(s3_object=self._s3obj)
 
+    def __str__(self):
+        return f"UploadedFile(id={self.db_id}, s3_key={self.s3_key}, etag={self.s3_etag})"
+
     @property
     def db_id(self):
         return self._properties['id']
