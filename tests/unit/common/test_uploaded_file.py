@@ -4,7 +4,7 @@ import uuid
 from sqlalchemy.orm.exc import NoResultFound
 
 from .. import UploadTestCaseUsingMockAWS
-from ... import FIXTURE_DATA_CHECKSUMS
+from ... import FixtureFile
 
 from upload.common.database_orm import DBSessionMaker, DbFile
 from upload.common.dss_checksums import DssChecksums
@@ -150,8 +150,8 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         self.assertEqual(new_content_type, uf.content_type)
 
     def test_info(self):
-        file_content = "exquisite corpse"
-        s3object = self.create_s3_object(f"{self.upload_area_id}/foo", content=file_content)
+        test_file = FixtureFile.factory("foo")
+        s3object = self.create_s3_object(f"{self.upload_area_id}/foo", content=test_file.contents)
         file_record = self.create_file_record(s3object)
         uf = UploadedFile(self.upload_area, s3object=s3object)
         uf.checksums.compute()
@@ -162,6 +162,6 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
             'size': s3object.content_length,
             'content_type': s3object.content_type,
             'url': f"s3://{s3object.bucket_name}/{s3object.key}",
-            'checksums': FIXTURE_DATA_CHECKSUMS[file_content]['checksums'],
+            'checksums': test_file.checksums,
             'last_modified': s3object.last_modified.isoformat()
         }, uf.info())

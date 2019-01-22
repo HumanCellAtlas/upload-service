@@ -5,7 +5,7 @@ import uuid
 import boto3
 
 from .. import UploadTestCaseUsingMockAWS, EnvironmentSetup
-from ... import FIXTURE_DATA_CHECKSUMS
+from ... import FixtureFile
 
 from upload.common.upload_config import UploadConfig
 
@@ -33,9 +33,9 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
 
     @patch('upload.docker_images.checksummer.checksummer.update_event')
     def test_checksummer_checksums(self, mock_update_checksum_event):
-        file_s3_key = "somearea/foo"
-        file_contents = "exquisite corpse"
-        self.create_s3_object(file_s3_key, content=file_contents)
+        test_file = FixtureFile.factory("foo")
+        file_s3_key = f"somearea/{test_file.name}"
+        self.create_s3_object(file_s3_key, content=test_file.contents)
         s3_url = f"s3://{self.upload_bucket.name}/{file_s3_key}"
 
         from upload.docker_images.checksummer.checksummer import Checksummer
@@ -44,7 +44,7 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
         tagging = boto3.client('s3').get_object_tagging(Bucket=self.upload_bucket.name, Key=file_s3_key)
         self.assertEqual(
             sorted(tagging['TagSet'], key=lambda x: x['Key']),
-            sorted(FIXTURE_DATA_CHECKSUMS[file_contents]['s3_tagset'], key=lambda x: x['Key'])
+            test_file.s3_tagset
         )
 
 

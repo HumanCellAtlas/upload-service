@@ -3,7 +3,7 @@ import uuid
 import boto3
 
 from .. import UploadTestCaseUsingMockAWS
-from ... import FIXTURE_DATA_CHECKSUMS
+from ... import FixtureFile
 
 from upload.common.upload_area import UploadArea
 from upload.common.dss_checksums import DssChecksums
@@ -76,14 +76,10 @@ class TestDssChecksums(UploadTestCaseUsingMockAWS):
         self.assertEqual({'crc32c': '3', 'sha1': '1', 'sha256': '2', 's3_etag': '4'}, checksums)
 
     def test_compute(self):
-        filename = 'bar'
-        file_contents = "exquisite corpse"
-        s3obj = self.mock_upload_file_to_s3(self.upload_area_id, filename, contents=file_contents)
+        test_file = FixtureFile.factory("foo")
+        s3obj = self.mock_upload_file_to_s3(self.upload_area_id, test_file.name, contents=test_file.contents)
 
-        self.assertEqual(
-            DssChecksums(s3_object=s3obj).compute(),
-            FIXTURE_DATA_CHECKSUMS[file_contents]['checksums']
-        )
+        self.assertEqual(DssChecksums(s3_object=s3obj).compute(), test_file.checksums)
 
     def test_save_as_tags_on_s3_object(self):
         s3obj = self.create_s3_object(object_key="foo")
