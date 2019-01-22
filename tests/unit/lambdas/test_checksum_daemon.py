@@ -7,7 +7,7 @@ import uuid
 import boto3
 
 from .. import UploadTestCaseUsingMockAWS, EnvironmentSetup
-from ... import FIXTURE_DATA_CHECKSUMS
+from ... import FixtureFile
 
 from upload.common.upload_area import UploadArea
 from upload.common.database_orm import DBSessionMaker, DbFile, DbChecksum
@@ -20,18 +20,6 @@ from upload.lambdas.checksum_daemon import ChecksumDaemon  # noqa
 
 
 class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
-
-    class FixtureFile:
-
-        def __init__(self, name='foo', content_type='text/html'):
-            self.name = name
-            self.content_type = content_type
-            self.contents = 'exquisite corpse'
-            self.e_tag = '18f17fbfdd21cf869d664731e10d4ffd'
-
-        @property
-        def size(self):
-            return len(self.contents)
 
     def _make_dbfile(self, upload_area, test_file):
         return DbFile(s3_key=f"{upload_area.uuid}/{test_file.name}", s3_etag=test_file.e_tag,
@@ -55,11 +43,10 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
         context = Mock()
         self.daemon = ChecksumDaemon(context)
         # File
-        self.test_file = self.__class__.FixtureFile('foo')
+        self.test_file = FixtureFile.factory('foo')
         self.file_key = f"{self.area_uuid}/{self.test_file.name}"
-        self.file_contents = "exquisite corpse"
         self.object = self.upload_bucket.Object(self.file_key)
-        self.object.put(Key=self.file_key, Body=self.file_contents, ContentType=self.test_file.content_type)
+        self.object.put(Key=self.file_key, Body=self.test_file.contents, ContentType=self.test_file.content_type)
         # Event
         self.event = {'Records': [
             {'eventVersion': '2.0', 'eventSource': 'aws:s3', 'awsRegion': 'us-east-1',
@@ -94,13 +81,13 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
             tagging = boto3.client('s3').get_object_tagging(Bucket=self.upload_config.bucket_name, Key=self.file_key)
             self.assertEqual(
                 sorted(tagging['TagSet'], key=lambda x: x['Key']),
-                sorted(FIXTURE_DATA_CHECKSUMS[self.file_contents]['s3_tagset'], key=lambda x: x['Key'])
+                self.test_file.s3_tagset
             )
 
             session = self.db_session_maker.session()
             file = self.upload_area.uploaded_file(self.test_file.name)
             db_checksum = session.query(DbChecksum).filter(DbChecksum.file_id == file.db_id).one()
-            self.assertEqual(FIXTURE_DATA_CHECKSUMS[self.file_contents]['checksums'], db_checksum.checksums)
+            self.assertEqual(self.test_file.checksums, db_checksum.checksums)
 
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.ChecksumDaemon.CHECK_CONTENT_TYPE_TIMES', 0)
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
@@ -117,7 +104,7 @@ class TestChecksumDaemon(UploadTestCaseUsingMockAWS):
             'last_modified': self.object.last_modified.isoformat(),
             'content_type': self.test_file.content_type,
             'url': f"s3://{self.upload_config.bucket_name}/{self.area_uuid}/{self.test_file.name}",
-            'checksums': FIXTURE_DATA_CHECKSUMS[self.file_contents]['checksums']
+            'checksums': self.test_file.checksums
         })
 
     @patch('upload.common.upload_area.UploadedFile.size', 100 * 1024 * 1024 * 1024)

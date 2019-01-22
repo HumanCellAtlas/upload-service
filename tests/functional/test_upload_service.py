@@ -8,7 +8,7 @@ import boto3
 import requests
 
 from .waitfor import WaitFor
-from .. import fixture_file_path, FIXTURE_DATA_CHECKSUMS
+from .. import FixtureFile
 
 from upload.common.upload_config import UploadConfig
 from upload.common.database_orm import DbUploadArea, DbFile, DbChecksum, DbValidation, DBSessionMaker
@@ -36,15 +36,16 @@ class TestUploadService(unittest.TestCase):
         self.upload_area_uuid = "deadbeef-dead-dead-dead-%012d" % random.randint(0, 999999999999)
         self._create_upload_area()
 
-        small_file_name = 'small_file'
-        small_file_path = fixture_file_path(small_file_name)
-        self._upload_file_using_cli(small_file_path)
-        self._verify_file_was_checksummed_inline(small_file_name)
+        small_file = FixtureFile.factory('small_file')
 
-        large_file_name = '10241MB_file'
-        self._upload_file_using_cli(f"s3://org-humancellatlas-dcp-test-data/upload_service/{large_file_name}")
-        self._verify_file_is_checksummed_via_batch(large_file_name)
-        self._validate_file(small_file_name)
+        self._upload_file_using_cli(small_file.path)
+        self._verify_file_was_checksummed_inline(small_file)
+
+        large_file = FixtureFile.factory('10241MB_file')
+        self._upload_file_using_cli(large_file.url)
+        self._verify_file_is_checksummed_via_batch(large_file)
+
+        self._validate_file(small_file)
 
         self._forget_upload_area()
         self._delete_upload_area()
@@ -59,36 +60,36 @@ class TestUploadService(unittest.TestCase):
         self.uri = data['uri']
         self.assertEqual('UNLOCKED', self._upload_area_record_status())
 
-    def _upload_file_using_cli(self, file_path):
+    def _upload_file_using_cli(self, file_location):
         self._run("SELECT UPLOAD AREA", ['hca', 'upload', 'select', self.uri])
-        self._run("UPLOAD FILE USING CLI", ['hca', 'upload', 'files', file_path])
+        self._run("UPLOAD FILE USING CLI", ['hca', 'upload', 'files', file_location])
 
-    def _verify_file_was_checksummed_inline(self, filename):
+    def _verify_file_was_checksummed_inline(self, test_file):
         print("VERIFY FILE WAS CHECKSUMMED INLINE...")
-        WaitFor(self._checksum_record_status, filename)\
+        WaitFor(self._checksum_record_status, test_file.name)\
             .to_return_value('CHECKSUMMED', timeout_seconds=300)
 
         # Inline checksums get no job_id
-        checksum_record = self._checksum_record(filename)
+        checksum_record = self._checksum_record(test_file.name)
         self.assertEqual(None, checksum_record.job_id)
-        self.assertEqual(FIXTURE_DATA_CHECKSUMS['small_file']['checksums'], checksum_record.checksums)
+        self.assertEqual(test_file.checksums, checksum_record.checksums)
 
-    def _verify_file_is_checksummed_via_batch(self, filename):
-        WaitFor(self._checksum_record_status, filename)\
+    def _verify_file_is_checksummed_via_batch(self, test_file):
+        WaitFor(self._checksum_record_status, test_file.name)\
             .to_return_value('SCHEDULED', timeout_seconds=30)
 
-        csum_record = self._checksum_record(filename)
+        csum_record = self._checksum_record(test_file.name)
         WaitFor(self._batch_job_status, csum_record.job_id)\
             .to_return_value('SUCCEEDED', timeout_seconds=20 * MINUTE_SEC)
 
-        checksum_record = self._checksum_record(filename)
+        checksum_record = self._checksum_record(test_file.name)
         self.assertEqual('CHECKSUMMED', checksum_record.status)
-        self.assertEqual(FIXTURE_DATA_CHECKSUMS[filename]['checksums'], checksum_record.checksums)
+        self.assertEqual(test_file.checksums, checksum_record.checksums)
 
-    def _validate_file(self, filename):
+    def _validate_file(self, test_file):
         response = self._make_request(description="VALIDATE",
                                       verb='PUT',
-                                      url=f"{self.api_url}/area/{self.upload_area_uuid}/{filename}/validate",
+                                      url=f"{self.api_url}/area/{self.upload_area_uuid}/{test_file.name}/validate",
                                       expected_status=200,
                                       headers=self.auth_headers,
                                       json={"validator_image": "humancellatlas/upload-validator-example"})
