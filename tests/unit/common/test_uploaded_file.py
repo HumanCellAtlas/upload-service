@@ -69,7 +69,7 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         uf = UploadedFile(self.upload_area, s3object=s3object)
 
         # Links to objects
-        self.assertEqual(s3object, uf._s3obj)
+        self.assertEqual(s3object, uf.s3object)
         self.assertEqual(self.upload_area, uf.upload_area)
         self.assertIsInstance(uf.checksums, DssChecksums)
         self.assertEqual(s3object, uf.checksums._s3obj)
@@ -116,7 +116,7 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         uf = UploadedFile.from_s3_key(self.upload_area, s3_key=s3object.key)
 
         self.assertEqual(self.upload_area, uf.upload_area)
-        self.assertEqual(s3object, uf._s3obj)
+        self.assertEqual(s3object, uf.s3object)
         self.assertEqual(file_record.id, uf.db_id)
 
     def test_from_db_id__initializes_correctly_and_figures_out_which_upload_area_to_use(self):
@@ -127,7 +127,7 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
 
         self.assertEqual(self.upload_area.uuid, uf.upload_area.uuid)
         self.assertEqual(self.upload_area.db_id, uf.upload_area.db_id)
-        self.assertEqual(s3object, uf._s3obj)
+        self.assertEqual(s3object, uf.s3object)
         self.assertEqual(file_record.id, uf.db_id)
 
     def test_refresh__picks_up_changed_content_type(self):
