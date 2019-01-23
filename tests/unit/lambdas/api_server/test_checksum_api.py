@@ -1,7 +1,7 @@
 import uuid
 from unittest.mock import patch
 
-from upload.common.database_orm import DBSessionMaker, DbChecksum
+from upload.common.database_orm import DBSessionMaker, DbChecksum, DbFile
 from upload.common.upload_area import UploadArea
 from upload.common.uploaded_file import UploadedFile
 from upload.common.checksum_event import ChecksumEvent
@@ -94,7 +94,7 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         mock_format_and_send_notification.assert_not_called()
 
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_post_checksum__with_a_checksummed_payload__updates_db_record_and_notifies_ingest(self, mock_fasn):
+    def test_post_checksum__with_a_checksummed_payload__updates_db_records_and_notifies_ingest(self, mock_fasn):
         checksum_id = str(uuid.uuid4())
         db_area = self.create_upload_area()
         upload_area = UploadArea(db_area.uuid)
@@ -105,18 +105,30 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
                                        job_id='12345',
                                        status="SCHEDULED")
         checksum_event.create_record()
+        checksums = {'crc32c': 'w', 's3_etag': 'x', 'sha1': 'y', 'sha256': 'z'}
         response = self.client.post(f"/v1/area/{upload_area.uuid}/update_checksum/{checksum_id}",
                                     headers=self.authentication_header,
                                     json={
                                         "status": "CHECKSUMMED",
                                         "job_id": checksum_event.job_id,
-                                        "payload": uploaded_file.info()
+                                        "payload": {
+                                            "upload_area_id": upload_area.db_id,
+                                            "name": uploaded_file.name,
+                                            "checksums": checksums
+                                        }
                                     })
 
         self.assertEqual(204, response.status_code)
+
+        # Checksum record status should be updated
         db_checksum = self.db.query(DbChecksum).filter(DbChecksum.id == checksum_id).one()
         self.assertEqual("CHECKSUMMED", db_checksum.status)
 
+        # Checksums should be stored in File record
+        db_file = self.db.query(DbFile).filter(DbFile.id == uploaded_file.db_id).one()
+        self.assertEqual(checksums, db_file.checksums)
+
+        # Ingest should be notified
         mock_fasn.assert_called()
 
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')

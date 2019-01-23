@@ -5,6 +5,7 @@ import requests
 from .. import return_exceptions_as_http_errors, require_authenticated
 from ..validation_scheduler import ValidationScheduler
 from ....common.upload_area import UploadArea
+from ....common.uploaded_file import UploadedFile
 from ....common.checksum_event import ChecksumEvent
 from ....common.validation_event import ValidationEvent
 from ....common.exceptions import UploadException
@@ -131,7 +132,8 @@ def update_checksum_event(upload_area_uuid: str, checksum_id: str, body: str):
     checksum_event.job_id = body['job_id']
 
     if checksum_event.status == "CHECKSUMMED":
-        checksum_event.checksums = payload["checksums"]
+        uploaded_file = UploadedFile.from_db_id(checksum_event.file_id)
+        uploaded_file.checksums = payload['checksums']
         _notify_ingest(checksum_event.file_id, payload, "file_uploaded")
     checksum_event.update_record()
 
