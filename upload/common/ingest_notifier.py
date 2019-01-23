@@ -58,7 +58,7 @@ class IngestNotifier:
             jwt_token = self.get_service_jwt()
             headers = {'Authorization': f"Bearer {jwt_token}"}
             response = requests.post(self.ingest_notification_url, headers=headers, json=body)
-            if not response.status_code == requests.codes.accepted:
+            if not response.status_code == requests.codes.ok:
                 self._create_or_update_db_notification(notification_id, "FAILED", json.loads(body))
                 logger.info(f"failed notification_id:{notification_id}, payload:{body}, \
                               response:{response.status_code}, url:{self.ingest_notification_url}")
