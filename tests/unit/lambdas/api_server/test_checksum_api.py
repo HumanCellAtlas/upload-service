@@ -132,6 +132,32 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         mock_fasn.assert_called()
 
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
+    def test_post_checksum__for_an_obj_without_tags__updates_db_but_and_does_not_notify_ingest(self, mock_fasn):
+        checksum_id = str(uuid.uuid4())
+        db_area = self.create_upload_area()
+        upload_area = UploadArea(db_area.uuid)
+        s3obj = self.mock_upload_file_to_s3(upload_area.uuid, 'foo.json', checksums={})
+        uploaded_file = UploadedFile(upload_area, s3object=s3obj)
+        checksum_event = ChecksumEvent(file_id=uploaded_file.db_id,
+                                       checksum_id=checksum_id,
+                                       job_id='12345',
+                                       status="SCHEDULED")
+        checksum_event.create_record()
+        response = self.client.post(f"/v1/area/{upload_area.uuid}/update_checksum/{checksum_id}",
+                                    headers=self.authentication_header,
+                                    json={
+                                        "status": "CHECKSUMMED",
+                                        "job_id": checksum_event.job_id,
+                                        "payload": uploaded_file.info()
+                                    })
+
+        self.assertEqual(204, response.status_code)
+        db_checksum = self.db.query(DbChecksum).filter(DbChecksum.id == checksum_id).one()
+        self.assertEqual("CHECKSUMMED", db_checksum.status)
+
+        mock_fasn.assert_not_called()
+
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_checksum_statuses_for_upload_area(self, mock_format_and_send_notification):
         db_area = self.create_upload_area()
         upload_area = UploadArea(db_area.uuid)
