@@ -6,6 +6,7 @@ from .. import return_exceptions_as_http_errors, require_authenticated
 from ..validation_scheduler import ValidationScheduler
 from ....common.upload_area import UploadArea
 from ....common.uploaded_file import UploadedFile
+from ....common.dss_checksums import DssChecksums
 from ....common.checksum_event import ChecksumEvent
 from ....common.validation_event import ValidationEvent
 from ....common.exceptions import UploadException
@@ -134,7 +135,16 @@ def update_checksum_event(upload_area_uuid: str, checksum_id: str, body: str):
     if checksum_event.status == "CHECKSUMMED":
         uploaded_file = UploadedFile.from_db_id(checksum_event.file_id)
         uploaded_file.checksums = payload['checksums']
-        _notify_ingest(checksum_event.file_id, payload, "file_uploaded")
+
+        """
+        Do a last minute check to see if the S3 object for this file still has checksum
+        tags.  The tags are erased if the file is overwritten, which happens a lot as
+        Ingest tends to upload the same file multiple times simultaneously.  If the
+        checksums are gone don't notify Ingest.  Some other checksummer kicked off by
+        the new upload will take care of that.
+        """
+        if DssChecksums(s3_object=uploaded_file.s3object).are_present():
+            _notify_ingest(checksum_event.file_id, payload, "file_uploaded")
     checksum_event.update_record()
 
     return None, requests.codes.no_content
