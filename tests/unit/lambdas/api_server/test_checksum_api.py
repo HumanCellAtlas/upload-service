@@ -1,9 +1,7 @@
-import json
 import uuid
 from unittest.mock import patch
 
-import boto3
-
+from upload.common.database_orm import DBSessionMaker, DbChecksum
 from upload.common.upload_area import UploadArea
 from upload.common.uploaded_file import UploadedFile
 from upload.common.checksum_event import ChecksumEvent
@@ -26,6 +24,8 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         self.environmentor = EnvironmentSetup(self.environment)
         self.environmentor.enter()
 
+        self.db = DBSessionMaker().session()
+
         # Authentication
         self.authentication_header = {'Api-Key': self.api_key}
         # Setup app
@@ -35,43 +35,24 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         super().tearDown()
         self.environmentor.exit()
 
-    def _create_area(self):
-        area_uuid = str(uuid.uuid4())
-        self.client.post(f"/v1/area/{area_uuid}", headers=self.authentication_header)
-        return area_uuid
-
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_unscheduled_status_file_checksum(self, mock_format_and_send_notification):
-        area_uuid = self._create_area()
-        s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
-        upload_area = UploadArea(area_uuid)
-        UploadedFile(upload_area, s3object=s3obj)
-        response = self.client.get(f"/v1/area/{area_uuid}/foo.json/checksum")
+    def test_get_checksum__for_a_file_with_no_checksum_records__returns_status_unscheduled(self, mock_fasn):
+        db_area = self.create_upload_area()
+        upload_area = UploadArea(db_area.uuid)
+        s3obj = self.mock_upload_file_to_s3(upload_area.uuid, 'foo.json')
+        UploadedFile(upload_area, s3object=s3obj)  # creates file record
+
+        response = self.client.get(f"/v1/area/{upload_area.uuid}/foo.json/checksum")
+
         checksum_status = response.get_json()['checksum_status']
-        self.assertEqual(checksum_status, "UNSCHEDULED")
+        self.assertEqual("UNSCHEDULED", checksum_status)
 
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_scheduled_status_file_checksum(self, mock_format_and_send_notification):
+    def test_get_checksum__for_a_file_with_checksum_records__returns_the_most_recent_record_status(self, mock_fasn):
         checksum_id = str(uuid.uuid4())
-        area_uuid = self._create_area()
-        s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
-        upload_area = UploadArea(area_uuid)
-        uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        checksum_event = ChecksumEvent(file_id=uploaded_file.db_id,
-                                       checksum_id=checksum_id,
-                                       job_id='12345',
-                                       status="SCHEDULED")
-        checksum_event.create_record()
-        response = self.client.get(f"/v1/area/{area_uuid}/foo.json/checksum")
-        checksum_status = response.get_json()['checksum_status']
-        self.assertEqual(checksum_status, "SCHEDULED")
-
-    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_checksumming_status_file_checksum(self, mock_format_and_send_notification):
-        checksum_id = str(uuid.uuid4())
-        area_uuid = self._create_area()
-        s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
-        upload_area = UploadArea(area_uuid)
+        db_area = self.create_upload_area()
+        upload_area = UploadArea(db_area.uuid)
+        s3obj = self.mock_upload_file_to_s3(upload_area.uuid, 'foo.json')
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
         checksum_event = ChecksumEvent(file_id=uploaded_file.db_id,
                                        checksum_id=checksum_id,
@@ -79,59 +60,79 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
                                        status="SCHEDULED")
         checksum_event.create_record()
 
-        data = {
-            "status": "CHECKSUMMING",
-            "job_id": checksum_event.job_id,
-            "payload": uploaded_file.info()
-        }
-        response = self.client.post(f"/v1/area/{area_uuid}/update_checksum/{checksum_id}",
+        response = self.client.get(f"/v1/area/{upload_area.uuid}/{uploaded_file.name}/checksum")
+
+        info = response.get_json()
+        self.assertEqual("SCHEDULED", info['checksum_status'])
+        self.assertEqual(uploaded_file.checksums, info['checksums'])
+
+    @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
+    def test_post_checksum__with_a_checksumming_payload__updates_db_record(self, mock_format_and_send_notification):
+        checksum_id = str(uuid.uuid4())
+        db_area = self.create_upload_area()
+        upload_area = UploadArea(db_area.uuid)
+        s3obj = self.mock_upload_file_to_s3(upload_area.uuid, 'foo.json')
+        uploaded_file = UploadedFile(upload_area, s3object=s3obj)
+        checksum_event = ChecksumEvent(file_id=uploaded_file.db_id,
+                                       checksum_id=checksum_id,
+                                       job_id='12345',
+                                       status="SCHEDULED")
+        checksum_event.create_record()
+
+        response = self.client.post(f"/v1/area/{upload_area.uuid}/update_checksum/{checksum_id}",
                                     headers=self.authentication_header,
-                                    data=json.dumps(data))
+                                    json={
+                                        "status": "CHECKSUMMING",
+                                        "job_id": checksum_event.job_id,
+                                        "payload": uploaded_file.info()
+                                    })
+
         self.assertEqual(204, response.status_code)
-        response = self.client.get(f"/v1/area/{area_uuid}/foo.json/checksum")
-        checksum_status = response.get_json()['checksum_status']
-        self.assertEqual(checksum_status, "CHECKSUMMING")
+        db_checksum = self.db.query(DbChecksum).filter(DbChecksum.id == checksum_id).one()
+        self.assertEqual("CHECKSUMMING", db_checksum.status)
+
+        mock_format_and_send_notification.assert_not_called()
 
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
-    def test_checksummed_status_file_checksum(self, mock_format_and_send_notification):
+    def test_post_checksum__with_a_checksummed_payload__updates_db_record_and_notifies_ingest(self, mock_fasn):
         checksum_id = str(uuid.uuid4())
-        area_uuid = self._create_area()
-        s3obj = self.mock_upload_file_to_s3(area_uuid, 'foo.json')
-        upload_area = UploadArea(area_uuid)
+        db_area = self.create_upload_area()
+        upload_area = UploadArea(db_area.uuid)
+        s3obj = self.mock_upload_file_to_s3(upload_area.uuid, 'foo.json')
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
         checksum_event = ChecksumEvent(file_id=uploaded_file.db_id,
                                        checksum_id=checksum_id,
                                        job_id='12345',
                                        status="SCHEDULED")
         checksum_event.create_record()
-
-        data = {
-            "status": "CHECKSUMMED",
-            "job_id": checksum_event.job_id,
-            "payload": uploaded_file.info()
-        }
-        response = self.client.post(f"/v1/area/{area_uuid}/update_checksum/{checksum_id}",
+        response = self.client.post(f"/v1/area/{upload_area.uuid}/update_checksum/{checksum_id}",
                                     headers=self.authentication_header,
-                                    data=json.dumps(data))
+                                    json={
+                                        "status": "CHECKSUMMED",
+                                        "job_id": checksum_event.job_id,
+                                        "payload": uploaded_file.info()
+                                    })
+
         self.assertEqual(204, response.status_code)
-        response = self.client.get(f"/v1/area/{area_uuid}/foo.json/checksum")
-        checksum_status = response.get_json()['checksum_status']
-        self.assertEqual(checksum_status, "CHECKSUMMED")
+        db_checksum = self.db.query(DbChecksum).filter(DbChecksum.id == checksum_id).one()
+        self.assertEqual("CHECKSUMMED", db_checksum.status)
+
+        mock_fasn.assert_called()
 
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_checksum_statuses_for_upload_area(self, mock_format_and_send_notification):
-        area_uuid = self._create_area()
-        upload_area = UploadArea(area_uuid)
+        db_area = self.create_upload_area()
+        upload_area = UploadArea(db_area.uuid)
 
         checksum1_id = str(uuid.uuid4())
         checksum2_id = str(uuid.uuid4())
         checksum3_id = str(uuid.uuid4())
 
-        s3obj1 = self.mock_upload_file_to_s3(area_uuid, 'foo1.json')
-        s3obj2 = self.mock_upload_file_to_s3(area_uuid, 'foo2.json')
-        s3obj3 = self.mock_upload_file_to_s3(area_uuid, 'foo3.json')
-        s3obj4 = self.mock_upload_file_to_s3(area_uuid, 'foo4.json')
-        s3obj5 = self.mock_upload_file_to_s3(area_uuid, 'foo5.json')
+        s3obj1 = self.mock_upload_file_to_s3(upload_area.uuid, 'foo1.json')
+        s3obj2 = self.mock_upload_file_to_s3(upload_area.uuid, 'foo2.json')
+        s3obj3 = self.mock_upload_file_to_s3(upload_area.uuid, 'foo3.json')
+        s3obj4 = self.mock_upload_file_to_s3(upload_area.uuid, 'foo4.json')
+        s3obj5 = self.mock_upload_file_to_s3(upload_area.uuid, 'foo5.json')
 
         f1 = UploadedFile(upload_area, s3object=s3obj1)
         f2 = UploadedFile(upload_area, s3object=s3obj2)
@@ -139,23 +140,14 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         UploadedFile(upload_area, s3object=s3obj4)
         UploadedFile(upload_area, s3object=s3obj5)
 
-        checksum1_event = ChecksumEvent(file_id=f1.db_id,
-                                        checksum_id=checksum1_id,
-                                        job_id='12345',
-                                        status="SCHEDULED")
-        checksum2_event = ChecksumEvent(file_id=f2.db_id,
-                                        checksum_id=checksum2_id,
-                                        job_id='23456',
-                                        status="CHECKSUMMING")
-        checksum3_event = ChecksumEvent(file_id=f3.db_id,
-                                        checksum_id=checksum3_id,
-                                        job_id='34567',
-                                        status="CHECKSUMMED")
+        checksum1_event = ChecksumEvent(file_id=f1.db_id, checksum_id=checksum1_id, job_id='123', status="SCHEDULED")
+        checksum2_event = ChecksumEvent(file_id=f2.db_id, checksum_id=checksum2_id, job_id='456', status="CHECKSUMMING")
+        checksum3_event = ChecksumEvent(file_id=f3.db_id, checksum_id=checksum3_id, job_id='789', status="CHECKSUMMED")
         checksum1_event.create_record()
         checksum2_event.create_record()
         checksum3_event.create_record()
 
-        response = self.client.get(f"/v1/area/{area_uuid}/checksums")
+        response = self.client.get(f"/v1/area/{upload_area.uuid}/checksums")
         expected_data = {
             'CHECKSUMMED': 1,
             'CHECKSUMMING': 1,
