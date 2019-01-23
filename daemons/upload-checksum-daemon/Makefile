@@ -29,7 +29,7 @@ build:
 	shopt -s nullglob; for wheel in vendor.in/*/*.whl; do unzip -q -o -d vendor $$wheel; done
 
 	cp -R vendor/* target/
-	cd target && zip -r ../$(ZIP_FILE) *
+	cd target && zip -r ../$(ZIP_FILE) .
 
 stage: build
 	aws s3 cp $(ZIP_FILE) s3://$(BUCKET)/$(STAGED_FILE_KEY)
