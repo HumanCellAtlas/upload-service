@@ -31,6 +31,12 @@ class Checksummer:
 
         self.checksum_event = ChecksumEvent(checksum_id=os.environ['CHECKSUM_ID'],
                                             job_id=os.environ['AWS_BATCH_JOB_ID'])
+
+        if self._object_contents_are_not_what_we_expect(s3obj):
+            # Object has been overwritten with different contents.  Abort.
+            self._update_checksum_event(status="ABORTED")
+            return
+
         if self.checksums.are_present():
             logger.info(f"File {self.s3_object_key} is already checksummed.")
             self._update_checksum_event(status="CHECKSUMMED")
@@ -45,6 +51,7 @@ class Checksummer:
     def _parse_args(self, argv):
         parser = argparse.ArgumentParser()
         parser.add_argument('s3_url', metavar="S3_URL", help="S3 URL of file to checksum")
+        parser.add_argument('s3_etag', metavar="S3_ETAG", help="Expected Etag of file we are checksumming")
         parser.add_argument('-t', '--test', action='store_true', help="Test only, do not submit results to Upload API")
         self.args = parser.parse_args(args=argv)
         url_bits = parse_url(self.args.s3_url)
@@ -58,6 +65,9 @@ class Checksummer:
         logger.debug("url={url} bucket={bucket} s3_key={key} area={area} file={filename}".format(
             url=self.args.s3_url, bucket=self.bucket_name, key=self.s3_object_key, area=self.upload_area_id,
             filename=self.file_name))
+
+    def _object_contents_are_not_what_we_expect(self, s3obj):
+        return s3obj.e_tag.strip('\"') != self.args.s3_etag
 
     def _update_checksum_event(self, status):
         self.checksum_event.status = status

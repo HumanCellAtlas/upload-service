@@ -130,7 +130,7 @@ class ChecksumDaemon:
     def _schedule_checksumming(self):
         logger.debug("Scheduling checksumming batch job")
         checksum_id = str(uuid.uuid4())
-        command = ['python', '/checksummer.py', self.uploaded_file.s3url]
+        command = ['python', '/checksummer.py', self.uploaded_file.s3url, self.uploaded_file.s3_etag]
         environment = {
             'API_HOST': self.api_host,
             'CHECKSUM_ID': checksum_id,
