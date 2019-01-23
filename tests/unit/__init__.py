@@ -3,10 +3,12 @@ import os
 import unittest
 import base64
 import json
+import uuid
 
 import boto3
 from moto import mock_iam, mock_s3, mock_sts, mock_sqs
 
+from upload.common.database_orm import DBSessionMaker, DbUploadArea
 from upload.common.upload_config import UploadConfig, UploadDbConfig, UploadVersion, UploadOutgoingIngestAuthConfig
 
 os.environ['LOG_LEVEL'] = 'CRITICAL'
@@ -124,6 +126,14 @@ class UploadTestCase(unittest.TestCase):
 
     def tearDown(self):
         self.common_environmentor.exit()
+
+    def create_upload_area(self, area_uuid=None, status='UNLOCKED', db_session=None):
+        area_uuid = area_uuid or str(uuid.uuid4())
+        db_session = db_session or DBSessionMaker().session()
+        db_area = DbUploadArea(uuid=area_uuid, bucket_name=self.upload_config.bucket_name, status=status)
+        db_session.add(db_area)
+        db_session.commit()
+        return db_area
 
 
 class UploadTestCaseUsingLiveAWS(UploadTestCase):
