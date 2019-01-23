@@ -20,13 +20,6 @@ class UploadAreaTest(UploadTestCaseUsingMockAWS):
         self.db_session_maker = DBSessionMaker()
         self.db = self.db_session_maker.session()
 
-    def _create_area(self, status='UNLOCKED'):
-        area_uuid = str(uuid.uuid4())
-        db_area = DbUploadArea(uuid=area_uuid, bucket_name=self.upload_config.bucket_name, status=status)
-        self.db.add(db_area)
-        self.db.commit()
-        return db_area
-
 
 class TestUploadAreaCreationExistenceAndDeletion(UploadAreaTest):
 
@@ -43,7 +36,7 @@ class TestUploadAreaCreationExistenceAndDeletion(UploadAreaTest):
         self.assertEqual("UNLOCKED", record.status)
 
     def test_update_or_create__when_area_exists__retrieves_db_record(self):
-        db_area = self._create_area()
+        db_area = self.create_upload_area()
 
         area = UploadArea(uuid=db_area.uuid)
         area.update_or_create()
@@ -56,18 +49,18 @@ class TestUploadAreaCreationExistenceAndDeletion(UploadAreaTest):
         self.assertFalse(UploadArea(area_uuid).is_extant())
 
     def test_is_extant__for_deleted_area__returns_false(self):
-        db_area = self._create_area('DELETED')
+        db_area = self.create_upload_area(status='DELETED')
 
         self.assertFalse(UploadArea(db_area.uuid).is_extant())
 
     def test_is_extant__for_existing_area__returns_true(self):
-        db_area = self._create_area()
+        db_area = self.create_upload_area()
 
         self.assertTrue(UploadArea(db_area.uuid).is_extant())
         pass
 
     def test_delete__marks_area_delete_and_deletes_objects(self):
-        db_area = self._create_area()
+        db_area = self.create_upload_area(db_session=self.db)
         obj = self.upload_bucket.Object(f'{db_area.uuid}/test_file')
         obj.put(Body="foo")
 
@@ -87,7 +80,7 @@ class TestUploadAreaCredentials(UploadAreaTest):
 
     @mock_sts
     def test_with_deleted_upload_area__raises(self):
-        db_area = self._create_area('DELETED')
+        db_area = self.create_upload_area(status='DELETED')
 
         with self.assertRaises(UploadException):
             area = UploadArea(db_area.uuid)
@@ -95,7 +88,7 @@ class TestUploadAreaCredentials(UploadAreaTest):
 
     @mock_sts
     def test_with_existing_locked_upload_area__raises(self):
-        db_area = self._create_area()
+        db_area = self.create_upload_area()
         area = UploadArea(db_area.uuid)
         area.lock()
 
@@ -104,7 +97,7 @@ class TestUploadAreaCredentials(UploadAreaTest):
 
     @mock_sts
     def test_with_existing_unlocked_upload_area__returns_creds(self):
-        db_area = self._create_area()
+        db_area = self.create_upload_area()
 
         area = UploadArea(db_area.uuid)
         creds = area.credentials()
@@ -118,7 +111,7 @@ class TestUploadAreaLocking(UploadAreaTest):
 
     def setUp(self):
         super().setUp()
-        self.db_area = self._create_area()
+        self.db_area = self.create_upload_area(db_session=self.db)
         self.area = UploadArea(uuid=self.db_area.uuid)
 
     def test_lock__with_unlocked_area__locks_area(self):
@@ -143,7 +136,7 @@ class TestUploadAreaLocking(UploadAreaTest):
 class TestUploadAreaFileManipulation(UploadAreaTest):
 
     def test_store_file(self):
-        db_area = self._create_area()
+        db_area = self.create_upload_area()
         area = UploadArea(uuid=db_area.uuid)
 
         filename = "some.json"
@@ -178,7 +171,7 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
         self.assertEqual("some.json", db_file.name)
 
     def test_ls__returns_info_on_all_files_in_upload_area(self):
-        db_area = self._create_area()
+        db_area = self.create_upload_area()
         o1 = self.mock_upload_file_to_s3(db_area.uuid, 'file1.json',
                                          content_type='application/json; dcp-type="metadata/foo"')
         o2 = self.mock_upload_file_to_s3(db_area.uuid, 'file2.fastq.gz',
@@ -209,8 +202,8 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
         }, data['files'][1])
 
     def test_ls__only_lists_files_in_this_upload_area(self):
-        db_area1 = self._create_area()
-        db_area2 = self._create_area()
+        db_area1 = self.create_upload_area(db_session=self.db)
+        db_area2 = self.create_upload_area(db_session=self.db)
         area_1_files = ['file1', 'file2']
         area_2_files = ['file3', 'file4']
         [self.mock_upload_file_to_s3(db_area1.uuid, file) for file in area_1_files]
@@ -221,7 +214,7 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
         self.assertEqual(area_2_files, [file['name'] for file in data['files']])
 
     def test_uploaded_file(self):
-        db_area = self._create_area()
+        db_area = self.create_upload_area()
         filename = "somefile.json"
         content = "sdfewrwer"
         self.mock_upload_file_to_s3(db_area.uuid, filename=filename, contents=content)
