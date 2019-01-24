@@ -47,6 +47,8 @@ test:
 	--env AWS_BATCH_JOB_ID=1 \
 	--env CHECKSUM_ID=2 \
 	--env AWS_BATCH_JOB_ATTEMPT=1 \
-	$(IMAGE):$(VERSION) python /checksummer.py s3://org-humancellatlas-sam/even
+	$(IMAGE):$(VERSION) python /checksummer.py s3://org-humancellatlas-sam/even 342f31b73c44cbbd1dff188c4e881eed
+	# The above hex number is tge s3_etag of the file to be checksummed.
+	# The checksummer is now called with this so it can check the file has not changed since we schedule the job.
 
 .phony: build bump_version examine play promote push release
