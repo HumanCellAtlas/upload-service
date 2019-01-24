@@ -25,8 +25,9 @@ class TestUploadService(unittest.TestCase):
         self.db_session_maker = DBSessionMaker()
 
     def setUp(self):
+        self.upload_config = UploadConfig()
         self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
-        self.auth_headers = {'Api-Key': UploadConfig().api_key}
+        self.auth_headers = {'Api-Key': self.upload_config.api_key}
         self.api_url = f"https://{os.environ['API_HOST']}/v1"
         self.verbose = True
 
@@ -72,7 +73,19 @@ class TestUploadService(unittest.TestCase):
         # Inline checksums get no job_id
         checksum_record = self._checksum_record(test_file.name)
         self.assertEqual(None, checksum_record.job_id)
-        self.assertEqual(test_file.checksums, checksum_record.checksums)
+
+        # Check file record now contains checksums
+        db = self.db_session_maker.session()
+        file_record = db.query(DbFile).get(checksum_record.file_id)
+        self.assertEqual(test_file.checksums, file_record.checksums)
+
+        # Check S3 object has checksum tags
+        tagging = boto3.client('s3').get_object_tagging(Bucket=self.upload_config.bucket_name,
+                                                        Key=f"{self.upload_area_uuid}/{test_file.name}")
+        self.assertEqual(
+            sorted(tagging['TagSet'], key=lambda x: x['Key']),
+            test_file.s3_tagset
+        )
 
     def _verify_file_is_checksummed_via_batch(self, test_file):
         WaitFor(self._checksum_record_status, test_file.name)\
@@ -84,7 +97,19 @@ class TestUploadService(unittest.TestCase):
 
         checksum_record = self._checksum_record(test_file.name)
         self.assertEqual('CHECKSUMMED', checksum_record.status)
-        self.assertEqual(test_file.checksums, checksum_record.checksums)
+
+        # Check file record now contains checksums
+        db = self.db_session_maker.session()
+        file_record = db.query(DbFile).get(checksum_record.file_id)
+        self.assertEqual(test_file.checksums, file_record.checksums)
+
+        # Check S3 object has checksum tags
+        tagging = boto3.client('s3').get_object_tagging(Bucket=self.upload_config.bucket_name,
+                                                        Key=f"{self.upload_area_uuid}/{test_file.name}")
+        self.assertEqual(
+            sorted(tagging['TagSet'], key=lambda x: x['Key']),
+            test_file.s3_tagset
+        )
 
     def _validate_file(self, test_file):
         response = self._make_request(description="VALIDATE",
