@@ -42,9 +42,9 @@ class TestUploadService(unittest.TestCase):
         self._upload_file_using_cli(small_file.path)
         self._verify_file_was_checksummed_inline(small_file)
 
-        # large_file = FixtureFile.factory('10241MB_file')
-        # self._upload_file_using_cli(large_file.url)
-        # self._verify_file_is_checksummed_via_batch(large_file)
+        large_file = FixtureFile.factory('10241MB_file')
+        self._upload_file_using_cli(large_file.url)
+        self._verify_file_is_checksummed_via_batch(large_file)
 
         self._validate_file(small_file)
 
