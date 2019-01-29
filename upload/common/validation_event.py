@@ -24,7 +24,7 @@ class ValidationEvent:
 
     def __init__(self, **kwargs):
         self.id = kwargs["validation_id"]
-        self.job_id = kwargs["job_id"]
+        self.job_id = kwargs.get("job_id")
         self.file_id = kwargs.get("file_id")
         self.status = kwargs["status"]
         self.results = None
