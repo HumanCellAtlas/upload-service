@@ -92,7 +92,7 @@ resource "aws_lambda_function" "upload_health_check_lambda" {
 }
 
 resource "aws_cloudwatch_event_rule" "daily" {
-    name = "every-day-${var.deployment_stage}"
+    name = "upload-every-day-${var.deployment_stage}"
     description = "Fires every day at 13:00 UTC"
     schedule_expression = "cron(0 13 * * ? *)"
 }
