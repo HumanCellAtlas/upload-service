@@ -1,7 +1,7 @@
 """upload_area_integer_pk
 
 Revision ID: 5ea5c9b56a3d
-Revises: 1c7493144cbf
+Revises: 0f28d27dffea
 Create Date: 2018-12-20 16:31:27.122579
 
 """

@@ -1,7 +1,7 @@
 """add state to upload area
 
 Revision ID: 0f28d27dffea
-Revises: 10c523521ee7
+Revises: 1c7493144cbf
 Create Date: 2018-12-13 12:38:12.635996
 
 """
