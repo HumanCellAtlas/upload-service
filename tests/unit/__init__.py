@@ -87,7 +87,7 @@ class UploadTestCase(unittest.TestCase):
         'area_deletion_lambda_name': 'delete_lambda_name',
         'staging_bucket_arn': 'staging_bucket_arn',
         'ingest_api_host': 'test_ingest_api_host',
-        'pre_batch_validation_q_url': 'test_pre_batch_validation_q_url'
+        'validation_q_url': 'test_validation_q_url'
     }
 
     TEST_SERVICE_CREDS = {
@@ -179,7 +179,7 @@ class UploadTestCaseUsingMockAWS(UploadTestCase):
         self.sqs = boto3.resource('sqs')
         self.sqs.create_queue(QueueName=f"bogo_url")
         self.sqs.create_queue(QueueName=f"delete_sqs_url")
-        self.sqs.create_queue(QueueName=f"test_pre_batch_validation_q_url")
+        self.sqs.create_queue(QueueName=f"test_validation_q_url")
 
     def tearDown(self):
         super().tearDown()

@@ -89,7 +89,7 @@ def schedule_file_validation(upload_area_uuid: str, filename: str, json_request_
     validation_scheduler = ValidationScheduler(file)
     if not validation_scheduler.check_file_can_be_validated():
         raise UploadException(status=requests.codes.bad_request, title="File too large for validation")
-    validation_id = validation_scheduler.add_to_pre_batch_validation_sqs(filename, image, env, orig_val_id)
+    validation_id = validation_scheduler.add_to_validation_sqs(filename, image, env, orig_val_id)
     return {'validation_id': validation_id}, requests.codes.ok
 
 

@@ -24,7 +24,7 @@ class TestValidationScheduler(UploadTestCaseUsingMockAWS):
         pass
 
     @patch('upload.common.upload_area.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES + 1)
-    def test_check_file_can_be_validated_returns_false_if_file_is_too_large_for_validation(self):
+    def test_check_file_can_be_validated__when_file_is_too_large_for_validation__returns_false(self):
         uploaded_file = UploadedFile.create(upload_area=self.upload_area,
                                             name="file2",
                                             content_type="application/octet-stream; dcp-type=data",
@@ -35,7 +35,7 @@ class TestValidationScheduler(UploadTestCaseUsingMockAWS):
 
         self.assertEqual(False, file_validatable)
 
-    def test_file_validation_event_can_be_created_with_hash(self):
+    def test__create_validation_event__creates_event_with_correct_status(self):
         uploaded_file = UploadedFile.create(upload_area=self.upload_area,
                                             name="file2#",
                                             content_type="application/octet-stream; dcp-type=data",
@@ -48,7 +48,7 @@ class TestValidationScheduler(UploadTestCaseUsingMockAWS):
         self.assertEqual(validation_event.docker_image, "test_docker_image")
         self.assertEqual(validation_event.status, "SCHEDULING_QUEUED")
 
-    def test_update_validation_event(self):
+    def test__update_validation_event__updates_event_status(self):
         uploaded_file = UploadedFile.create(upload_area=self.upload_area,
                                             name="file2#",
                                             content_type="application/octet-stream; dcp-type=data",
@@ -65,7 +65,7 @@ class TestValidationScheduler(UploadTestCaseUsingMockAWS):
         self.assertEqual(validation_event.status, "SCHEDULED")
 
     @patch('upload.common.upload_area.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES - 1)
-    def test_check_file_can_be_validated_returns_true_if_file_is_not_too_large(self):
+    def test_check_file_can_be_validated__if_file_is_too_large__returns_true(self):
         uploaded_file = UploadedFile.create(upload_area=self.upload_area,
                                             name="file2",
                                             content_type="application/octet-stream; dcp-type=data",
@@ -76,19 +76,19 @@ class TestValidationScheduler(UploadTestCaseUsingMockAWS):
 
         self.assertEqual(True, file_validatable)
 
-    def test_add_to_pre_batch_validation_sqs(self):
+    def test_add_to_validation_sqs__adds_correct_event_to_queue(self):
         uploaded_file = UploadedFile.create(upload_area=self.upload_area,
                                             name="file2",
                                             content_type="application/octet-stream; dcp-type=data",
                                             data="file2_content")
         validation_scheduler = ValidationScheduler(uploaded_file)
 
-        validation_uuid = validation_scheduler.add_to_pre_batch_validation_sqs("filename123",
-                                                                               "test_docker_image",
-                                                                               {"variable": "variable"},
-                                                                               "123456")
+        validation_uuid = validation_scheduler.add_to_validation_sqs("filename123",
+                                                                     "test_docker_image",
+                                                                     {"variable": "variable"},
+                                                                     "123456")
 
-        message = self.sqs.meta.client.receive_message(QueueUrl='test_pre_batch_validation_q_url')
+        message = self.sqs.meta.client.receive_message(QueueUrl='test_validation_q_url')
         message_body = json.loads(message['Messages'][0]['Body'])
         record = UploadDB().get_pg_record("validation", validation_uuid, column='id')
         self.assertEqual(message_body["filename"], "filename123")

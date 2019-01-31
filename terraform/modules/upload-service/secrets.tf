@@ -19,7 +19,7 @@ resource "aws_secretsmanager_secret_version" "secrets" {
   "slack_webhook": "${var.slack_webhook}",
   "staging_bucket_arn": "${var.staging_bucket_arn}",
   "ingest_api_host": "${var.ingest_api_host}",
-  "pre_batch_validation_q_url": "${aws_sqs_queue.pre_batch_validation_queue.id}"
+  "validation_q_url": "${aws_sqs_queue.validation_queue.id}"
 }
 SECRETS_JSON
 }

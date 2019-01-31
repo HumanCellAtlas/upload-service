@@ -89,7 +89,7 @@ resource "aws_iam_role_policy" "validation_scheduler_lambda" {
         "sqs:SendMessage"
       ],
       "Resource": [
-        "arn:aws:sqs:*:*:${aws_sqs_queue.pre_batch_validation_queue.name}"
+        "arn:aws:sqs:*:*:${aws_sqs_queue.validation_queue.name}"
       ]
     },
     {

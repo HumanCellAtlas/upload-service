@@ -104,7 +104,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(400, response.status_code)
 
     @patch('upload.common.upload_area.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES - 1)
-    @patch('upload.lambdas.api_server.v1.area.ValidationScheduler.add_to_pre_batch_validation_sqs')
+    @patch('upload.lambdas.api_server.v1.area.ValidationScheduler.add_to_validation_sqs')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_schedule_file_validation_doesnt_raise_error_for_correct_file_size(self, mock_format_and_send_notification,
                                                                                mock_validate):
@@ -119,7 +119,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(200, response.status_code)
 
     @patch('upload.common.upload_area.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES - 1)
-    @patch('upload.lambdas.api_server.v1.area.ValidationScheduler.add_to_pre_batch_validation_sqs')
+    @patch('upload.lambdas.api_server.v1.area.ValidationScheduler.add_to_validation_sqs')
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_schedule_file_validation_works_for_hash_percent_encoding(self, mock_format_and_send_notification,
                                                                       mock_validate):

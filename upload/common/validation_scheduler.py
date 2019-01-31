@@ -40,7 +40,7 @@ class ValidationScheduler:
         return self.file.size < MAX_FILE_SIZE_IN_BYTES
 
     @retry(wait=wait_fixed(2), stop=stop_after_attempt(5))
-    def add_to_pre_batch_validation_sqs(self, filename: str, validator_image: str, env: dict, orig_val_id=None):
+    def add_to_validation_sqs(self, filename: str, validator_image: str, env: dict, orig_val_id=None):
         validation_id = str(uuid.uuid4())
         payload = {
             'upload_area_uuid': self.file.upload_area.uuid,
@@ -51,7 +51,7 @@ class ValidationScheduler:
             'orig_validation_id': orig_val_id
         }
         self._create_validation_event(validator_image, validation_id, orig_val_id)
-        response = sqs.meta.client.send_message(QueueUrl=self.config.pre_batch_validation_q_url,
+        response = sqs.meta.client.send_message(QueueUrl=self.config.validation_q_url,
                                                 MessageBody=json.dumps(payload))
         status = response['ResponseMetadata']['HTTPStatusCode']
         if status != 200:

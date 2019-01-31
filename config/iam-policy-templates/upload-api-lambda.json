@@ -69,7 +69,7 @@
       "Resource": [
         "arn:aws:sqs:us-east-1:$account_id:dcp-upload-pre-csum-queue-${DEPLOYMENT_STAGE}",
         "arn:aws:sqs:us-east-1:$account_id:dcp-upload-area-deletion-queue-${DEPLOYMENT_STAGE}",
-        "arn:aws:sqs:us-east-1:$account_id:dcp-upload-pre-batch-validation-queue-${DEPLOYMENT_STAGE}"
+        "arn:aws:sqs:us-east-1:$account_id:dcp-upload-validation-queue-${DEPLOYMENT_STAGE}"
       ]
     }
   ]

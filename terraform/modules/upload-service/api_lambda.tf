@@ -93,7 +93,7 @@ resource "aws_iam_role_policy" "upload_api_lambda" {
       "Resource": [
         "arn:aws:sqs:${local.aws_region}:${local.account_id}:dcp-upload-pre-csum-queue-${var.deployment_stage}",
         "arn:aws:sqs:${local.aws_region}:${local.account_id}:dcp-upload-area-deletion-queue-${var.deployment_stage}",
-        "arn:aws:sqs:${local.aws_region}:${local.account_id}:dcp-upload-pre-batch-validation-queue-${var.deployment_stage}"
+        "arn:aws:sqs:${local.aws_region}:${local.account_id}:dcp-upload-validation-queue-${var.deployment_stage}"
       ]
     }
   ]
