@@ -78,17 +78,6 @@ resource "aws_iam_role_policy" "upload_api_lambda" {
     {
       "Effect": "Allow",
       "Action": [
-        "batch:Describe*",
-        "batch:RegisterJobDefinition",
-        "batch:SubmitJob"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
         "secretsmanager:DescribeSecret",
         "secretsmanager:GetSecretValue"
       ],
@@ -103,7 +92,8 @@ resource "aws_iam_role_policy" "upload_api_lambda" {
       ],
       "Resource": [
         "arn:aws:sqs:${local.aws_region}:${local.account_id}:dcp-upload-pre-csum-queue-${var.deployment_stage}",
-        "arn:aws:sqs:${local.aws_region}:${local.account_id}:dcp-upload-area-deletion-queue-${var.deployment_stage}"
+        "arn:aws:sqs:${local.aws_region}:${local.account_id}:dcp-upload-area-deletion-queue-${var.deployment_stage}",
+        "arn:aws:sqs:${local.aws_region}:${local.account_id}:dcp-upload-validation-queue-${var.deployment_stage}"
       ]
     }
   ]

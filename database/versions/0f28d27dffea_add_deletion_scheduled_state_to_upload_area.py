@@ -22,5 +22,6 @@ def upgrade():
 
 
 def downgrade():
-    op.execute('COMMIT')
-    op.execute("ALTER TYPE upload_status_enum DROP VALUE 'DELETION_QUEUED';")
+    # https://stackoverflow.com/questions/25811017/how-to-delete-an-enum-type-value-in-postgres
+    # complexity of rollback is unnecessarily to introduce at the moment
+    pass

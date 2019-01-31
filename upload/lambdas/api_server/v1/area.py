@@ -3,7 +3,7 @@ import urllib.parse
 import connexion
 import requests
 from .. import return_exceptions_as_http_errors, require_authenticated
-from ..validation_scheduler import ValidationScheduler
+from ....common.validation_scheduler import ValidationScheduler
 from ....common.upload_area import UploadArea
 from ....common.uploaded_file import UploadedFile
 from ....common.dss_checksums import DssChecksums
@@ -80,14 +80,16 @@ def post_file(upload_area_uuid: str, filename: str):
 @require_authenticated
 def schedule_file_validation(upload_area_uuid: str, filename: str, json_request_body: str):
     upload_area = _load_upload_area(upload_area_uuid)
-    file = upload_area.uploaded_file(urllib.parse.unquote(filename))
+    filename = urllib.parse.unquote(filename)
+    file = upload_area.uploaded_file(filename)
     body = json.loads(json_request_body)
-    environment = body['environment'] if 'environment' in body else {}
+    env = body['environment'] if 'environment' in body else {}
     orig_val_id = body.get('original_validation_id')
+    image = body['validator_image']
     validation_scheduler = ValidationScheduler(file)
     if not validation_scheduler.check_file_can_be_validated():
         raise UploadException(status=requests.codes.bad_request, title="File too large for validation")
-    validation_id = validation_scheduler.schedule_validation(body['validator_image'], environment, orig_val_id)
+    validation_id = validation_scheduler.add_to_validation_sqs(filename, image, env, orig_val_id)
     return {'validation_id': validation_id}, requests.codes.ok
 
 
