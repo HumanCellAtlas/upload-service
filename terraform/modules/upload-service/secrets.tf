@@ -18,7 +18,8 @@ resource "aws_secretsmanager_secret_version" "secrets" {
   "api_key": "${var.ingest_api_key}",
   "slack_webhook": "${var.slack_webhook}",
   "staging_bucket_arn": "${var.staging_bucket_arn}",
-  "ingest_api_host": "${var.ingest_api_host}"
+  "ingest_api_host": "${var.ingest_api_host}",
+  "validation_q_url": "${aws_sqs_queue.validation_queue.id}"
 }
 SECRETS_JSON
 }

@@ -120,6 +120,9 @@ class TestUploadService(unittest.TestCase):
                                       json={"validator_image": "humancellatlas/upload-validator-example"})
         validation_id = json.loads(response)['validation_id']
 
+        WaitFor(self._validation_record_status, validation_id)\
+            .to_return_value('SCHEDULED', timeout_seconds=MINUTE_SEC)
+
         validation_job_id = self._validation_record_job_id(validation_id)
 
         WaitFor(self._batch_job_status, validation_job_id)\
