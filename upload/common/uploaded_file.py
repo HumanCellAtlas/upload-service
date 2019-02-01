@@ -3,6 +3,7 @@ import os
 import boto3
 from botocore.exceptions import ClientError
 from sqlalchemy.sql import and_
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from .dss_checksums import DssChecksums
 from .exceptions import UploadException
