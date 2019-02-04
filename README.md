@@ -79,7 +79,7 @@ brew install postgres
 # follow instructions to start postgres server
 createuser
 createdb upload_local
-DEPLOYMENT_STAGE=local make migrate
+DEPLOYMENT_STAGE=local make db/migrate
 ```
 To run tests offline use the `local` environment:
 ```bash

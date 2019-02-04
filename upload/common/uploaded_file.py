@@ -15,7 +15,6 @@ s3client = boto3.client('s3')
 
 
 class UploadedFile:
-
     """
     The UploadedFile class represents newly-uploaded or previously uploaded files.
     """
@@ -149,7 +148,7 @@ class UploadedFile:
             status = rows[0][0]
         return status, self.checksums
 
-    @retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
+    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(3))
     def _s3_load(self):
         try:
             self.s3object.load()
