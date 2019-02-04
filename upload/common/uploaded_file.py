@@ -15,6 +15,7 @@ s3client = boto3.client('s3')
 
 
 class UploadedFile:
+
     """
     The UploadedFile class represents newly-uploaded or previously uploaded files.
     """
