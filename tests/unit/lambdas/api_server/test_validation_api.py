@@ -62,19 +62,19 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         f3 = UploadedFile(upload_area, s3object=s3obj3)
         f4 = UploadedFile(upload_area, s3object=s3obj4)
 
-        validation_event1 = ValidationEvent(file_id=f1.db_id,
+        validation_event1 = ValidationEvent(file_ids=[f1.db_id],
                                             validation_id=validation1_id,
                                             job_id='12345',
                                             status="SCHEDULED")
-        validation_event2 = ValidationEvent(file_id=f2.db_id,
+        validation_event2 = ValidationEvent(file_ids=[f2.db_id],
                                             validation_id=validation2_id,
                                             job_id='23456',
                                             status="VALIDATING")
-        validation_event3 = ValidationEvent(file_id=f3.db_id,
+        validation_event3 = ValidationEvent(file_ids=[f3.db_id],
                                             validation_id=validation3_id,
                                             job_id='34567',
                                             status="VALIDATED")
-        validation_event4 = ValidationEvent(file_id=f4.db_id,
+        validation_event4 = ValidationEvent(file_ids=[f4.db_id],
                                             validation_id=validation4_id,
                                             job_id='45678',
                                             status="VALIDATING")
@@ -152,7 +152,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file_to_s3(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        validation_event = ValidationEvent(file_id=uploaded_file.db_id,
+        validation_event = ValidationEvent(file_ids=[uploaded_file.db_id],
                                            validation_id=validation_id,
                                            job_id='12345',
                                            status="SCHEDULED")
@@ -169,7 +169,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file_to_s3(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        validation_event = ValidationEvent(file_id=uploaded_file.db_id,
+        validation_event = ValidationEvent(file_ids=[uploaded_file.db_id],
                                            validation_id=validation_id,
                                            job_id='12345',
                                            status="SCHEDULED",
@@ -205,7 +205,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         s3obj = self.mock_upload_file_to_s3(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        validation_event = ValidationEvent(file_id=uploaded_file.db_id,
+        validation_event = ValidationEvent(file_ids=[uploaded_file.db_id],
                                            validation_id=validation_id,
                                            job_id='12345',
                                            status="SCHEDULED",
@@ -246,3 +246,67 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         response = self.client.get(f"/v1/area/{area_id}/foo.json/validate")
         validation_status = response.get_json()['validation_status']
         self.assertEqual(validation_status, "VALIDATED")
+
+    def test_schedule_validation__for_multiple_files__is_successful(self):
+        area_id = self._create_area()
+        self.mock_upload_file_to_s3(area_id, 'foo.json')
+        self.mock_upload_file_to_s3(area_id, 'foo2.json')
+
+        payload = {
+            'validator_image': "humancellatlas/upload-validator-example",
+            'files': ['foo.json', 'foo2.json']
+        }
+        response = self.client.put(
+            f"/v1/area/{area_id}/validate",
+            headers=self.authentication_header,
+            json=payload
+        )
+
+        self.assertEqual(response.status_code, 200)
+        validation_id = response.json['validation_id']
+        validation_record = UploadDB().get_pg_record("validation", validation_id)
+        self.assertEqual(validation_record['status'], "SCHEDULING_QUEUED")
+        validation_files_records = UploadDB().get_pg_records("validation_files", validation_id, column='validation_id')
+        file_one_record = UploadDB().get_pg_record("file", f"{area_id}/foo.json", "s3_key")
+        file_two_record = UploadDB().get_pg_record("file", f"{area_id}/foo2.json", "s3_key")
+        self.assertEqual(len(validation_files_records), 2)
+        validation_file_db_ids = [record['file_id'] for record in validation_files_records]
+        self.assertEqual(file_one_record['id'] in validation_file_db_ids, True)
+        self.assertEqual(file_two_record['id'] in validation_file_db_ids, True)
+
+    def test_schedule_validation__without_files_in_payload__is_unsuccessful(self):
+        area_id = self._create_area()
+
+        payload = {
+            'validator_image': "humancellatlas/upload-validator-example",
+            'files': ['foo.json', 'foo2.json']
+        }
+        response = self.client.put(
+            f"/v1/area/{area_id}/validate",
+            headers=self.authentication_header,
+            json=payload
+        )
+
+        self.assertEqual(404, response.status_code)
+
+    def test_schedule_validation__with_original_validation_id__retains_original_validation_id(self):
+        area_id = self._create_area()
+        self.mock_upload_file_to_s3(area_id, 'foo.json')
+        self.mock_upload_file_to_s3(area_id, 'foo2.json')
+
+        payload = {
+            'validator_image': "humancellatlas/upload-validator-example",
+            'files': ['foo.json', 'foo2.json'],
+            'original_validation_id': '123456'
+        }
+        response = self.client.put(
+            f"/v1/area/{area_id}/validate",
+            headers=self.authentication_header,
+            json=payload
+        )
+
+        self.assertEqual(200, response.status_code)
+        validation_id = response.json['validation_id']
+        validation_record = UploadDB().get_pg_record("validation", validation_id)
+        self.assertEqual(validation_record['status'], "SCHEDULING_QUEUED")
+        self.assertEqual(validation_record['original_validation_id'], "123456")

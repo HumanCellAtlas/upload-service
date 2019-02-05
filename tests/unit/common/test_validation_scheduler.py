@@ -24,14 +24,14 @@ class TestValidationScheduler(UploadTestCaseUsingMockAWS):
         pass
 
     @patch('upload.common.upload_area.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES + 1)
-    def test_check_file_can_be_validated__when_file_is_too_large_for_validation__returns_false(self):
+    def test_check_files_can_be_validated__when_files_are_too_large_for_validation__returns_false(self):
         uploaded_file = UploadedFile.create(upload_area=self.upload_area,
                                             name="file2",
                                             content_type="application/octet-stream; dcp-type=data",
                                             data="file2_content")
-        scheduler = ValidationScheduler(uploaded_file)
+        scheduler = ValidationScheduler(self.upload_area_id, [uploaded_file])
 
-        file_validatable = scheduler.check_file_can_be_validated()
+        file_validatable = scheduler.check_files_can_be_validated()
 
         self.assertEqual(False, file_validatable)
 
@@ -40,7 +40,7 @@ class TestValidationScheduler(UploadTestCaseUsingMockAWS):
                                             name="file2#",
                                             content_type="application/octet-stream; dcp-type=data",
                                             data="file2_content")
-        scheduler = ValidationScheduler(uploaded_file)
+        scheduler = ValidationScheduler(self.upload_area_id, [uploaded_file])
         validation_id = str(uuid.uuid4())
 
         validation_event = scheduler._create_validation_event("test_docker_image", validation_id, None)
@@ -53,7 +53,7 @@ class TestValidationScheduler(UploadTestCaseUsingMockAWS):
                                             name="file2#",
                                             content_type="application/octet-stream; dcp-type=data",
                                             data="file2_content")
-        scheduler = ValidationScheduler(uploaded_file)
+        scheduler = ValidationScheduler(self.upload_area_id, [uploaded_file])
         scheduler.batch_job_id = "123456"
         validation_id = str(uuid.uuid4())
         validation_event = scheduler._create_validation_event("test_docker_image", validation_id, None)
@@ -65,14 +65,14 @@ class TestValidationScheduler(UploadTestCaseUsingMockAWS):
         self.assertEqual(validation_event.status, "SCHEDULED")
 
     @patch('upload.common.upload_area.UploadedFile.size', MAX_FILE_SIZE_IN_BYTES - 1)
-    def test_check_file_can_be_validated__if_file_is_too_large__returns_true(self):
+    def test_check_files_can_be_validated__if_file_is_too_large__returns_true(self):
         uploaded_file = UploadedFile.create(upload_area=self.upload_area,
                                             name="file2",
                                             content_type="application/octet-stream; dcp-type=data",
                                             data="file2_content")
-        scheduler = ValidationScheduler(uploaded_file)
+        scheduler = ValidationScheduler(self.upload_area_id, [uploaded_file])
 
-        file_validatable = scheduler.check_file_can_be_validated()
+        file_validatable = scheduler.check_files_can_be_validated()
 
         self.assertEqual(True, file_validatable)
 
@@ -81,9 +81,9 @@ class TestValidationScheduler(UploadTestCaseUsingMockAWS):
                                             name="file2",
                                             content_type="application/octet-stream; dcp-type=data",
                                             data="file2_content")
-        validation_scheduler = ValidationScheduler(uploaded_file)
+        validation_scheduler = ValidationScheduler(self.upload_area_id, [uploaded_file])
 
-        validation_uuid = validation_scheduler.add_to_validation_sqs("filename123",
+        validation_uuid = validation_scheduler.add_to_validation_sqs(["filename123"],
                                                                      "test_docker_image",
                                                                      {"variable": "variable"},
                                                                      "123456")
@@ -91,7 +91,7 @@ class TestValidationScheduler(UploadTestCaseUsingMockAWS):
         message = self.sqs.meta.client.receive_message(QueueUrl='test_validation_q_url')
         message_body = json.loads(message['Messages'][0]['Body'])
         record = UploadDB().get_pg_record("validation", validation_uuid, column='id')
-        self.assertEqual(message_body["filename"], "filename123")
+        self.assertEqual(message_body["filenames"], ["filename123"])
         self.assertEqual(message_body["validation_id"], validation_uuid)
         self.assertEqual(message_body["validator_docker_image"], "test_docker_image")
         self.assertEqual(message_body["environment"], {"variable": "variable"})
