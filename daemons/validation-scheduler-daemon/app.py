@@ -14,14 +14,16 @@ def schedule_file_validation(event, context):
     logger.info(f"initiated schedule_file_validation with {event}")
     unwrapped_event = json.loads(event["Records"][0]["body"])
     upload_area_uuid = unwrapped_event["upload_area_uuid"]
-    filename = unwrapped_event["filename"]
+    filenames = unwrapped_event["filenames"]
     validation_id = unwrapped_event["validation_id"]
     image = unwrapped_event["validator_docker_image"]
     env = unwrapped_event["environment"]
     orig_validation_id = unwrapped_event["orig_validation_id"]
-
     upload_area = UploadArea(upload_area_uuid)
-    file = upload_area.uploaded_file(filename)
-    validation_scheduler = ValidationScheduler(file)
+    files = []
+    for filename in filenames:
+        file = upload_area.uploaded_file(filename)
+        files.append(file)
+    validation_scheduler = ValidationScheduler(upload_area_uuid, files)
     validation_id = validation_scheduler.schedule_batch_validation(validation_id, image, env, orig_validation_id)
     logger.info(f"scheduled batch job with {event}")

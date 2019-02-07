@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('validator', help="Path of validator to invoke")
 parser.add_argument('-t', '--test', action='store_true', help="Test only, do not submit results to Ingest")
 parser.add_argument('-k', '--keep', action='store_true', help="Keep downloaded files after validation")
-parser.add_argument('s3_urls', metavar="<s3_url>", help="S3 URLs of file/s to be validated")
+parser.add_argument('s3_urls', nargs=argparse.REMAINDER, help="S3 URLs of file/s to be validated")
 
 args = parser.parse_args()
 

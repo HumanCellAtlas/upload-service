@@ -42,7 +42,7 @@ class ValidationScheduler:
 
     @property
     def bucket(self):
-        return self.file.upload_area.bucket_name
+        return self.files[0].upload_area.bucket_name
 
     @property
     def url_safe_file_keys(self):
