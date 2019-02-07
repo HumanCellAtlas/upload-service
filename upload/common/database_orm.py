@@ -52,7 +52,6 @@ class DbChecksum(Base):
 class DbValidation(Base):
     __tablename__ = 'validation'
     id = Column(String(), primary_key=True)
-    file_id = Column(String(), ForeignKey('file.id'), nullable=False)
     job_id = Column(String(), nullable=False)
     status = Column(String(), nullable=False)
     results = Column(String(), nullable=False)
@@ -60,8 +59,6 @@ class DbValidation(Base):
     validation_ended_at = Column(DateTime(), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, nullable=False, onupdate=datetime.utcnow)
-
-    file = relationship("DbFile", back_populates='validations')
 
 
 class DbNotification(Base):
@@ -80,10 +77,6 @@ DbUploadArea.files = relationship('DbFile', order_by=DbFile.id, back_populates='
 DbFile.checksum_records = relationship('DbChecksum', order_by=DbChecksum.created_at,
                                        back_populates='file',
                                        cascade='all, delete, delete-orphan')
-DbFile.validations = relationship('DbValidation',
-                                  order_by=DbValidation.created_at,
-                                  back_populates='file',
-                                  cascade='all, delete, delete-orphan')
 DbFile.notifications = relationship('DbNotification',
                                     order_by=DbNotification.created_at,
                                     back_populates='file',

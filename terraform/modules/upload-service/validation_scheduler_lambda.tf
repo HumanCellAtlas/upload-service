@@ -72,6 +72,15 @@ resource "aws_iam_role_policy" "validation_scheduler_lambda" {
     {
       "Effect": "Allow",
       "Action": [
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::${local.bucket_name}"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
         "secretsmanager:DescribeSecret",
         "secretsmanager:GetSecretValue"
       ],
