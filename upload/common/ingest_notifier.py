@@ -107,4 +107,3 @@ class IngestNotifier:
     def _validate_payload(self, payload):
         assert type(payload) is dict, "payload is not dict"
         assert payload.get("upload_area_id") is not None, "upload_area_id is not in payload"
-        assert payload.get("names") is not None, "names is not in payload"
