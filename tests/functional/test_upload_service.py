@@ -117,7 +117,7 @@ class TestUploadService(unittest.TestCase):
                                       url=f"{self.api_url}/area/{self.upload_area_uuid}/{test_file.name}/validate",
                                       expected_status=200,
                                       headers=self.auth_headers,
-                                      json={"validator_image": "humancellatlas/upload-validator-example"})
+                                      json={"validator_image": "humancellatlas/upload-validator-example:14"})
         validation_id = json.loads(response)['validation_id']
 
         WaitFor(self._validation_record_status, validation_id)\
