@@ -1,11 +1,12 @@
 import json
+import logging
 
-from upload.common.uploaded_file import UploadedFile
-from upload.common.validation_scheduler import ValidationScheduler
+from upload.common.logging import configure_logger
 from upload.common.upload_area import UploadArea
-from upload.common.logging import get_logger
+from upload.common.validation_scheduler import ValidationScheduler
 
-logger = get_logger(__name__)
+configure_logger()
+logger = logging.getLogger(__name__)
 
 
 # This lambda function is invoked by messages in the the validation_queue (AWS SQS).
