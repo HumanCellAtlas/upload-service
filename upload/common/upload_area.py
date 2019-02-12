@@ -1,23 +1,24 @@
 import json
-import logging
 import os
-import time
 import uuid
+import time
 
 import boto3
-from dcplib.media_types import DcpMediaType
 from tenacity import retry, wait_fixed, stop_after_attempt
 
-from .checksum_event import ChecksumEvent
+from dcplib.media_types import DcpMediaType
+
 from .dss_checksums import DssChecksums
+from .uploaded_file import UploadedFile
+from .checksum_event import ChecksumEvent
 from .exceptions import UploadException
 from .upload_config import UploadConfig
-from .uploaded_file import UploadedFile
+from .logging import get_logger
 
 if not os.environ.get("CONTAINER"):
     from .database import UploadDB
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 s3 = boto3.resource('s3')
 sqs = boto3.resource('sqs')
@@ -168,7 +169,7 @@ class UploadArea:
         if status != 200:
             raise UploadException(status=500, title="Internal error",
                                   detail=f"Adding file upload message for {self.key_prefix}{filename} "
-                                  f"was unsuccessful to SQS {self.config.csum_upload_q_url} )")
+                                         f"was unsuccessful to SQS {self.config.csum_upload_q_url} )")
 
     @retry(wait=wait_fixed(2), stop=stop_after_attempt(5))
     def add_upload_area_to_delete_sqs(self):

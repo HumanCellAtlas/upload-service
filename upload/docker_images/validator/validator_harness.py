@@ -1,22 +1,25 @@
-import logging
 import os
+import sys
 import pathlib
 import subprocess
-import sys
 import time
 import urllib.parse
+import logging
 
 import boto3
-from tenacity import retry, stop_after_attempt, before_log, before_sleep_log, wait_exponential, TryAgain
 from urllib3.util import parse_url
+from tenacity import retry, stop_after_attempt, before_log, before_sleep_log, wait_exponential, TryAgain
 
-from upload.common.upload_api_client import update_event
 from upload.common.validation_event import ValidationEvent
+from upload.common.logging import get_logger
+from upload.common.upload_api_client import update_event
 
-logger = logging.getLogger(f"CHECKSUMMER [{os.environ.get('AWS_BATCH_JOB_ID')}]")
+
+logger = get_logger(f"CHECKSUMMER [{os.environ.get('AWS_BATCH_JOB_ID')}]")
 
 
 class ValidatorHarness:
+
     DEFAULT_STAGING_AREA = "/data"
     TIMEOUT = None
 

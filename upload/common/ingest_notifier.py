@@ -1,20 +1,23 @@
-import base64
 import json
-import logging
-import time
+import os
 import uuid
+import time
+import base64
 
 import requests
 from jwt import encode
 from tenacity import retry, stop_after_attempt, wait_fixed
 
+from .exceptions import UploadException
+from .logging import get_logger
 from .database import UploadDB
 from .upload_config import UploadConfig, UploadOutgoingIngestAuthConfig
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class IngestNotifier:
+
     INGEST_ENDPOINTS = {"file_uploaded": "messaging/fileUploadInfo",
                         "file_validated": "messaging/fileValidationResult"}
 
@@ -68,8 +71,7 @@ class IngestNotifier:
 
     def get_service_jwt(self):
         # This function is taken directly from auth best practice docs in hca gitlab
-        # https://allspark.dev.data.humancellatlas.org/dcp-ops/docs/wikis/Security/Authentication%20and
-        # %20Authorization/Setting%20up%20DCP%20Auth
+        # https://allspark.dev.data.humancellatlas.org/dcp-ops/docs/wikis/Security/Authentication%20and%20Authorization/Setting%20up%20DCP%20Auth
         iat = time.time()
         exp = iat + 3600
         payload = {'iss': self.gcp_service_acct_creds["client_email"],

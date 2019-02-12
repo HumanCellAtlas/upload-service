@@ -22,14 +22,6 @@
     "prod": {
       "api_gateway_stage": "",
       "environment_variables": {}
-    },
-    "arathi": {
-      "api_gateway_stage": "arathi",
-      "environment_variables": {
-        "DEPLOYMENT_STAGE": "arathi",
-        "INGEST_API_KEY": "",
-        "API_HOST": "upload.arathi.data.humancellatlas.org"
-      }
     }
   },
   "lambda_timeout": 300,

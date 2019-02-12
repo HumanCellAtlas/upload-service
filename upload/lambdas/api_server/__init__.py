@@ -5,16 +5,17 @@ import traceback
 
 import connexion
 import requests
-from connexion.lifecycle import ConnexionResponse
 from connexion.resolver import RestyResolver
+from connexion.lifecycle import ConnexionResponse
 
 from ...common.exceptions import UploadException
+from ...common.logging import get_logger
 
-logging.getLogger('boto3').setLevel(logging.WARNING)
-logging.getLogger('botocore').setLevel(logging.WARNING)
-logging.getLogger('nose').setLevel(logging.WARNING)
+get_logger('boto3').setLevel(logging.WARNING)
+get_logger('botocore').setLevel(logging.WARNING)
+get_logger('nose').setLevel(logging.WARNING)
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def create_app():

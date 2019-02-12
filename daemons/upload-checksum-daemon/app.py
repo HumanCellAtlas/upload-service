@@ -1,9 +1,5 @@
 import json
-
-from upload.common.logging import configure_logger
 from upload.lambdas.checksum_daemon import ChecksumDaemon
-
-configure_logger()
 
 
 # This lambda function is invoked by messages in the the pre_checksum_upload_queue (AWS SQS).
