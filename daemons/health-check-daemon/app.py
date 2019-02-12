@@ -1,7 +1,7 @@
-from upload.common.logging import get_logger
+from upload.common.logging import configure_logger
 from upload.lambdas.health_check.health_check import HealthCheck
 
-logger = get_logger(__name__)
+configure_logger()
 
 
 def health_check(event, context):
