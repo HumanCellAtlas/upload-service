@@ -25,8 +25,7 @@ class UploadDB:
                 "file": meta.tables['file'],
                 "notification": meta.tables['notification'],
                 "validation": meta.tables['validation'],
-                "checksum": meta.tables['checksum'],
-                "validation_files": meta.tables['validation_files']
+                "checksum": meta.tables['checksum']
             }
 
     @property
@@ -65,7 +64,9 @@ class UploadDB:
         self.run_query(update)
 
     def get_pg_record(self, record_type, record_id, column='id'):
-        result = self._run_select_query(record_type, record_id, column)
+        table = self.table(table_name=record_type)
+        select = table.select().where(table.columns[column] == record_id)
+        result = self.run_query(select)
         column_keys = result.keys()
         rows = result.fetchall()
         if len(rows) == 0:
@@ -78,28 +79,6 @@ class UploadDB:
                 column = column_keys[idx]
                 output[column] = val
             return output
-
-    def get_pg_records(self, record_type, record_id, column):
-        result = self._run_select_query(record_type, record_id, column)
-        column_keys = result.keys()
-        rows = result.fetchall()
-        if len(rows) == 0:
-            return None
-        else:
-            results = []
-            for row in rows:
-                output = {}
-                for idx, val in enumerate(row):
-                    column = column_keys[idx]
-                    output[column] = val
-                results.append(output)
-        return results
-
-    def _run_select_query(self, record_type, record_id, column):
-        table = self.table(table_name=record_type)
-        select = table.select().where(table.columns[column] == record_id)
-        result = self.run_query(select)
-        return result
 
     # Engine.dispose() protects us from situations where the client thinks it has
     # an active connection but for some reason it is inactive. Potential causes

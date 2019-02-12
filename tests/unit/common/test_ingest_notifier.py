@@ -48,7 +48,7 @@ class TestIngestNotifier(UploadTestCaseUsingMockAWS):
         file = upload_area.store_file("test_file_name", "test_file_content", "application/json; dcp-type=data")
         ingest_notifier = IngestNotifier("file_uploaded", file_id=file.db_id)
 
-        test_payload = {'names': "[test_file_name]", 'upload_area_id': area_uuid}
+        test_payload = {'name': "test_file_name", 'upload_area_id': area_uuid}
         notification_id = ingest_notifier.format_and_send_notification(test_payload)
 
         record = UploadDB().get_pg_record("notification", notification_id, column="id")

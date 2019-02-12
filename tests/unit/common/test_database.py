@@ -1,12 +1,13 @@
 import uuid
 
-from .. import UploadTestCaseUsingMockAWS
+from .. import UploadTestCaseUsingLiveAWS
 
 from upload.common.database import UploadDB
 from upload.common.upload_area import UploadArea
+from upload.common.upload_config import UploadConfig
 
 
-class TestDatabase(UploadTestCaseUsingMockAWS):
+class TestDatabase(UploadTestCaseUsingLiveAWS):
 
     def setUp(self):
         super().setUp()
@@ -41,10 +42,3 @@ class TestDatabase(UploadTestCaseUsingMockAWS):
         self.assertEqual(after["uuid"], self.area_uuid)
         self.assertEqual(after["bucket_name"], self.upload_config.bucket_name)
         self.assertEqual(after["status"], "LOCKED")
-
-    def test_get_pg_records(self):
-        results = self.db.get_pg_records("upload_area", self.area_uuid, column='uuid')
-
-        self.assertEqual(results[0]["uuid"], self.area_uuid)
-        self.assertEqual(results[0]["bucket_name"], self.upload_config.bucket_name)
-        self.assertEqual(results[0]["status"], "UNLOCKED")

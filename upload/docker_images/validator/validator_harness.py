@@ -23,10 +23,11 @@ class ValidatorHarness:
     DEFAULT_STAGING_AREA = "/data"
     TIMEOUT = None
 
-    def __init__(self, path_to_validator, s3_urls_of_files_to_be_validated, staging_folder=None):
+    def __init__(self, path_to_validator, s3_url_of_file_to_be_validated, staging_folder=None):
         self.path_to_validator = path_to_validator
-        self.s3_file_urls = s3_urls_of_files_to_be_validated
-        self.staged_file_paths = []
+        url_bits = parse_url(s3_url_of_file_to_be_validated)
+        self.s3_bucket_name = url_bits.netloc
+        self.s3_object_key = urllib.parse.unquote(url_bits.path.lstrip('/'))
         self.staging_folder = staging_folder or self.DEFAULT_STAGING_AREA
         self.version = self._find_version()
         self.job_id = os.environ['AWS_BATCH_JOB_ID']
@@ -39,63 +40,52 @@ class ValidatorHarness:
                       attempt=os.environ['AWS_BATCH_JOB_ATTEMPT']))
 
     def validate(self, test_only=False):
+        key_parts = self.s3_object_key.split('/')
+        upload_area_id = key_parts.pop(0)
+        file_name = "/".join(key_parts)
         self._log("VERSION {version}, attempt {attempt} with argv: {argv}".format(
             version=self.version, attempt=os.environ['AWS_BATCH_JOB_ATTEMPT'], argv=sys.argv))
 
-        upload_area_id, file_names = self._stage_files_to_be_validated()
+        self._stage_file_to_be_validated()
 
         validation_event = ValidationEvent(validation_id=self.validation_id,
                                            job_id=self.job_id,
                                            status="VALIDATING")
         if not test_only:
-            update_event(validation_event, {"upload_area_id": upload_area_id, "names": file_names})
+            update_event(validation_event, {"upload_area_id": upload_area_id, "name": file_name})
 
         results = self._run_validator()
 
         results["upload_area_id"] = upload_area_id
-        results["names"] = file_names
+        results["name"] = file_name
         validation_event.status = "VALIDATED"
 
         if not test_only:
             update_event(validation_event, results)
 
-        self._unstage_files()
+        self._unstage_file()
 
     @retry(stop=stop_after_attempt(5),
            wait=wait_exponential(multiplier=10, min=1, max=4),
            before=before_log(logger, logging.DEBUG),
            before_sleep=before_sleep_log(logger, logging.ERROR))
-    def _stage_files_to_be_validated(self):
-        upload_area_id = None
-        file_names = []
-        for s3_file_url in self.s3_file_urls:
-            url_bits = parse_url(s3_file_url)
-            s3_bucket_name = url_bits.netloc
-            s3_object_key = urllib.parse.unquote(url_bits.path.lstrip('/'))
-            key_parts = s3_object_key.split('/')
-            upload_area_id = key_parts.pop(0)
-            file_name = "/".join(key_parts)
-            file_names.append(file_name)
-            staged_file_path = pathlib.Path(self.staging_folder, s3_object_key)
-            self._log("Staging s3://{bucket}/{key} at {file_path}".format(bucket=s3_bucket_name,
-                                                                          key=s3_object_key,
-                                                                          file_path=staged_file_path))
-            staged_file_path.parent.mkdir(parents=True, exist_ok=True)
-            self._download_file_from_bucket_to_filesystem(s3_bucket_name, s3_object_key, staged_file_path)
-            if not staged_file_path.is_file():
-                raise TryAgain
-            self.staged_file_paths.append(staged_file_path)
-        return upload_area_id, file_names
+    def _stage_file_to_be_validated(self):
+        self.staged_file_path = pathlib.Path(self.staging_folder, self.s3_object_key)
+        self._log("Staging s3://{bucket}/{key} at {file_path}".format(bucket=self.s3_bucket_name,
+                                                                      key=self.s3_object_key,
+                                                                      file_path=self.staged_file_path))
+        self.staged_file_path.parent.mkdir(parents=True, exist_ok=True)
+        self._download_file_from_bucket_to_filesystem()
+        if not self.staged_file_path.is_file():
+            raise TryAgain
 
-    def _download_file_from_bucket_to_filesystem(self, s3_bucket_name, s3_object_key, staged_file_path):
+    def _download_file_from_bucket_to_filesystem(self):
         s3 = boto3.resource('s3')
-        bucket = s3.Bucket(s3_bucket_name)
-        bucket.download_file(s3_object_key, str(staged_file_path))
+        bucket = s3.Bucket(self.s3_bucket_name)
+        bucket.download_file(self.s3_object_key, str(self.staged_file_path))
 
     def _run_validator(self):
-        command = [self.path_to_validator]
-        for staged_file_path in self.staged_file_paths:
-            command.append(str(staged_file_path))
+        command = [self.path_to_validator, str(self.staged_file_path)]
         os.environ['VALIDATION_ID'] = self.validation_id
         start_time = time.time()
         self._log("RUNNING {}".format(command))
@@ -131,10 +121,9 @@ class ValidatorHarness:
         results['duration_s'] = time.time() - start_time
         return results
 
-    def _unstage_files(self):
-        for staged_file_path in self.staged_file_paths:
-            self._log("removing file {}".format(staged_file_path))
-            staged_file_path.unlink()
+    def _unstage_file(self):
+        self._log("removing file {}".format(self.staged_file_path))
+        self.staged_file_path.unlink()
 
     def _find_version(self):
         try:
