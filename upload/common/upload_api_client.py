@@ -11,7 +11,7 @@ api_version = "v1"
 header = {'Content-type': 'application/json'}
 
 
-def update_event(event, file_payload, client=requests):
+def update_event(event, payload, client=requests):
     event_type = type(event).__name__
     if event_type == "ValidationEvent":
         action = 'update_validation'
@@ -20,9 +20,9 @@ def update_event(event, file_payload, client=requests):
 
     data = {"status": event.status,
             "job_id": event.job_id,
-            "payload": file_payload
+            "payload": payload
             }
-    upload_area_uuid = file_payload["upload_area_id"]
+    upload_area_uuid = payload["upload_area_id"]
     event_id = event.id
     api_url = f"https://{url}/{api_version}/area/{upload_area_uuid}/{action}/{event_id}"
     logger.debug(f"update_event: sending to {api_url}: {data}")

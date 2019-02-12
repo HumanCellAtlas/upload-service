@@ -236,9 +236,10 @@ class UploadArea:
 
     def retrieve_file_validation_statuses_for_upload_area(self):
         query_result = self.db.run_query_with_params(
-            "SELECT status, COUNT(DISTINCT validation.file_id) "
+            "SELECT status, COUNT(validation.id) "
             "FROM validation "
-            "INNER JOIN file ON validation.file_id = file.id "
+            "INNER JOIN validation_files ON validation.id = validation_files.validation_id  "
+            "INNER JOIN file ON validation_files.file_id = file.id "
             "WHERE file.upload_area_id = %s GROUP BY status;", (self.db_id,))
         results = query_result.fetchall()
         validation_status_dict = {

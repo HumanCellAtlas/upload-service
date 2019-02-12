@@ -11,6 +11,7 @@ from upload.common.upload_area import UploadArea
 from upload.common.validation_event import ValidationEvent
 from upload.common.checksum_event import ChecksumEvent
 from upload.common.database import UploadDB
+from upload.common.upload_api_client import update_event
 
 
 class TestUploadApiClient(UploadTestCaseUsingMockAWS):
@@ -43,14 +44,13 @@ class TestUploadApiClient(UploadTestCaseUsingMockAWS):
 
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_update_event_with_validation_event(self, mock_format_and_send_notification):
-        from upload.common.upload_api_client import update_event
 
         validation_id = str(uuid.uuid4())
         area_id = self._create_area()
         s3obj = self.mock_upload_file_to_s3(area_id, 'foo.json')
         upload_area = UploadArea(area_id)
         uploaded_file = UploadedFile(upload_area, s3object=s3obj)
-        validation_event = ValidationEvent(file_id=uploaded_file.db_id,
+        validation_event = ValidationEvent(file_ids=[uploaded_file.db_id],
                                            validation_id=validation_id,
                                            job_id='12345',
                                            status="SCHEDULED")
@@ -75,7 +75,6 @@ class TestUploadApiClient(UploadTestCaseUsingMockAWS):
 
     @patch('upload.lambdas.api_server.v1.area.IngestNotifier.format_and_send_notification')
     def test_update_event_with_checksum_event(self, mock_format_and_send_notification):
-        from upload.common.upload_api_client import update_event
 
         checksum_id = str(uuid.uuid4())
         area_uuid = self._create_area()

@@ -30,20 +30,43 @@ logger = logging.getLogger(__name__)
 class ValidationScheduler:
     JOB_NAME_ALLOWABLE_CHARS = '[^\w-]'
 
-    def __init__(self, uploaded_file: UploadedFile):
-        self.file = uploaded_file
-        self.file_key = self.file.upload_area.uuid + '/' + urllib.parse.unquote(self.file.name)
+    def __init__(self, upload_area_uuid: str, uploaded_files: list):
+        self.upload_area_uuid = upload_area_uuid
+        self.files = uploaded_files
         self.config = UploadConfig()
 
-    def check_file_can_be_validated(self):
-        return self.file.size < MAX_FILE_SIZE_IN_BYTES
+    @property
+    def file_keys(self):
+        return [f"{file.upload_area.uuid}/{urllib.parse.unquote(file.name)}" for file in self.files]
+
+    @property
+    def bucket(self):
+        return self.files[0].upload_area.bucket_name
+
+    @property
+    def url_safe_file_keys(self):
+        return [urllib.parse.quote(file_key) for file_key in self.file_keys]
+
+    @property
+    def file_s3_locations(self):
+        return [f"s3://{self.bucket}/{file_key}" for file_key in self.url_safe_file_keys]
+
+    @property
+    def file_db_ids(self):
+        return [file.db_id for file in self.files]
+
+    def check_files_can_be_validated(self):
+        files_size = 0
+        for file in self.files:
+            files_size += file.size
+        return files_size < MAX_FILE_SIZE_IN_BYTES
 
     @retry(wait=wait_fixed(2), stop=stop_after_attempt(5))
-    def add_to_validation_sqs(self, filename: str, validator_image: str, env: dict, orig_val_id=None):
+    def add_to_validation_sqs(self, filenames: list, validator_image: str, env: dict, orig_val_id=None):
         validation_id = str(uuid.uuid4())
         payload = {
-            'upload_area_uuid': self.file.upload_area.uuid,
-            'filename': filename,
+            'upload_area_uuid': self.upload_area_uuid,
+            'filenames': filenames,
             'validation_id': validation_id,
             'validator_docker_image': validator_image,
             'environment': env,
@@ -55,9 +78,9 @@ class ValidationScheduler:
         status = response['ResponseMetadata']['HTTPStatusCode']
         if status != 200:
             raise UploadException(status=500, title="Internal error",
-                                  detail=f"Adding file {self.file_key} was unsuccessful to \
-                                          so pre batch sqs {self.config.area_deletion_q_url} )")
-        logger.info(f"added file {self.file_key} to pre batch sqs")
+                                  detail=f"Adding files {self.file_keys} was unsuccessful to \
+                                          validation sqs {self.config.area_deletion_q_url} )")
+        logger.info(f"added files {self.file_keys} to validation sqs")
         return validation_id
 
     def schedule_batch_validation(self, validation_id: str, docker_image: str, env: dict, orig_val_id=None) -> str:
@@ -73,19 +96,16 @@ class ValidationScheduler:
             env['VALIDATION_ID'] = orig_val_id
         else:
             env['VALIDATION_ID'] = validation_id
-        url_safe_file_key = urllib.parse.quote(self.file_key)
-        file_s3loc = "s3://{bucket}/{file_key}".format(
-            bucket=self.file.upload_area.bucket_name,
-            file_key=url_safe_file_key
-        )
-        command = ['/validator', file_s3loc]
+        command = ['/validator']
+        for file_s3_loc in self.file_s3_locations:
+            command.append(file_s3_loc)
         logger.info(f"scheduling batch job with {env}")
-        self.batch_job_id = self._enqueue_batch_job(job_defn, command, env)
+        self.batch_job_id = self._enqueue_batch_job(job_defn, command, env, validation_id)
         self._update_validation_event(docker_image, validation_id, orig_val_id)
         return validation_id
 
     def _create_validation_event(self, validator_docker_image, validation_id, orig_val_id, status="SCHEDULING_QUEUED"):
-        validation_event = ValidationEvent(file_id=self.file.db_id,
+        validation_event = ValidationEvent(file_ids=self.file_db_ids,
                                            validation_id=validation_id,
                                            status=status,
                                            docker_image=validator_docker_image,
@@ -94,7 +114,7 @@ class ValidationScheduler:
         return validation_event
 
     def _update_validation_event(self, validator_docker_image, validation_id, orig_val_id, status="SCHEDULED"):
-        validation_event = ValidationEvent(file_id=self.file.db_id,
+        validation_event = ValidationEvent(file_ids=self.file_db_ids,
                                            validation_id=validation_id,
                                            job_id=self.batch_job_id,
                                            status=status,
@@ -112,8 +132,8 @@ class ValidationScheduler:
         return job_defn
 
     @retry_on_aws_too_many_requests
-    def _enqueue_batch_job(self, job_defn, command, environment):
-        job_name = "-".join(["validation", os.environ['DEPLOYMENT_STAGE'], self.file.upload_area.uuid, self.file.name])
+    def _enqueue_batch_job(self, job_defn, command, environment, validation_id):
+        job_name = "-".join(["validation", os.environ['DEPLOYMENT_STAGE'], self.upload_area_uuid, validation_id])
         job_name = re.sub(self.JOB_NAME_ALLOWABLE_CHARS, "", job_name)[0:128]
         job = batch.submit_job(
             jobName=job_name,
@@ -124,7 +144,7 @@ class ValidationScheduler:
                 'environment': [dict(name=k, value=v) for k, v in environment.items()]
             }
         )
-        print(f"Enqueued job {job['jobId']} to validate {self.file.upload_area.uuid}/{self.file.name} "
+        print(f"Enqueued job {job['jobId']} to validate {self.file_keys} "
               f"using job definition {job_defn.arn}:")
         print(json.dumps(job))
         return job['jobId']

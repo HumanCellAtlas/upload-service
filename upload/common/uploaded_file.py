@@ -132,8 +132,12 @@ class UploadedFile:
     def retrieve_latest_file_validation_status_and_results(self):
         status = "UNSCHEDULED"
         results = None
-        query_results = self._db.run_query_with_params("SELECT status, results->>'stdout' FROM validation \
-            WHERE file_id = %s ORDER BY created_at DESC LIMIT 1;", (self.db_id,))
+        query_results = self._db.run_query_with_params(
+            "SELECT status, results->>'stdout' "
+            "FROM validation "
+            "INNER JOIN validation_files ON validation.id = validation_files.validation_id  "
+            "INNER JOIN file ON validation_files.file_id = file.id "
+            "WHERE file.id = %s;", (self.db_id,))
         rows = query_results.fetchall()
         if len(rows) > 0:
             status = rows[0][0]
