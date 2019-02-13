@@ -1,12 +1,47 @@
 {
-  "arathi": {
-    "api_handler_name": "upload-api-arathi",
-    "api_handler_arn": "arn:aws:lambda:us-east-1:861229788715:function:upload-api-arathi",
-    "lambda_functions": {},
+  "predev": {
+    "api_handler_name": "upload-api-predev",
+    "api_handler_arn": "",
+    "rest_api_id": "",
+    "region": "us-east-1",
+    "api_gateway_stage": "predev",
     "backend": "api",
-    "chalice_version": "1.1.1",
-    "rest_api_id": "e35crsfoaa",
-    "api_gateway_stage": "arathi",
-    "region": "us-east-1"
+    "chalice_version": "0.9.0"
+  },
+  "dev": {
+    "api_handler_name": "upload-api-dev",
+    "api_handler_arn": "",
+    "rest_api_id": "",
+    "region": "us-east-1",
+    "api_gateway_stage": "dev",
+    "backend": "api",
+    "chalice_version": "0.9.0"
+  },
+  "staging": {
+    "api_handler_name": "upload-api-staging",
+    "api_handler_arn": "",
+    "rest_api_id": "",
+    "region": "us-east-1",
+    "api_gateway_stage": "staging",
+    "backend": "api",
+    "chalice_version": "0.9.0"
+  },
+  "prod": {
+    "api_handler_name": "upload-api-prod",
+    "api_handler_arn": "",
+    "rest_api_id": "",
+    "region": "us-east-1",
+    "api_gateway_stage": "prod",
+    "backend": "api",
+    "chalice_version": "0.9.0"
+  },
+  "integration": {
+    "api_handler_name": "upload-api-integration",
+    "api_handler_arn": "",
+    "rest_api_id": "",
+    "region": "us-east-1",
+    "api_gateway_stage": "integration",
+    "backend": "api",
+    "chalice_version": "0.9.0"
   }
 }
