@@ -168,7 +168,7 @@ class UploadArea:
         if status != 200:
             raise UploadException(status=500, title="Internal error",
                                   detail=f"Adding file upload message for {self.key_prefix}{filename} "
-                                  f"was unsuccessful to SQS {self.config.csum_upload_q_url} )")
+                                         f"was unsuccessful to SQS {self.config.csum_upload_q_url} )")
 
     @retry(wait=wait_fixed(2), stop=stop_after_attempt(5))
     def add_upload_area_to_delete_sqs(self):
