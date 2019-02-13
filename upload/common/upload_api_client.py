@@ -1,9 +1,10 @@
-import requests
-from .logging import get_logger
 import json
+import logging
 import os
 
-logger = get_logger(__name__)
+import requests
+
+logger = logging.getLogger(__name__)
 
 url = os.environ["API_HOST"]
 api_version = "v1"

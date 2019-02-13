@@ -1,19 +1,18 @@
-from functools import reduce
-import time
 import collections.abc
+import logging
+import time
+from functools import reduce
 
 import boto3
-from botocore.exceptions import ClientError
 from boto3.s3.transfer import TransferConfig
-from tenacity import retry, wait_fixed, stop_after_attempt
-
+from botocore.exceptions import ClientError
 from dcplib.checksumming_io import ChecksummingSink
 from dcplib.s3_multipart import get_s3_multipart_chunk_size, MULTIPART_THRESHOLD
+from tenacity import retry, wait_fixed, stop_after_attempt
 
-from .logging import get_logger
 from .exceptions import UploadException
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class DssChecksums(collections.abc.MutableMapping):

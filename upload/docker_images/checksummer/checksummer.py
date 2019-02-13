@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 
 import argparse
+import logging
 import os
 import sys
-from urllib3.util import parse_url
 
 import boto3
+from urllib3.util import parse_url
 
-from upload.common.logging import get_logger
-from upload.common.dss_checksums import DssChecksums
 from upload.common.checksum_event import ChecksumEvent
+from upload.common.dss_checksums import DssChecksums
 from upload.common.upload_api_client import update_event
 from upload.common.upload_config import UploadConfig
 
-logger = get_logger(f"CHECKSUMMER [{os.environ.get('AWS_BATCH_JOB_ID')}]")
+logger = logging.getLogger(f"CHECKSUMMER [{os.environ.get('AWS_BATCH_JOB_ID')}]")
 
 
 class Checksummer:

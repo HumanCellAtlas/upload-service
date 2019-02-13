@@ -1,11 +1,19 @@
-import os, sys, re, logging, collections
+import collections
+import logging
+import os
+import re
+import sys
 
 import chalice
 
-pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), 'chalicelib')) # noqa
-sys.path.insert(0, pkg_root) # noqa
+pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), 'chalicelib'))  # noqa
+sys.path.insert(0, pkg_root)  # noqa
 
 from upload.lambdas.api_server import create_app
+from upload.common.logging import configure_logger
+
+configure_logger()
+
 
 def get_chalice_app(flask_app):
     app = chalice.Chalice(app_name=flask_app.name)
@@ -48,5 +56,6 @@ def get_chalice_app(flask_app):
                                 body=swagger_ui_html)
 
     return app
+
 
 app = get_chalice_app(create_app().app)
