@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import re
 import urllib.parse
@@ -7,13 +8,12 @@ import uuid
 import boto3
 from tenacity import retry, wait_fixed, stop_after_attempt
 
-from .uploaded_file import UploadedFile
 from .batch import JobDefinition
-from .retry import retry_on_aws_too_many_requests
-from .validation_event import ValidationEvent
-from .upload_config import UploadConfig
 from .exceptions import UploadException
-from .logging import get_logger
+from .retry import retry_on_aws_too_many_requests
+from .upload_config import UploadConfig
+from .uploaded_file import UploadedFile
+from .validation_event import ValidationEvent
 
 batch = boto3.client('batch')
 sqs = boto3.resource('sqs')
@@ -24,11 +24,10 @@ GB = MB * KB
 TB = GB * KB
 MAX_FILE_SIZE_IN_BYTES = TB
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class ValidationScheduler:
-
     JOB_NAME_ALLOWABLE_CHARS = '[^\w-]'
 
     def __init__(self, uploaded_file: UploadedFile):

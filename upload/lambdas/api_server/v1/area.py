@@ -1,19 +1,21 @@
 import json
+import logging
 import urllib.parse
+
 import connexion
 import requests
+
 from .. import return_exceptions_as_http_errors, require_authenticated
-from ....common.validation_scheduler import ValidationScheduler
-from ....common.upload_area import UploadArea
-from ....common.uploaded_file import UploadedFile
-from ....common.dss_checksums import DssChecksums
 from ....common.checksum_event import ChecksumEvent
-from ....common.validation_event import ValidationEvent
+from ....common.dss_checksums import DssChecksums
 from ....common.exceptions import UploadException
 from ....common.ingest_notifier import IngestNotifier
-from ....common.logging import get_logger
+from ....common.upload_area import UploadArea
+from ....common.uploaded_file import UploadedFile
+from ....common.validation_event import ValidationEvent
+from ....common.validation_scheduler import ValidationScheduler
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @return_exceptions_as_http_errors
