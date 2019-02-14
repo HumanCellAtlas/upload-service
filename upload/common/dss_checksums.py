@@ -99,7 +99,7 @@ class DssChecksums(collections.abc.MutableMapping):
                 tags_dict = self._decode_s3_tagset(tagging['TagSet'])
             return tags_dict
 
-        @retry(wait=wait_fixed(2), stop=stop_after_attempt(5))
+        @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(5))
         def save_tags(self, checksums):
             tags = {f"{DssChecksums.TAG_PREFIX}{csum_name}": csum for csum_name, csum in checksums.items()}
 

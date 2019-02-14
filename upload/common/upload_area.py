@@ -147,7 +147,7 @@ class UploadArea:
     def s3_object_for_file(self, filename):
         return self._bucket.Object(self.key_prefix + filename)
 
-    @retry(wait=wait_fixed(2), stop=stop_after_attempt(5))
+    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(5))
     def add_uploaded_file_to_csum_daemon_sqs(self, filename):
         payload = {
             'Records': [{
@@ -170,7 +170,7 @@ class UploadArea:
                                   detail=f"Adding file upload message for {self.key_prefix}{filename} "
                                   f"was unsuccessful to SQS {self.config.csum_upload_q_url} )")
 
-    @retry(wait=wait_fixed(2), stop=stop_after_attempt(5))
+    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(5))
     def add_upload_area_to_delete_sqs(self):
         self.status = "DELETION_QUEUED"
         self._db_update()

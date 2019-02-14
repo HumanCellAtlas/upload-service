@@ -58,7 +58,8 @@ class ValidatorHarness:
 
         self._unstage_files()
 
-    @retry(stop=stop_after_attempt(5),
+    @retry(reraise=True,
+           stop=stop_after_attempt(5),
            wait=wait_exponential(multiplier=10, min=1, max=4),
            before=before_log(logger, logging.DEBUG),
            before_sleep=before_sleep_log(logger, logging.ERROR))
