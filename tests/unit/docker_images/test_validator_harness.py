@@ -1,14 +1,14 @@
 import json
 import os
 from tempfile import TemporaryDirectory
-from mock import patch
 
 import responses
 import tenacity
+from mock import patch
 
-from .. import UploadTestCaseUsingMockAWS, EnvironmentSetup
-
+from upload.common.exceptions import UploadException
 from upload.docker_images.validator.validator_harness import ValidatorHarness
+from .. import UploadTestCaseUsingMockAWS, EnvironmentSetup
 
 
 class TestValidatorHarness(UploadTestCaseUsingMockAWS):
@@ -96,7 +96,7 @@ class TestValidatorHarness(UploadTestCaseUsingMockAWS):
             self.expected_file_path = f"{staging_dir}/{self.upload_area_id}/{self.filename}"
             self.mock_download_file_call_count = 0
 
-            with self.assertRaises(tenacity.RetryError):
+            with self.assertRaises(UploadException):
                 harness._stage_files_to_be_validated()
 
             self.assertEqual(5, self.mock_download_file_call_count)
@@ -116,7 +116,6 @@ class TestValidatorHarness(UploadTestCaseUsingMockAWS):
 
     def test__run_validator__runs_binary_and_returns_results_dict_for_validator_running_successfully(self):
         with TemporaryDirectory() as staging_dir:
-
             harness = ValidatorHarness(path_to_validator='/usr/bin/sum',
                                        s3_urls_of_files_to_be_validated=[self.s3_url],
                                        staging_folder=staging_dir)
@@ -144,7 +143,6 @@ class TestValidatorHarness(UploadTestCaseUsingMockAWS):
         s3_url = f"s3://{self.upload_config.bucket_name}/{self.upload_area_id}/{filename}"
 
         with TemporaryDirectory() as staging_dir:
-
             harness = ValidatorHarness(path_to_validator='/usr/bin/sum',
                                        s3_urls_of_files_to_be_validated=[s3_url],
                                        staging_folder=staging_dir)
@@ -176,7 +174,6 @@ class TestValidatorHarness(UploadTestCaseUsingMockAWS):
                       status=204)
 
         with TemporaryDirectory() as staging_dir:
-
             harness = ValidatorHarness(path_to_validator='/usr/bin/sum',
                                        s3_urls_of_files_to_be_validated=[self.s3_url],
                                        staging_folder=staging_dir)
