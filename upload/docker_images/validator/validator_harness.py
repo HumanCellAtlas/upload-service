@@ -32,10 +32,10 @@ class ValidatorHarness:
         self.validation_id = os.environ['VALIDATION_ID']
         self._log("VALIDATOR STARTING version={version}, job_id={job_id}, "
                   "validation_id={validation_id} attempt={attempt}".format(
-            version=self.version,
-            job_id=self.job_id,
-            validation_id=self.validation_id,
-            attempt=os.environ['AWS_BATCH_JOB_ATTEMPT']))
+                      version=self.version,
+                      job_id=self.job_id,
+                      validation_id=self.validation_id,
+                      attempt=os.environ['AWS_BATCH_JOB_ATTEMPT']))
 
     def validate(self, test_only=False):
         self._log("VERSION {version}, attempt {attempt} with argv: {argv}".format(
