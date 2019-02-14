@@ -10,9 +10,6 @@ pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), 'chalicelib')
 sys.path.insert(0, pkg_root)  # noqa
 
 from upload.lambdas.api_server import create_app
-from upload.common.logging import configure_logger
-
-configure_logger()
 
 
 def get_chalice_app(flask_app):

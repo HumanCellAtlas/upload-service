@@ -1,9 +1,6 @@
 import json
 
-from upload.common.logging import configure_logger
 from upload.common.upload_area import UploadArea
-
-configure_logger()
 
 
 # This lambda function is invoked by messages in the the area_deletion_queue (AWS SQS).

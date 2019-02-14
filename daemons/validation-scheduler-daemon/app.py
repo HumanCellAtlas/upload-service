@@ -1,11 +1,9 @@
 import json
 import logging
 
-from upload.common.logging import configure_logger
 from upload.common.upload_area import UploadArea
 from upload.common.validation_scheduler import ValidationScheduler
 
-configure_logger()
 logger = logging.getLogger(__name__)
 
 
