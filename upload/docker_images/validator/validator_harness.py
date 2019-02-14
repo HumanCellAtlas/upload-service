@@ -10,6 +10,8 @@ import boto3
 from urllib3.util import parse_url
 from tenacity import retry, stop_after_attempt, before_log, before_sleep_log, wait_exponential, TryAgain
 
+from upload.common.exceptions import UploadException
+from upload.common.upload_api_client import update_event
 from upload.common.validation_event import ValidationEvent
 from upload.common.logging import get_logger
 from upload.common.upload_api_client import update_event
@@ -83,6 +85,10 @@ class ValidatorHarness:
                                                                           file_path=staged_file_path))
             staged_file_path.parent.mkdir(parents=True, exist_ok=True)
             self._download_file_from_bucket_to_filesystem(s3_bucket_name, s3_object_key, staged_file_path)
+            if not staged_file_path.is_file():
+                raise UploadException(status=500, title="Staged file path is not a file",
+                                      detail=f"Attempting to stage file path {staged_file_path} failed because it is "
+                                      f"not a file.")
             if not staged_file_path.is_file():
                 raise TryAgain
             self.staged_file_paths.append(staged_file_path)
