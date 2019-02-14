@@ -62,7 +62,7 @@ class ValidationScheduler:
             files_size += file.size
         return files_size < MAX_FILE_SIZE_IN_BYTES
 
-    @retry(wait=wait_fixed(2), stop=stop_after_attempt(5))
+    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(5))
     def add_to_validation_sqs(self, filenames: list, validator_image: str, env: dict, orig_val_id=None):
         validation_id = str(uuid.uuid4())
         payload = {

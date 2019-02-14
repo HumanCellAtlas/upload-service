@@ -1,25 +1,24 @@
+import logging
 import os
-import sys
 import pathlib
 import subprocess
+import sys
 import time
 import urllib.parse
-import logging
 
 import boto3
+from tenacity import retry, stop_after_attempt, before_log, before_sleep_log, wait_exponential
 from urllib3.util import parse_url
-from tenacity import retry, stop_after_attempt, before_log, before_sleep_log, wait_exponential, TryAgain
 
-from upload.common.validation_event import ValidationEvent
+from upload.common.exceptions import UploadException
 from upload.common.logging import get_logger
 from upload.common.upload_api_client import update_event
-
+from upload.common.validation_event import ValidationEvent
 
 logger = get_logger(f"CHECKSUMMER [{os.environ.get('AWS_BATCH_JOB_ID')}]")
 
 
 class ValidatorHarness:
-
     DEFAULT_STAGING_AREA = "/data"
     TIMEOUT = None
 
@@ -61,7 +60,8 @@ class ValidatorHarness:
 
         self._unstage_files()
 
-    @retry(stop=stop_after_attempt(5),
+    @retry(reraise=True,
+           stop=stop_after_attempt(5),
            wait=wait_exponential(multiplier=10, min=1, max=4),
            before=before_log(logger, logging.DEBUG),
            before_sleep=before_sleep_log(logger, logging.ERROR))
@@ -83,7 +83,9 @@ class ValidatorHarness:
             staged_file_path.parent.mkdir(parents=True, exist_ok=True)
             self._download_file_from_bucket_to_filesystem(s3_bucket_name, s3_object_key, staged_file_path)
             if not staged_file_path.is_file():
-                raise TryAgain
+                raise UploadException(status=500, title="Staged file path is not a file",
+                                      detail=f"Attempting to stage file path {staged_file_path} failed because it is "
+                                      f"not a file.")
             self.staged_file_paths.append(staged_file_path)
         return upload_area_id, file_names
 

@@ -49,7 +49,7 @@ class IngestNotifier:
             self._create_or_update_db_notification(notification_id, "DELIVERED", payload)
         return notification_id
 
-    @retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
+    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(3))
     def _send_notification(self, notification_id, payload):
         try:
             logger.info(f"attempting notification_id:{notification_id}, payload:{payload}, \
