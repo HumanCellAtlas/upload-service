@@ -1,27 +1,24 @@
+import logging
 import os
-import sys
 import pathlib
 import subprocess
+import sys
 import time
 import urllib.parse
-import logging
 
 import boto3
-from urllib3.util import parse_url
 from tenacity import retry, stop_after_attempt, before_log, before_sleep_log, wait_exponential, TryAgain
+from urllib3.util import parse_url
 
 from upload.common.exceptions import UploadException
-from upload.common.upload_api_client import update_event
-from upload.common.validation_event import ValidationEvent
 from upload.common.logging import get_logger
 from upload.common.upload_api_client import update_event
-
+from upload.common.validation_event import ValidationEvent
 
 logger = get_logger(f"CHECKSUMMER [{os.environ.get('AWS_BATCH_JOB_ID')}]")
 
 
 class ValidatorHarness:
-
     DEFAULT_STAGING_AREA = "/data"
     TIMEOUT = None
 
@@ -35,10 +32,10 @@ class ValidatorHarness:
         self.validation_id = os.environ['VALIDATION_ID']
         self._log("VALIDATOR STARTING version={version}, job_id={job_id}, "
                   "validation_id={validation_id} attempt={attempt}".format(
-                      version=self.version,
-                      job_id=self.job_id,
-                      validation_id=self.validation_id,
-                      attempt=os.environ['AWS_BATCH_JOB_ATTEMPT']))
+            version=self.version,
+            job_id=self.job_id,
+            validation_id=self.validation_id,
+            attempt=os.environ['AWS_BATCH_JOB_ATTEMPT']))
 
     def validate(self, test_only=False):
         self._log("VERSION {version}, attempt {attempt} with argv: {argv}".format(
