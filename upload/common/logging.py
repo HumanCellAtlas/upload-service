@@ -9,8 +9,6 @@ since log message are propagated up to the root logger's handler by default.
 _root_logging_configured = False
 _log_level = getattr(logging, (os.environ['LOG_LEVEL'] if 'LOG_LEVEL' in os.environ else 'DEBUG').upper())
 
-configure_logger()
-
 
 def configure_logger():
     """
@@ -38,3 +36,6 @@ def configure_logger():
 
     # The root logger hasn't been configured yet with a handler, so create one and attach it.
     logging.basicConfig(level=_log_level)
+
+
+configure_logger()
