@@ -1,4 +1,4 @@
-This file is valid for the upload-service functional tests because it contains an even number of bytes.
+This file is invalid for the upload-service functional tests because it contains an odd number of bytes.
 
 MIT License
 
