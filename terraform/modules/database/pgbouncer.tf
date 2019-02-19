@@ -1,6 +1,8 @@
 resource "aws_ecs_task_definition" "pgbouncer" {
-  family                = "upload-pgbouncer-service-${var.deployment_stage}"
+  family                = "upload-service-pgbouncer-${var.deployment_stage}"
   requires_compatibilities = ["FARGATE"]
+  execution_role_arn = "${aws_iam_role.task_executor.arn}"
+  task_role_arn = "${aws_iam_role.pgbouncer.arn}"
   container_definitions = <<DEFINITION
 [
   {
@@ -42,8 +44,16 @@ resource "aws_ecs_task_definition" "pgbouncer" {
     ],
     "memory": 1024,
     "cpu": 512,
-    "image": "quay.io/humancellatlas/docker-pgbouncer:master",
-    "name": "pgbouncer-${var.deployment_stage}"
+    "image": "humancellatlas/pgbouncer:1",
+    "name": "pgbouncer-${var.deployment_stage}",
+    "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "${aws_cloudwatch_log_group.pgbouncer.name}",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+    }
   }
 ]
 DEFINITION
@@ -52,12 +62,88 @@ DEFINITION
   memory                = "1024"
 }
 
+resource "aws_cloudwatch_log_group" "pgbouncer" {
+  name              = "/aws/service/upload-service-pgbouncer-${var.deployment_stage}"
+  retention_in_days = 90
+}
+
+resource "aws_iam_role" "task_executor" {
+  name = "upload-service-PgbouncerTaskExecutionRole-${var.deployment_stage}"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": [
+          "ecs.amazonaws.com",
+          "ecs-tasks.amazonaws.com"
+        ]
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "task_executor_ecs" {
+  role = "${aws_iam_role.task_executor.name}"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+resource "aws_iam_role" "pgbouncer" {
+  name = "upload-service-pgbouncer-${var.deployment_stage}"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": [
+          "ecs-tasks.amazonaws.com"
+        ]
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "pgbouncer" {
+  name = "upload-service-pgbouncer-policy-${var.deployment_stage}"
+  role = "${aws_iam_role.pgbouncer.id}"
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+            ],
+            "Resource": "${aws_cloudwatch_log_group.pgbouncer.arn}:*",
+            "Effect": "Allow"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "logs:CreateLogGroup",
+            "Resource": "${aws_cloudwatch_log_group.pgbouncer.arn}"
+        }
+    ]
+}
+EOF
+}
+
 resource "aws_ecs_cluster" "pgbouncer" {
-  name = "upload-pgbouncer-${var.deployment_stage}"
+  name = "upload-service-pgbouncer-${var.deployment_stage}"
 }
 
 resource "aws_ecs_service" "pgbouncer" {
-  name            = "upload-pgbouncer-${var.deployment_stage}"
+  name            = "upload-service-pgbouncer-${var.deployment_stage}"
   cluster         = "${aws_ecs_cluster.pgbouncer.id}"
   task_definition = "${aws_ecs_task_definition.pgbouncer.arn}"
   desired_count   = 1
@@ -105,9 +191,4 @@ resource "aws_lb_target_group" "pgbouncer" {
   protocol    = "TCP"
   vpc_id      = "${var.vpc_id}"
   target_type = "ip"
-}
-
-resource "aws_cloudwatch_log_group" "pgbouncer" {
-  name = "/aws/service/upload-pgbouncer-${var.deployment_stage}"
-  retention_in_days = 90
 }
