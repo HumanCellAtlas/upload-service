@@ -1,5 +1,4 @@
 import json
-
 from upload.common.upload_area import UploadArea
 
 

@@ -11,10 +11,12 @@ from tenacity import retry, stop_after_attempt, before_log, before_sleep_log, wa
 from urllib3.util import parse_url
 
 from upload.common.exceptions import UploadException
+from upload.common.logging import get_logger
 from upload.common.upload_api_client import update_event
 from upload.common.validation_event import ValidationEvent
 
-logger = logging.getLogger(f"CHECKSUMMER [{os.environ.get('AWS_BATCH_JOB_ID')}]")
+logger = get_logger(f"CHECKSUMMER [{os.environ.get('AWS_BATCH_JOB_ID')}]")
+
 
 class ValidatorHarness:
     DEFAULT_STAGING_AREA = "/data"

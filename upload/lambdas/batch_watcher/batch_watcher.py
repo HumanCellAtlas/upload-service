@@ -1,15 +1,15 @@
-import json
-import logging
 import os
+import json
 
 import boto3
 import requests
 
+from upload.common.retry import retry_on_aws_too_many_requests
+from upload.common.logging import get_logger
 from upload.common.database import UploadDB
 from upload.common.exceptions import UploadException
-from upload.common.retry import retry_on_aws_too_many_requests
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class BatchWatcher:
