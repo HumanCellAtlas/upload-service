@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import re
 import time
@@ -10,13 +9,15 @@ from six.moves import urllib
 
 from ...common.batch import JobDefinition
 from ...common.checksum_event import ChecksumEvent
+from ...common.database_orm import DBSessionMaker, DbChecksum
 from ...common.dss_checksums import DssChecksums
 from ...common.ingest_notifier import IngestNotifier
+from ...common.logging import get_logger
 from ...common.retry import retry_on_aws_too_many_requests
 from ...common.upload_area import UploadArea
 from ...common.upload_config import UploadConfig, UploadVersion
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 KB = 1024
 MB = KB * KB
@@ -26,6 +27,7 @@ batch = boto3.client('batch')
 
 
 class ChecksumDaemon:
+
     RECOGNIZED_S3_EVENTS = (
         'ObjectCreated:Put',
         'ObjectCreated:CompleteMultipartUpload',
@@ -100,7 +102,6 @@ class ChecksumDaemon:
     to see if it acquires one.  Due to AWSCLI/S3 failing to correctly apply content_type,
     we occasionally have to add it after the fact.  If it doesn't appear, proceed anyway.
     """
-
     def _check_content_type(self):
         naps_left = self.CHECK_CONTENT_TYPE_TIMES
         while naps_left > 0 and '; dcp-type=' not in self.uploaded_file.content_type:

@@ -1,11 +1,10 @@
-import logging
 import os
 from datetime import datetime
-
+from .logging import get_logger
 if not os.environ.get("CONTAINER"):
     from .database import UploadDB
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ChecksumEvent:

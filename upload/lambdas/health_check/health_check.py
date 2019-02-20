@@ -1,15 +1,15 @@
-import json
-import logging
-import os
 from datetime import datetime, timedelta
+import json
+import os
 
 import boto3
 import requests
 
 from upload.common.database import UploadDB
+from upload.common.logging import get_logger
 from upload.common.upload_config import UploadConfig
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 client = boto3.client('cloudwatch')
 
@@ -149,7 +149,7 @@ class HealthCheck:
             deadletter_queue_status = "GOOD\n"
         else:
             deadletter_queue_status = f"{deadletter_results['visible_messages']} in queue, " \
-                f"{deadletter_results['received_messages']} added in past 24 hrs\n"
+                                      f"{deadletter_results['received_messages']} added in past 24 hrs\n"
         return deadletter_queue_status
 
     def generate_lambda_error_status(self):

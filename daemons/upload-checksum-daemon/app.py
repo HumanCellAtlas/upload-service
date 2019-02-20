@@ -1,5 +1,4 @@
 import json
-
 from upload.lambdas.checksum_daemon import ChecksumDaemon
 
 
