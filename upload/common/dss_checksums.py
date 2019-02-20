@@ -85,6 +85,7 @@ class DssChecksums(collections.abc.MutableMapping):
             tags_dict = self._read_tags()
             return self._cut_off_tag_prefix_for_dss_tags(tags_dict)
 
+        @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(5))
         def _read_tags(self):
             try:
                 tagging = self._s3client.get_object_tagging(Bucket=self._s3obj.bucket_name, Key=self._s3obj.key)

@@ -153,7 +153,7 @@ class UploadedFile:
             status = rows[0][0]
         return status, self.checksums
 
-    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(3))
+    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(5))
     def _s3_load(self):
         try:
             self.s3object.load()
