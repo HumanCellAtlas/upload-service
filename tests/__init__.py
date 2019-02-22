@@ -4,9 +4,8 @@ from urllib3.util import parse_url
 
 
 class FixtureFile:
-
     """
-    FixtureFile is used to provide data and metadata about known files for testing purposes.
+    FixtureFile is used to provide data and metadata about known files exclusively for testing purposes.
     """
 
     fixture_files = {}
@@ -36,7 +35,13 @@ class FixtureFile:
         if self._contents:
             return len(self._contents)
         else:
-            raise RuntimeError('size() is only implemented when contents is provided')
+            try:
+                len(self.contents)
+            except Exception:
+                raise RuntimeError(
+                    f"size() is only available when the file type is of type file (the file inputted is of type "
+                    f"{parse_url(self.contents_url).scheme}) or if the contents was set during initialization of the "
+                    f"object.")
 
     @property
     def e_tag(self):
@@ -54,6 +59,8 @@ class FixtureFile:
             url = parse_url(self.contents_url)
             if url.scheme == 'file':
                 return self.fixture_file_path(self.name)
+            elif url.scheme == 's3':
+                raise RuntimeError("This file is an S3 file. You probably meant to call .url instead of .path")
             else:
                 raise RuntimeError(f"path() not supported for file of type {url.scheme}")
 
@@ -64,8 +71,9 @@ class FixtureFile:
         else:
             url = parse_url(self.contents_url)
             if url.scheme == 'file':
-                with open(self.fixture_file_path(url.path)) as f:
-                    return f.read()
+                with open(self.fixture_file_path(self.name)) as f:
+                    self._contents = f.read()
+                return self._contents
             else:
                 raise RuntimeError(f'contents() not supported for URL of type {url.scheme}')
 
@@ -86,10 +94,28 @@ FixtureFile.register(name="foo",
 FixtureFile.register(name='small_file',
                      url='file://small_file',
                      checksums={
-                         "s3_etag": "d44dbb8da5d736652e7b53e7482f2ecc",
-                         "sha1": "e5e331f8bc6347607cf69ea242982f483ab53523",
-                         "sha256": "7830bee1d57cb253d2aefc4e117e2ddcb056d523d92c164611a5bffe25b0444b",
-                         "crc32c": "C80D954E"
+                         "s3_etag": "90bb15802d139f86139a6ca72d61611b",
+                         "sha1": "1039d0969f1fb147292dedfd9116fb5d447430e1",
+                         "sha256": "513ede16ce2c0a32fdbe2b4177356b919bfa40523c1e5919d5ea024a53a07b7a",
+                         "crc32c": "00CED75A"
+                     })
+
+FixtureFile.register(name='small_invalid_file',
+                     url='file://small_invalid_file',
+                     checksums={
+                         "s3_etag": "98b503a28b4117eae0bdce852598f1ad",
+                         "sha1": "3687cdcbdbaca09bf19bdb9323ba8902db8587a5",
+                         "sha256": "1e981bfa26ebbb6b4916ad7ce3571705d0bd854d7655a2a9cee3dd6270dcf42b",
+                         "crc32c": "81259BFD"
+                     })
+
+FixtureFile.register(name='small_invalid_file',
+                     url='file://small_invalid_file',
+                     checksums={
+                         "s3_etag": "945cf6cb1e6d6ad82831bef65997ef64",
+                         "sha1": "b41a77c28b3134122ba1f520535ef8c491e15336",
+                         "sha256": "d2cf8f92b6a2f66555c7cfe76ed90676fd89a6003f9d1cfa7a1c9375a570d020",
+                         "crc32c": "9B0F0C97"
                      })
 
 FixtureFile.register(name='10241MB_file',
