@@ -8,6 +8,7 @@ if [[ $# != 1 ]]; then
 fi
 
 export DEPLOYMENT_STAGE=$1
+export SERVICE="upload"
 
 # function tag_deploy(){
 #    TAG=`date -u +"${DEPLOYMENT_STAGE}-%Y%m%dT%H%M%SZ"`
@@ -24,12 +25,22 @@ export DEPLOYMENT_STAGE=$1
 # EOF
 # }
 
+function delete_all_job_definitions() {
+    prefix="$SERVICE-$DEPLOYMENT_STAGE-"
+    jobNames=$(aws batch describe-job-definitions | jq -r '.jobDefinitions[].jobDefinitionName' | grep $prefix)
+    for jobName in $jobNames; do
+        aws glue delete-job --job-name $jobName
+        break
+    done
+}
+
 source config/environment
 echo "Deploying to ${DEPLOYMENT_STAGE}"
 cd terraform/envs/${DEPLOYMENT_STAGE} && make init && cd ../../..
 alembic -x db=${DEPLOYMENT_STAGE} -c=./config/database.ini upgrade head
 make deploy
 aws secretsmanager update-secret --secret-id="dcp/upload/${DEPLOYMENT_STAGE}/upload_service_version" --secret-string='{ "upload_service_version": "'${UPLOAD_SERVICE_VERSION}'" }'
+delete_all_job_definitions
 
 #if [ ${DEPLOYMENT_STAGE} != dev ] ; then
 #    tag_deploy
