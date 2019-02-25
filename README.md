@@ -12,6 +12,7 @@ Upload Areas are created/deleted using a REST API, which is secured so only the 
 Files are staged into AWS S3 using the HCA CLI, where the Upload Service then computes checksums for them.
 The validation service runs Docker images against files.
 
+
 ## Components
 
 ### upload-api
@@ -30,6 +31,13 @@ Is a lambda function triggered by SQS events that computes checksums for uploade
 ### Validation Batch Service
 
 Is an AWS Batch installation
+
+
+## System Architecture Diagram
+<img src="images/upload_service_architecture.png" alt="Upload Service System Architecture Diagram"
+	title="Upload Service System Architecture Diagram" width="100%" height="100%" />
+
+Image by [Sam Pierson](mailto:spierson@chanzuckerberg.com)
 
 ## Development Environment Setup
 
@@ -70,10 +78,10 @@ export AWS_PROFILE=hca
 source config/environment
 make test
 ```
-
 ### Running Tests Offline
 Tests may also be run offline if you have a PostgreSQL server running locally.
 You must setup an `upload_local` postgres database first, e.g.:
+
 ```bash
 brew install postgres
 # follow instructions to start postgres server
@@ -88,16 +96,25 @@ source config/environment
 make test
 ```
 
-
-## Running Locally
+### Running Locally
 ```bash
 source config/environment
 scripts/upload-api
 ```
 
-## Deployment
+## Running Functional Tests
+```bash
+export DEPLOYMENT_STAGE=dev
+source config/environment
+make functional-tests 
+```
 
-Deployment is typically performed by Travis.
+
+## Deployment/Release Process
+
+Deployment is typically performed by Gitlab. The full instructions on how to deploy to each environment (i.e. 
+integration, prod, etc.) can be found [here](
+https://allspark.dev.data.humancellatlas.org/HumanCellAtlas/upload-service/wikis/How-to-Deploy-the-Upload-Service).
 
 To manually deploy to e.g. the staging deployment:
 
@@ -105,6 +122,7 @@ To manually deploy to e.g. the staging deployment:
 export enc_password="<password-used-to-encrypt-deployment-secrets>"
 scripts/deploy.sh staging
 ```
+
 
 ## Validation Deployment
 
