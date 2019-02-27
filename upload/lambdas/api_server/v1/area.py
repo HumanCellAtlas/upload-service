@@ -166,7 +166,7 @@ def update_checksum_event(upload_area_uuid: str, checksum_id: str, body: str):
         the new upload will take care of that.
         """
         if DssChecksums(s3_object=uploaded_file.s3object).are_present():
-            _notify_ingest(checksum_event.file_id, payload, "file_uploaded")
+            _notify_ingest(checksum_event.file_id, uploaded_file.info(), "file_uploaded")
     checksum_event.update_record()
 
     return None, requests.codes.no_content

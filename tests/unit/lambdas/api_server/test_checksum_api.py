@@ -105,7 +105,7 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
                                        job_id='12345',
                                        status="SCHEDULED")
         checksum_event.create_record()
-        checksums = {'crc32c': 'w', 's3_etag': 'x', 'sha1': 'y', 'sha256': 'z'}
+        checksums = {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         response = self.client.post(f"/v1/area/{upload_area.uuid}/update_checksum/{checksum_id}",
                                     headers=self.authentication_header,
                                     json={
