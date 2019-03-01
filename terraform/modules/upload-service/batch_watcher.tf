@@ -102,6 +102,7 @@ resource "aws_lambda_function" "batch_watcher_lambda" {
   runtime          = "python3.6"
   memory_size      = 512
   timeout          = 900
+  reserved_concurrent_executions = 0
 
   environment {
     variables = {
