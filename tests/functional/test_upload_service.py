@@ -35,6 +35,22 @@ class TestUploadService(unittest.TestCase):
         _end_time = time.time()
         print(f"Total startup time: {_end_time - _start_time} seconds.")
 
+    def test__put_file__successful(self):
+        # Test variables
+        _start_time = time.time()
+        _metadata_file = FixtureFile.factory('metadata_file.json')
+
+        # Run test
+        print(f"\n\nUsing environment {self.deployment_stage} at URL {self.api_url}.\n")
+        self._execute_create_upload_area()
+        self._execute_put_file_using_api(_metadata_file)
+        self._verify_file_was_checksummed_inline(_metadata_file)
+
+        self._execute_delete_upload_area()
+
+        _end_time = time.time()
+        print(f"Total test_upload__small_file__successful time: {_end_time - _start_time} seconds.")
+
     def test__upload_small_file__successful(self):
         # Test variables
         _start_time = time.time()
@@ -113,6 +129,16 @@ class TestUploadService(unittest.TestCase):
     def _execute_upload_file_using_cli(self, file_location):
         self._run_cli_command("SELECT UPLOAD AREA", ['hca', 'upload', 'select', self.uri])
         self._run_cli_command("UPLOAD FILE USING CLI", ['hca', 'upload', 'files', file_location])
+
+    def _execute_put_file_using_api(self, test_file):
+        headers = {'Content-Type': 'application/json; dcp-type=data'}
+        headers.update(self.auth_headers)
+        self._make_request(description="VALIDATE",
+                           verb='PUT',
+                           url=f"{self.api_url}/area/{self.upload_area_uuid}/{test_file.name}",
+                           expected_status=201,
+                           headers=headers,
+                           json=test_file.contents)
 
     def _execute_validate_file(self, test_file):
         response = self._make_request(description="VALIDATE",

@@ -126,3 +126,12 @@ FixtureFile.register(name='10241MB_file',
                          "sha256": "f9212050708ba0513663538eb98dc2a4687d63821d3956f07fb6db0a4d061027",
                          "crc32c": "68AF9466"
                      })
+
+FixtureFile.register(name='metadata_file.json',
+                     contents={'test_obj': 'test_obj'},
+                     checksums={
+                         "s3_etag": "98b3a7471805e97a493c0e42763abe14",
+                         "sha1": "f3c6f383698e3abf90721e9705d99d065708d405",
+                         "sha256": "e08097457644aef76b6129423d5f3fcbd800d39d207dbf8491db534c1d93968f",
+                         "crc32c": "EA784DAF"
+                     })

@@ -11,7 +11,7 @@ if not os.environ.get("CONTAINER"):
     from .database import UploadDB
 
 s3 = boto3.resource('s3')
-s3client = boto3.client('s3')
+s3_client = boto3.client('s3')
 
 
 class UploadedFile:
@@ -22,9 +22,10 @@ class UploadedFile:
 
     @classmethod
     def create(cls, upload_area, name=None, content_type=None, data=None):
-        s3object = upload_area.s3_object_for_file(name)
-        s3object.put(Body=data, ContentType=content_type)
-        return cls(upload_area, s3object=s3object)
+        obj_key = f"{upload_area.uuid}/{name}"
+        s3_client.put_object(Body=data, ContentType=content_type, Bucket=upload_area.bucket_name, Key=obj_key)
+        s3_object = upload_area.s3_object_for_file(name)
+        return cls(upload_area, s3object=s3_object)
 
     @classmethod
     def from_s3_key(cls, upload_area, s3_key):
