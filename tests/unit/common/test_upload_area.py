@@ -43,7 +43,7 @@ class TestUploadAreaCreationExistenceAndDeletion(UploadAreaTest):
 
         self.assertEqual(db_area.id, area.db_id)
 
-    def test_is_extant__for_nonexistant_area__returns_false(self):
+    def test_is_extant__for_nonexistent_area__returns_false(self):
         area_uuid = "an-area-that-will-not-exist"
 
         self.assertFalse(UploadArea(area_uuid).is_extant())

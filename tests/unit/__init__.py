@@ -188,13 +188,13 @@ class UploadTestCaseUsingMockAWS(UploadTestCase):
         if self.deployment_stage == 'local':
             self.sts_mock.stop()
 
-    def create_s3_object(self, object_key, bucket_name=None,
+    def create_s3_object(self, object_key, checksum_value={}, bucket_name=None,
                          content_type="application/octet-stream",
                          content="file_content"):
         bucket_name = bucket_name or self.upload_config.bucket_name
         s3 = boto3.resource('s3')
         s3object = s3.Bucket(bucket_name).Object(object_key)
-        s3object.put(Body=content, ContentType=content_type)
+        s3object.put(Body=content, ContentType=content_type, Metadata=checksum_value)
         return s3object
 
     """

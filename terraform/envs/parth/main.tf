@@ -47,6 +47,7 @@ module "upload-service" {
   db_username = "${var.db_username}"
   db_password = "${var.db_password}"
   db_instance_count = "${var.db_instance_count}"
+  preferred_maintenance_window = "${var.preferred_maintenance_window}"
 
   // DCP Ingest
   ingest_api_host = "${var.ingest_api_host}"

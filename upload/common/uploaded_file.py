@@ -7,6 +7,7 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 
 from .dss_checksums import DssChecksums
 from .exceptions import UploadException
+
 if not os.environ.get("CONTAINER"):
     from .database import UploadDB
 
@@ -15,15 +16,15 @@ s3_client = boto3.client('s3')
 
 
 class UploadedFile:
-
     """
     The UploadedFile class represents newly-uploaded or previously uploaded files.
     """
 
     @classmethod
-    def create(cls, upload_area, name=None, content_type=None, data=None):
+    def create(cls, upload_area, checksums={}, name=None, content_type=None, data=None):
         obj_key = f"{upload_area.uuid}/{name}"
-        s3_client.put_object(Body=data, ContentType=content_type, Bucket=upload_area.bucket_name, Key=obj_key)
+        s3_client.put_object(Body=data, ContentType=content_type, Bucket=upload_area.bucket_name, Key=obj_key,
+                             Metadata=checksums)
         s3_object = upload_area.s3_object_for_file(name)
         return cls(upload_area, s3object=s3_object)
 

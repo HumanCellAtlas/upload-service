@@ -48,6 +48,10 @@ class FixtureFile:
         return self.checksums['s3_etag']
 
     @property
+    def crc32c(self):
+        return self.checksums['crc32c']
+
+    @property
     def s3_tagset(self):
         tags = {f"hca-dss-{csum_name}": csum for csum_name, csum in self.checksums.items()}
         tagset = [{'Key': tagname, 'Value': csum} for tagname, csum in tags.items()]

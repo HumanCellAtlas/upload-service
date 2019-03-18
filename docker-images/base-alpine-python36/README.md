@@ -77,7 +77,7 @@ The primary user of this Docker image is the DCP Ingest team's `fastq_utils`
 docker image.  To update their image to use a newer version of this base
 image, update the first line of its [Dockerfile](https://github.com/HumanCellAtlas/fastq_utils/blob/master/Dockerfile#L1):
 ```
-FROM humancellatlas/upload-validator-base-alpine:17
+FROM humancellatlas/upload-validator-base-alpine:19
 ```
 Then submit a PR.
 

@@ -34,7 +34,7 @@ variable "ingest_api_key" {
 // Checksum Lambda
 variable "csum_docker_image" {
   type = "string"
-  default = "humancellatlas/upload-checksummer:2"
+  default = "humancellatlas/upload-checksummer:8"
 }
 
 // Batch
@@ -69,6 +69,9 @@ variable "db_password" {
 variable "db_instance_count" {
   type = "string"
   default = 2
+}
+variable "preferred_maintenance_window" {
+  type = "string"
 }
 
 # DCP Ingest

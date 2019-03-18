@@ -1,6 +1,6 @@
 # DCP Upload Validation Service, Example Validator
 
-The DCP Upload Service provides the ability to run a validator against uploaded files. 
+The DCP Upload Service provides the ability to run a validator against uploaded files.
 
 This is a simple example validator that declares files with an even number of bytes valid,
 and files with an odd number of bytes invalid.
@@ -8,7 +8,7 @@ and files with an odd number of bytes invalid.
 ## Validators
 
 Validators are Docker images.
-  
+
   - They should be derivatives of one of the "base" validator images.
   - They should have an executable file at `/validator`.
   - The validator will be called with a single argument, the location in
@@ -41,7 +41,7 @@ AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY. Alternatively you can mount
 your AWS credentials in the container with option `-v ~/.aws:/root/aws`.
 
 The `-t` option is passed into the container.  It tells the harness not
-to attempt to contact Ingest. 
+to attempt to contact Ingest.
 
 ```bash
 make build
@@ -51,7 +51,7 @@ aws s3 cp somefile s3://mybucket/
 docker run --rm -e VALIDATION_ID=1 -e DEPLOYMENT_STAGE=dev \
            -e AWS_BATCH_JOB_ID=500 -e AWS_BATCH_JOB_ATTEMPT=1 -e CONTAINER=docker \
            API_HOST=upload.dev.data.humancellatlas.org -v ~/.aws:/root/.aws \
-           upload-validator-example -t /validator s3://mubucket/somefile
+           upload-validator-example:14 -t /validator s3://mubucket/somefile
 ```
 
 ## Testing a Validator in the Upload Service Development Environment (DCP Developers Only)
@@ -65,7 +65,7 @@ make release
 
 curl -X PUT -H "Api-Key: look-it-up" \
             -H "content-type: application/json" \
-            -d '{"validator_image": "humancellatlas/upload-validator-example"}' \
+            -d '{"validator_image": "humancellatlas/upload-validator-example:14"}' \
             https://upload.dev.data.humancellatlas.org/v1/area/<uuid>/<filename>/validate
 ```
 

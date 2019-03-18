@@ -2,11 +2,11 @@ import uuid
 
 import boto3
 
+from upload.common.dss_checksums import DssChecksums
+from upload.common.exceptions import UploadException
+from upload.common.upload_area import UploadArea
 from .. import UploadTestCaseUsingMockAWS
 from ... import FixtureFile
-
-from upload.common.upload_area import UploadArea
-from upload.common.dss_checksums import DssChecksums
 
 
 class TestDssChecksums(UploadTestCaseUsingMockAWS):
@@ -27,71 +27,89 @@ class TestDssChecksums(UploadTestCaseUsingMockAWS):
         super().tearDown()
 
     def test_it_acts_like_a_dict(self):
-        checksums = DssChecksums(s3_object=None, checksums={'crc32c': 'a', 'sha1': 'b', 'sha256': 'c', 's3_etag': 'd'})
-        self.assertEqual(4, len(checksums))
-        self.assertEqual('b', checksums['sha1'])
-        self.assertIn('sha256', checksums)
-        self.assertEqual(['crc32c', 's3_etag', 'sha1', 'sha256'], sorted(checksums.keys()))
+        _checksums_input = {'crc32c': 'a', 'sha1': 'b', 'sha256': 'c', 's3_etag': 'd'}
+        _dss_checksums = DssChecksums(s3_object=None, checksums=_checksums_input)
 
-    def test_are_present__for_an_object_with_no_checksums__returns_false(self):
-        filename = 'file1'
-        s3obj = self.mock_upload_file_to_s3(self.upload_area_id, filename, checksums={})
+        self.assertEquals(_dss_checksums, _checksums_input)
 
-        self.assertFalse(DssChecksums(s3_object=s3obj).are_present())
+    def test__upload_file_with_no_checksums__insufficientChecksums(self):
+        _filename = 'file'
+        _checksums = {}
 
-    def test_are_present__for_an_object_with_partial_checksums__returns_false(self):
-        filename = 'file2'
-        s3obj = self.mock_upload_file_to_s3(self.upload_area_id, filename, checksums={
-            'sha1': '1',
-            'sha256': '2'
-        })
+        _s3obj = self.mock_upload_file_to_s3(self.upload_area_id, _filename, checksums=_checksums)
 
-        self.assertFalse(DssChecksums(s3_object=s3obj).are_present())
+        self.assertFalse(DssChecksums(s3_object=_s3obj).are_present())
 
-    def test_are_present__for_an_object_with_all_checksums__returns_true(self):
-        filename = 'file3'
-        s3obj = self.mock_upload_file_to_s3(self.upload_area_id, filename, checksums={
-            'sha1': '1',
-            'sha256': '2',
-            's3_etag': '3',
-            'crc32c': '4'
-        })
+    def test__upload_file_with_partial_checksums__insufficientChecksums(self):
+        _filename = 'file'
+        _checksums = {'sha1': '1', 'sha256': '2'}
 
-        self.assertTrue(DssChecksums(s3_object=s3obj).are_present())
+        _s3obj = self.mock_upload_file_to_s3(self.upload_area_id, _filename, checksums=_checksums)
 
-    def test_init_reads_checksums_from_s3_object(self):
-        s3obj = self.create_s3_object(object_key="file4")
-        tagging = [
-            {'Key': 'hca-dss-sha1', 'Value': '1'},
-            {'Key': 'hca-dss-sha256', 'Value': '2'},
-            {'Key': 'hca-dss-crc32c', 'Value': '3'},
-            {'Key': 'hca-dss-s3_etag', 'Value': '4'}
-        ]
-        self.s3client.put_object_tagging(Bucket=s3obj.bucket_name,
-                                         Key=s3obj.key,
-                                         Tagging={'TagSet': tagging})
+        self.assertFalse(DssChecksums(s3_object=_s3obj).are_present())
 
-        checksums = DssChecksums(s3_object=s3obj)
+    def test__upload_file_with_full_checksums__succeeds(self):
+        _filename = 'file'
+        _checksums = {'sha1': '1', 'sha256': '2', 's3_etag': '3', 'crc32c': '4'}
 
-        self.assertEqual({'crc32c': '3', 'sha1': '1', 'sha256': '2', 's3_etag': '4'}, checksums)
+        _s3obj = self.mock_upload_file_to_s3(self.upload_area_id, _filename, checksums=_checksums)
 
-    def test_compute(self):
-        test_file = FixtureFile.factory("foo")
-        s3obj = self.mock_upload_file_to_s3(self.upload_area_id, test_file.name, contents=test_file.contents)
+        self.assertTrue(DssChecksums(s3_object=_s3obj).are_present())
 
-        self.assertEqual(DssChecksums(s3_object=s3obj).compute(), test_file.checksums)
+    def test__upload_file_with_checksums__checksums_match_input(self):
+        _filename = 'file'
+        _checksums = {'crc32c': '3', 'sha1': '1', 'sha256': '2', 's3_etag': '4'}
+        _tagging = [{'Key': 'hca-dss-' + _hash_function, 'Value': _value} for _hash_function, _value in
+                    _checksums.items()]
+        _s3obj = self.create_s3_object(object_key=_filename, checksum_value={'crc32c': '3'})
 
-    def test_save_as_tags_on_s3_object(self):
-        s3obj = self.create_s3_object(object_key="foo")
+        self.s3client.put_object_tagging(Bucket=_s3obj.bucket_name,
+                                         Key=_s3obj.key,
+                                         Tagging={'TagSet': _tagging})
+        _dss_checksums = DssChecksums(s3_object=_s3obj)
 
-        checksums = DssChecksums(s3obj, checksums={'sha1': 'a', 'sha256': 'b', 'crc32c': 'c', 's3_etag': 'd'})
+        self.assertEqual(_checksums, _dss_checksums)
+
+    def test__upload_file_with_missing_clientside_checksums__fails(self):
+        _filename = 'file'
+        _checksums = {'crc32c': '3', 'sha1': '1', 'sha256': '2', 's3_etag': '4'}
+
+        _s3obj = self.create_s3_object(object_key=_filename, checksum_value={})
+        _checksums = DssChecksums(_s3obj, checksums=_checksums)
+
+        with self.assertRaises(UploadException) as _upload_exception:
+            _checksums.save_as_tags_on_s3_object()
+
+        self.assertIn("checksum values stored as metadata did not match", _upload_exception.exception.detail)
+
+    def test__upload_file_with_mismatched_clientside_checksum_fails(self):
+        _filename = 'file'
+        _checksums = {'crc32c': '3', 'sha1': '1', 'sha256': '2', 's3_etag': '4'}
+
+        _s3obj = self.create_s3_object(object_key=_filename, checksum_value={'crc32c': 'I do not match!'})
+        _checksums = DssChecksums(_s3obj, checksums=_checksums)
+
+        with self.assertRaises(UploadException) as _upload_exception:
+            _checksums.save_as_tags_on_s3_object()
+
+        self.assertIn("checksum values stored as metadata did not match", _upload_exception.exception.detail)
+
+    def test__compute_checksums__succeeds(self):
+        _test_file = FixtureFile.factory("foo")
+
+        _s3obj = self.mock_upload_file_to_s3(self.upload_area_id, _test_file.name, contents=_test_file.contents)
+
+        self.assertEqual(DssChecksums(s3_object=_s3obj).compute(), _test_file.checksums)
+
+    def test__save_as_tags_on_s3_object__succeeds(self):
+        _filename = "foo"
+        _checksums = {'sha1': 'a', 'sha256': 'b', 'crc32c': 'c', 's3_etag': 'd'}
+        _clientside_checksums = {'crc32c': 'c'}
+        _s3obj = self.create_s3_object(object_key=_filename, checksum_value=_clientside_checksums)
+
+        checksums = DssChecksums(_s3obj, checksums=_checksums)
         checksums.save_as_tags_on_s3_object()
 
         self.assertEqual(
-            [
-                {'Key': 'hca-dss-sha1', 'Value': 'a'},
-                {'Key': 'hca-dss-sha256', 'Value': 'b'},
-                {'Key': 'hca-dss-crc32c', 'Value': 'c'},
-                {'Key': 'hca-dss-s3_etag', 'Value': 'd'}
-            ],
-            self.s3client.get_object_tagging(Bucket=self.upload_area.bucket_name, Key=s3obj.key)['TagSet'])
+            [{'Key': 'hca-dss-' + _hash_function, 'Value': _value} for _hash_function, _value in _checksums.items()],
+            self.s3client.get_object_tagging(Bucket=self.upload_area.bucket_name, Key=_s3obj.key)['TagSet'])

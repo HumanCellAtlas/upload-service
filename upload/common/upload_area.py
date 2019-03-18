@@ -1,19 +1,19 @@
 import json
 import os
-import uuid
 import time
+import uuid
 
 import boto3
+from dcplib.media_types import DcpMediaType
 from tenacity import retry, wait_fixed, stop_after_attempt
 
-from dcplib.media_types import DcpMediaType
-
-from .dss_checksums import DssChecksums
-from .uploaded_file import UploadedFile
 from .checksum_event import ChecksumEvent
+from .client_side_checksum_handler import ClientSideChecksumHandler
+from .dss_checksums import DssChecksums
 from .exceptions import UploadException
-from .upload_config import UploadConfig
 from .logging import get_logger
+from .upload_config import UploadConfig
+from .uploaded_file import UploadedFile
 
 if not os.environ.get("CONTAINER"):
     from .database import UploadDB
@@ -169,7 +169,7 @@ class UploadArea:
         if status != 200:
             raise UploadException(status=500, title="Internal error",
                                   detail=f"Adding file upload message for {self.key_prefix}{filename} "
-                                         f"was unsuccessful to SQS {self.config.csum_upload_q_url} )")
+                                  f"was unsuccessful to SQS {self.config.csum_upload_q_url} )")
 
     @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(5))
     def add_upload_area_to_delete_sqs(self):
@@ -194,7 +194,12 @@ class UploadArea:
                                   detail="Content-Type is missing parameter 'dcp-type',"
                                          " e.g. 'application/json; dcp-type=\"metadata/sample\"'.")
 
-        file = UploadedFile.create(upload_area=self, name=filename, content_type=str(media_type), data=content)
+        # Compute client-side checksums for the file being uploaded
+        checksum_handler = ClientSideChecksumHandler(data=content)
+        checksum_handler.compute_checksum()
+        clientside_checksums = checksum_handler.get_checksum_metadata_tag()
+        file = UploadedFile.create(upload_area=self, checksums=clientside_checksums, name=filename,
+                                   content_type=str(media_type), data=content)
         checksum_id = str(uuid.uuid4())
         checksum_event = ChecksumEvent(file_id=file.db_id,
                                        checksum_id=checksum_id,
