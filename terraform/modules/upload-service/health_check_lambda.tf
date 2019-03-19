@@ -95,6 +95,7 @@ resource "aws_cloudwatch_event_rule" "daily" {
     name = "dcp-upload-daily-health-check-${var.deployment_stage}"
     description = "Fires every day at 13:00 UTC"
     schedule_expression = "cron(0 13 * * ? *)"
+    count = "${var.deployment_stage == "prod" || var.deployment_stage == "staging" || var.deployment_stage == "integration" || var.deployment_stage == "dev" ? 1 : 0}"
 }
 
 resource "aws_cloudwatch_event_target" "daily_health_check" {

@@ -117,6 +117,7 @@ resource "aws_cloudwatch_event_rule" "batch_watcher_hourly_rule" {
     name = "batch-watcher-every-hour-${var.deployment_stage}"
     description = "Fires every hour"
     schedule_expression = "cron(0 * * * ? *)"
+    count = "${var.deployment_stage == "prod" || var.deployment_stage == "staging" || var.deployment_stage == "integration" || var.deployment_stage == "dev" ? 1 : 0}"
 }
 
 resource "aws_cloudwatch_event_target" "hourly_batch_watcher" {
