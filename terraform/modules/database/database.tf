@@ -8,7 +8,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
   engine_version          = "9.6.8"
   auto_minor_version_upgrade = "true"
   performance_insights_enabled = "true"
-  preferred_maintenance_window = "sat:09:08-sat:09:38"
+  preferred_maintenance_window = "${var.preferred_maintenance_window}"
 }
 
 resource "aws_rds_cluster" "upload" {
@@ -23,7 +23,7 @@ resource "aws_rds_cluster" "upload" {
   backup_retention_period = 7
   port                    = 5432
   preferred_backup_window = "07:27-07:57"
-  preferred_maintenance_window = "sat:09:08-sat:09:38"
+  preferred_maintenance_window = "${var.preferred_maintenance_window}"
   storage_encrypted       = "true"
   skip_final_snapshot     = "true"
   vpc_security_group_ids  = ["${aws_security_group.rds-postgres.id}"]

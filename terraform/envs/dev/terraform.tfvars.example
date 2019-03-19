@@ -27,6 +27,7 @@ csum_cluster_min_vcpus = 0
 db_username = "xxxxxxxx"
 db_password = "xxxxxxxxxxxxx"
 db_instance_count = 1
+preferred_maintenance_window = "sat:09:08-sat:09:38"
 
 // DCP Ingest
 ingest_api_host = "api.ingest.<deployment_stage>.data.humancellatlas.org"

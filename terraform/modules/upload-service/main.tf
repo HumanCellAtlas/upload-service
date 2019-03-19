@@ -20,4 +20,5 @@ module "upload-service-database" {
   pgbouncer_subnet_id = "${element(data.aws_subnet_ids.upload_vpc.ids, 0)}"
   lb_subnet_ids = "${data.aws_subnet_ids.upload_vpc.ids}"
   vpc_id = "${module.upload-vpc.vpc_id}"
+  preferred_maintenance_window = "${var.preferred_maintenance_window}"
 }
