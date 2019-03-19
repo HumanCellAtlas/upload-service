@@ -12,7 +12,7 @@ upload_api_fqdn = "upload.<deployment_stage>.data.humancellatlas.org"
 ingest_api_key = "xxxxxxxxxxxxxxxxxxxx"
 
 // Checksum Lambda
-csum_docker_image = "humancellatlas/upload-checksummer:3"
+csum_docker_image = "humancellatlas/upload-checksummer:8"
 
 // Validation Batch infrastructure.
 validation_cluster_ec2_key_pair = "my-ec2-keypair"
