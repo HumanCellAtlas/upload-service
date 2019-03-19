@@ -96,7 +96,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         response = self.client.put(
             f"/v1/area/{area_id}/foo.json/validate",
             headers=self.authentication_header,
-            json={"validator_image": "humancellatlas/upload-validator-example"}
+            json={"validator_image": "humancellatlas/upload-validator-example:999"}
         )
         expected_decoded_response_data = '{\n  "status": 400,\n  "title": "File too large for validation"\n}\n'
         self.assertEqual(expected_decoded_response_data, response.data.decode())
@@ -114,7 +114,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         response = self.client.put(
             f"/v1/area/{area_id}/foo.json/validate",
             headers=self.authentication_header,
-            json={"validator_image": "humancellatlas/upload-validator-example"}
+            json={"validator_image": "humancellatlas/upload-validator-example:999"}
         )
         self.assertEqual(200, response.status_code)
 
@@ -131,7 +131,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         response = self.client.put(
             f"/v1/area/{area_id}/{url_safe_filename}/validate",
             headers=self.authentication_header,
-            json={"validator_image": "humancellatlas/upload-validator-example"}
+            json={"validator_image": "humancellatlas/upload-validator-example:999"}
         )
         self.assertEqual(200, response.status_code)
 
@@ -253,7 +253,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         self.mock_upload_file_to_s3(area_id, 'foo2.json')
 
         payload = {
-            'validator_image': "humancellatlas/upload-validator-example",
+            'validator_image': "humancellatlas/upload-validator-example:999",
             'files': ['foo.json', 'foo2.json']
         }
         response = self.client.put(
@@ -278,7 +278,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         area_id = self._create_area()
 
         payload = {
-            'validator_image': "humancellatlas/upload-validator-example",
+            'validator_image': "humancellatlas/upload-validator-example:999",
             'files': ['foo.json', 'foo2.json']
         }
         response = self.client.put(
@@ -295,7 +295,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         self.mock_upload_file_to_s3(area_id, 'foo2.json')
 
         payload = {
-            'validator_image': "humancellatlas/upload-validator-example",
+            'validator_image': "humancellatlas/upload-validator-example:999",
             'files': ['foo.json', 'foo2.json'],
             'original_validation_id': '123456'
         }
