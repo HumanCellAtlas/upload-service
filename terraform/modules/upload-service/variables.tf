@@ -70,6 +70,9 @@ variable "db_instance_count" {
   type = "string"
   default = 2
 }
+variable "preferred_maintenance_window" {
+  type = "string"
+}
 
 # DCP Ingest
 
