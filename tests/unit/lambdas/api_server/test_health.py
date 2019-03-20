@@ -10,3 +10,10 @@ class TestHealthcheckEndpoint(UploadTestCaseUsingMockAWS):
         response = self.client.get(f"/health")
 
         self.assertEqual(response.status_code, 200)
+
+    def test_v1_heathcheck_endpoint(self):
+        self.client = client_for_test_api_server()
+
+        response = self.client.get(f"/v1/health")
+
+        self.assertEqual(response.status_code, 200)
