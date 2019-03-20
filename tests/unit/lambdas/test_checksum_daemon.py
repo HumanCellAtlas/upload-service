@@ -156,11 +156,12 @@ class TestChecksumDaemonSeeingS3ObjectsForWhichAFileRecordAlreadyExists(Checksum
 
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     def test_that_a_new_file_record_is_not_created(self, mock_fasn):
-        record_count_before = self.db.query(DbFile).count()
+        record_count_before = self.db.query(DbFile).filter(DbFile.s3_key == self.file_key).count()
 
         self.daemon.consume_events(self.events)
 
-        self.assertEqual(record_count_before, self.db.query(DbFile).count())
+        record_count_after = self.db.query(DbFile).filter(DbFile.s3_key == self.file_key).count()
+        self.assertEqual(record_count_before, record_count_after)
 
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.DssChecksums.compute')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')

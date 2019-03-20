@@ -5,7 +5,7 @@ VERSION=$(shell cat VERSION)
 # Modus operandi
 # --------------
 # make bump_version
-#   Make some changes
+#	make some changes
 # make build
 #	test locally:
 #		In validator-example/
@@ -15,8 +15,6 @@ VERSION=$(shell cat VERSION)
 #		watch the output, look for payload with 'stdout': 'valid\n'
 # make push
 #	test with explicit version number from Docker Hub
-# make promote
-#	promote that latest version to "latest"
 
 build:
 	mkdir -p code/upload code/upload/docker_images
@@ -34,13 +32,8 @@ push:
 	docker tag $(IMAGE):$(VERSION) $(HUB_ORG)/$(IMAGE):$(VERSION)
 	docker push $(HUB_ORG)/$(IMAGE):$(VERSION)
 
-promote:
-	$(eval VERSION=$(shell cat VERSION))
-	docker tag $(HUB_ORG)/$(IMAGE):$(VERSION) $(HUB_ORG)/$(IMAGE):latest
-	docker push $(HUB_ORG)/$(IMAGE):latest
-
 bump_version:
 	expr `cat VERSION` + 1 > VERSION
 	$(eval VERSION=$(shell cat VERSION))
 
-.phony: build bump_version examine play promote push
+.phony: build bump_version examine play push
