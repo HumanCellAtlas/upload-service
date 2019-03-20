@@ -112,20 +112,19 @@ class ValidatorHarness:
             'exception': None
         }
         try:
+            _subprocess_filename = "SUBPROCESS_LOG_FILE"
+            _subprocess_file_object = open(_subprocess_filename, "w")
             completed_process = subprocess.run(command,
-                                               stdout=subprocess.PIPE,
-                                               stderr=subprocess.PIPE,
+                                               stdout=_subprocess_file_object,
+                                               stderr=_subprocess_file_object,
                                                timeout=self.TIMEOUT)
+            _subprocess_file_object.close()
             self._log("validator completed")
             results['status'] = 'completed'
             results['exit_code'] = completed_process.returncode
-            results['stdout'] = completed_process.stdout.decode('utf8')
-            results['stderr'] = completed_process.stderr.decode('utf8')
         except subprocess.TimeoutExpired as e:
             self._log("validator timed out: {}".format(e))
             results['status'] = 'timed_out'
-            results['stdout'] = e.stdout.decode('utf8')
-            results['stderr'] = e.stderr.decode('utf8')
         except Exception as e:
             self._log("validator aborted: {}".format(e))
             results['status'] = 'aborted'
