@@ -8,12 +8,7 @@ SERVICE_NAME='upload'
 DCP_DNS_DOMAIN='data.humancellatlas.org'
 DEPLOYMENT_STAGE="${DEPLOYMENT_STAGE:-dev}"
 UPLOAD_SERVICE_VERSION=`(git describe --tags --always)`
-if [[ ${DEPLOYMENT_STAGE} = prod ]] ; then
-    API_HOST=${SERVICE_NAME}.${DCP_DNS_DOMAIN}
-else
-    API_HOST=${SERVICE_NAME}.${DEPLOYMENT_STAGE}.${DCP_DNS_DOMAIN}
-fi
-
+API_HOST=${SERVICE_NAME}.${DEPLOYMENT_STAGE}.${DCP_DNS_DOMAIN}
 BUCKET_NAME_PREFIX='org-humancellatlas-upload-'
 BUCKET_NAME="${BUCKET_NAME_PREFIX}${DEPLOYMENT_STAGE}"
 AWS_DEFAULT_REGION='us-east-1'
@@ -22,8 +17,6 @@ set +a
 echo "DEPLOYMENT STAGE IS \"${DEPLOYMENT_STAGE}\""
 
 if [ -f ${SOURCE}.${DEPLOYMENT_STAGE} ] ; then
-    echo "source ${SOURCE}.${DEPLOYMENT_STAGE}"
+    echo "Sourcing ${SOURCE}.${DEPLOYMENT_STAGE}"
     source ${SOURCE}.${DEPLOYMENT_STAGE}
-else
-    echo "There is no ${SOURCE}.${DEPLOYMENT_STAGE} to read."
 fi

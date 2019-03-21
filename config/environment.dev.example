@@ -1,6 +1,0 @@
-#
-# Copy this file to environment.dev and then "source environment"
-#
-set -a
-API_HOST=${SERVICE_NAME}.${DEPLOYMENT_STAGE}.${DCP_DNS_DOMAIN}
-set +a
