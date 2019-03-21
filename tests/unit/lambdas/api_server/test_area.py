@@ -211,23 +211,6 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(404, response.status_code)
         self.assertEqual('application/problem+json', response.content_type)
 
-    def test_locking_of_upload_area(self):
-        area_uuid = self._create_area()
-        record = UploadDB().get_pg_record("upload_area", area_uuid, column='uuid')
-        self.assertEqual("UNLOCKED", record["status"])
-
-        response = self.client.post(f"/v1/area/{area_uuid}/lock", headers=self.authentication_header)
-
-        self.assertEqual(204, response.status_code)
-        record = UploadDB().get_pg_record("upload_area", area_uuid, column='uuid')
-        self.assertEqual("LOCKED", record["status"])
-
-        response = self.client.delete(f"/v1/area/{area_uuid}/lock", headers=self.authentication_header)
-
-        self.assertEqual(204, response.status_code)
-        record = UploadDB().get_pg_record("upload_area", area_uuid, column='uuid')
-        self.assertEqual("UNLOCKED", record["status"])
-
     def test_put_file_without_content_type_dcp_type_param(self):
         headers = {'Content-Type': 'application/json'}
         headers.update(self.authentication_header)

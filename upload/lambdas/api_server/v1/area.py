@@ -46,22 +46,6 @@ def delete(upload_area_uuid: str):
 
 @return_exceptions_as_http_errors
 @require_authenticated
-def lock(upload_area_uuid: str):
-    upload_area = _load_upload_area(upload_area_uuid)
-    upload_area.lock()
-    return None, requests.codes.no_content
-
-
-@return_exceptions_as_http_errors
-@require_authenticated
-def unlock(upload_area_uuid: str):
-    upload_area = _load_upload_area(upload_area_uuid)
-    upload_area.unlock()
-    return None, requests.codes.no_content
-
-
-@return_exceptions_as_http_errors
-@require_authenticated
 def put_file(upload_area_uuid: str, filename: str, body: str):
     upload_area = _load_upload_area(upload_area_uuid)
     content_type = connexion.request.headers['Content-Type']
