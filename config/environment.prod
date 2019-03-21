@@ -1,3 +1,0 @@
-set -a
-API_HOST=${SERVICE_NAME}.${DCP_DNS_DOMAIN}
-set +a

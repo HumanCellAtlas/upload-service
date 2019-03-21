@@ -21,10 +21,3 @@ AWS_DEFAULT_REGION='us-east-1'
 set +a
 
 echo "DEPLOYMENT STAGE IS \"${DEPLOYMENT_STAGE}\""
-
-if [ -f ${SOURCE}.${DEPLOYMENT_STAGE} ] ; then
-    echo "source ${SOURCE}.${DEPLOYMENT_STAGE}"
-    source ${SOURCE}.${DEPLOYMENT_STAGE}
-else
-    echo "There is no ${SOURCE}.${DEPLOYMENT_STAGE} to read."
-fi
