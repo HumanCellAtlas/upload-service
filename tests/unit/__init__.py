@@ -65,7 +65,8 @@ class EnvironmentSetup:
             if v:
                 os.environ[k] = v
             else:
-                del os.environ[k]
+                if k in os.environ:
+                    del os.environ[k]
 
     def __enter__(self):
         self.enter()

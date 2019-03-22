@@ -1,6 +1,2 @@
-#
-# Copy this file to environment.dev and then "source environment"
-#
 set -a
-INGEST_API_KEY=secret
 set +a

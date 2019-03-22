@@ -5,6 +5,7 @@ from upload.common.database_orm import DBSessionMaker, DbChecksum, DbFile
 from upload.common.upload_area import UploadArea
 from upload.common.uploaded_file import UploadedFile
 from upload.common.checksum_event import ChecksumEvent
+from upload.common.upload_config import UploadConfig
 
 from . import client_for_test_api_server
 from ... import UploadTestCaseUsingMockAWS, EnvironmentSetup
@@ -15,10 +16,7 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
     def setUp(self):
         super().setUp()
         # Environment
-        self.api_key = "foo"
         self.environment = {
-            'INGEST_API_KEY': self.api_key,
-            'INGEST_AMQP_SERVER': 'foo',
             'CSUM_DOCKER_IMAGE': 'bogo_image',
         }
         self.environmentor = EnvironmentSetup(self.environment)
@@ -26,8 +24,6 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
 
         self.db = DBSessionMaker().session()
 
-        # Authentication
-        self.authentication_header = {'Api-Key': self.api_key}
         # Setup app
         self.client = client_for_test_api_server()
 
@@ -80,7 +76,6 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         checksum_event.create_record()
 
         response = self.client.post(f"/v1/area/{upload_area.uuid}/update_checksum/{checksum_id}",
-                                    headers=self.authentication_header,
                                     json={
                                         "status": "CHECKSUMMING",
                                         "job_id": checksum_event.job_id,
@@ -107,7 +102,6 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
         checksum_event.create_record()
         checksums = {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         response = self.client.post(f"/v1/area/{upload_area.uuid}/update_checksum/{checksum_id}",
-                                    headers=self.authentication_header,
                                     json={
                                         "status": "CHECKSUMMED",
                                         "job_id": checksum_event.job_id,
@@ -144,7 +138,6 @@ class TestChecksumApi(UploadTestCaseUsingMockAWS):
                                        status="SCHEDULED")
         checksum_event.create_record()
         response = self.client.post(f"/v1/area/{upload_area.uuid}/update_checksum/{checksum_id}",
-                                    headers=self.authentication_header,
                                     json={
                                         "status": "CHECKSUMMED",
                                         "job_id": checksum_event.job_id,

@@ -10,6 +10,7 @@ from connexion.lifecycle import ConnexionResponse
 
 from ...common.exceptions import UploadException
 from ...common.logging import get_logger
+from ...common.upload_config import UploadConfig
 
 get_logger('boto3').setLevel(logging.WARNING)
 get_logger('botocore').setLevel(logging.WARNING)
@@ -53,17 +54,19 @@ def return_exceptions_as_http_errors(func):
 def require_authenticated(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        if 'INGEST_API_KEY' not in os.environ:
+        try:
+            api_key_actual = UploadConfig().api_key
+        except RuntimeError:
             raise UploadException(status=requests.codes.server_error,
                                   title="Authentication is not configured",
-                                  detail="INGEST_API_KEY is not set.")
-        api_key = connexion.request.headers.get('Api-Key', None)
-        if api_key == os.environ['INGEST_API_KEY']:
-            logger.info(f"Authenticated with Api-Key: {api_key[:3]}")
+                                  detail="api_key is not in secrets.")
+        api_key_presented = connexion.request.headers.get('Api-Key', None)
+        if api_key_presented == api_key_actual:
+            logger.info(f"Authenticated with Api-Key: {api_key_presented[:3]}")
         else:
             raise UploadException(status=requests.codes.unauthorized,
                                   title="Access Denied.",
-                                  detail=f"Unrecognized Api-Key: {api_key[:3]}...")
+                                  detail=f"Unrecognized Api-Key: {api_key_presented[:3]}...")
         return func(*args, **kwargs)
 
     return wrapper

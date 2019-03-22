@@ -32,7 +32,6 @@ class ChecksumDaemonTest(UploadTestCaseUsingMockAWS):
         super().setUp()
         # Environment
         self.environment = {
-            'INGEST_AMQP_SERVER': 'foo',
             'CSUM_DOCKER_IMAGE': 'bogoimage'
         }
         self.environmentor = EnvironmentSetup(self.environment)
