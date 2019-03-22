@@ -17,7 +17,6 @@ before_script:
   - export DEPLOYMENT_STAGE=$CI_COMMIT_REF_NAME
   - if [ "$DEPLOYMENT_STAGE" == "master" ]; then export DEPLOYMENT_STAGE=dev; fi
   - source config/environment
-  - export INGEST_API_KEY="$(aws secretsmanager get-secret-value --secret-id dcp/upload/${DEPLOYMENT_STAGE}/secrets | jq .SecretString | jq -r fromjson.api_key)"
 
 functional_tests:
   stage: functional_tests

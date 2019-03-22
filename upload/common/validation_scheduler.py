@@ -87,7 +87,6 @@ class ValidationScheduler:
     def schedule_batch_validation(self, validation_id: str, docker_image: str, env: dict, orig_val_id=None) -> str:
         job_defn = self._find_or_create_job_definition_for_image(docker_image)
         env['DEPLOYMENT_STAGE'] = os.environ['DEPLOYMENT_STAGE']
-        env['INGEST_API_KEY'] = os.environ['INGEST_API_KEY']
         env['API_HOST'] = os.environ['API_HOST']
         env['CONTAINER'] = 'DOCKER'
         if orig_val_id:

@@ -8,13 +8,15 @@ from upload.common.retry import retry_on_aws_too_many_requests
 from upload.common.logging import get_logger
 from upload.common.database import UploadDB
 from upload.common.exceptions import UploadException
+from upload.common.upload_config import UploadConfig
 
 logger = get_logger(__name__)
 
 
 class BatchWatcher:
     def __init__(self):
-        self.api_key = os.environ["INGEST_API_KEY"]
+        self.config = UploadConfig()
+        self.api_key = self.config.api_key
         self.deployment_stage = os.environ["DEPLOYMENT_STAGE"]
         self.api_host = os.environ["API_HOST"]
         self.batch_client = boto3.client("batch")
