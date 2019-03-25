@@ -64,7 +64,7 @@ DEFINITION
 
 resource "aws_cloudwatch_log_group" "pgbouncer" {
   name              = "/aws/service/upload-service-pgbouncer-${var.deployment_stage}"
-  retention_in_days = 90
+  retention_in_days = 1827
 }
 
 resource "aws_iam_role" "task_executor" {
