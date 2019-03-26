@@ -19,12 +19,12 @@ csum_docker_image = "humancellatlas/upload-checksummer:8"
 // Validation Batch infrastructure.
 validation_cluster_ec2_key_pair = "my-ec2-keypair"
 validation_cluster_ami_id = "ami-xxxxxxxx"
-validation_cluster_instance_type = "m4"
+validation_cluster_instance_type = "m5"
 validation_cluster_min_vcpus = 0
 
 // Checksumming Batch infrastructure.
 csum_cluster_ec2_key_pair = "my-ec2-keypair"
-csum_cluster_instance_type = "m4"
+csum_cluster_instance_type = "m5"
 csum_cluster_min_vcpus = 0
 
 // Database
