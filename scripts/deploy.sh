@@ -37,7 +37,7 @@ function delete_all_job_definitions() {
 source config/environment
 echo "Deploying to ${DEPLOYMENT_STAGE}"
 cd terraform/envs/${DEPLOYMENT_STAGE} && make init && cd ../../..
-alembic -x db=${DEPLOYMENT_STAGE} -c=./config/database.ini upgrade head
+make db/migrate
 make deploy
 aws secretsmanager update-secret --secret-id="dcp/upload/${DEPLOYMENT_STAGE}/upload_service_version" --secret-string='{ "upload_service_version": "'${UPLOAD_SERVICE_VERSION}'" }'
 delete_all_job_definitions
