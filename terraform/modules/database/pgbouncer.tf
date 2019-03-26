@@ -191,4 +191,7 @@ resource "aws_lb_target_group" "pgbouncer" {
   protocol    = "TCP"
   vpc_id      = "${var.vpc_id}"
   target_type = "ip"
+  lifecycle {
+     ignore_changes = "lambda_multi_value_headers_enabled"
+   }
 }
