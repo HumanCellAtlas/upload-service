@@ -16,3 +16,6 @@ variable "db_password" {
 variable "db_instance_count" {
   type = "string"
 }
+variable "preferred_maintenance_window" {
+  type = "string"
+}
