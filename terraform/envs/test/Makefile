@@ -7,16 +7,13 @@ default: plan
 init:
 	terraform init
 
-plan:
-	make retrieve-vars
+plan: retrieve-vars
 	terraform plan -detailed-exitcode
 
-apply:
-	make retrieve-vars
+apply: retrieve-vars
 	terraform apply --backup=-
 
-destroy:
-	make state/rm
+destroy: state/rm
 	terraform destroy --backup=-
 
 retrieve-vars:
