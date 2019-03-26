@@ -10,8 +10,9 @@ from mock import patch
 from . import client_for_test_api_server
 from ... import UploadTestCaseUsingMockAWS, EnvironmentSetup
 
-from upload.common.upload_area import UploadArea, lambda_client
+from upload.common.upload_area import UploadArea
 from upload.common.database import UploadDB
+from upload.common.upload_config import UploadConfig
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
@@ -20,39 +21,29 @@ if __name__ == '__main__':
 
 class TestApiAuthenticationErrors(UploadTestCaseUsingMockAWS):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Setup app
-        with EnvironmentSetup({
-            'DEPLOYMENT_STAGE': 'test',
-            'INGEST_API_KEY': 'unguessable'
-        }):
-            self.client = client_for_test_api_server()
-
     def test_call_without_auth_setup(self):
-        # Use a different app instance started without an INGEST_API_KEY
-        with EnvironmentSetup({
-            'DEPLOYMENT_STAGE': 'test',
-            'INGEST_API_KEY': None
-        }):
-            self.client = client_for_test_api_server()
+        upload_config = UploadConfig()
+        upload_config.__class__._config = {}
 
-            response = self.client.post(f"/v1/area/{str(uuid.uuid4())}", headers={'Api-Key': 'foo'})
+        client = client_for_test_api_server()
+
+        response = client.post(f"/v1/area/{str(uuid.uuid4())}", headers={'Api-Key': 'foo'})
 
         self.assertEqual(500, response.status_code)
-        self.assertIn("INGEST_API_KEY", response.data.decode('utf8'))
+        self.assertIn("api_key is not in secrets", response.data.decode('utf8'))
 
     def test_call_with_unautenticated(self):
+        client = client_for_test_api_server()
 
-        response = self.client.post(f"/v1/area/{str(uuid.uuid4())}")
+        response = client.post(f"/v1/area/{str(uuid.uuid4())}")
 
         self.assertEqual(400, response.status_code)
         self.assertRegex(str(response.data), "Missing header.*Api-Key")
 
     def test_call_with_bad_api_key(self):
+        client = client_for_test_api_server()
 
-        response = self.client.post(f"/v1/area/{str(uuid.uuid4())}", headers={'Api-Key': 'I-HAXX0RED-U'})
-
+        response = client.post(f"/v1/area/{str(uuid.uuid4())}", headers={'Api-Key': 'I-HAXX0RED-U'})
         self.assertEqual(401, response.status_code)
 
 
@@ -61,10 +52,8 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
     def setUp(self):
         super().setUp()
         # Environment
-        self.api_key = "foo"
+        self.api_key = UploadConfig().api_key
         self.environment = {
-            'INGEST_API_KEY': self.api_key,
-            'INGEST_AMQP_SERVER': 'foo',
             'CSUM_DOCKER_IMAGE': 'bogo_image',
         }
         self.environmentor = EnvironmentSetup(self.environment)
@@ -210,23 +199,6 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
         self.assertEqual(404, response.status_code)
         self.assertEqual('application/problem+json', response.content_type)
-
-    def test_locking_of_upload_area(self):
-        area_uuid = self._create_area()
-        record = UploadDB().get_pg_record("upload_area", area_uuid, column='uuid')
-        self.assertEqual("UNLOCKED", record["status"])
-
-        response = self.client.post(f"/v1/area/{area_uuid}/lock", headers=self.authentication_header)
-
-        self.assertEqual(204, response.status_code)
-        record = UploadDB().get_pg_record("upload_area", area_uuid, column='uuid')
-        self.assertEqual("LOCKED", record["status"])
-
-        response = self.client.delete(f"/v1/area/{area_uuid}/lock", headers=self.authentication_header)
-
-        self.assertEqual(204, response.status_code)
-        record = UploadDB().get_pg_record("upload_area", area_uuid, column='uuid')
-        self.assertEqual("UNLOCKED", record["status"])
 
     def test_put_file_without_content_type_dcp_type_param(self):
         headers = {'Content-Type': 'application/json'}

@@ -135,7 +135,6 @@ resource "aws_lambda_function" "validation_scheduler_lambda" {
   environment {
     variables = {
       DEPLOYMENT_STAGE = "${var.deployment_stage}",
-      INGEST_API_KEY = "${var.ingest_api_key}",
       API_HOST = "${var.upload_api_fqdn}"
     }
   }

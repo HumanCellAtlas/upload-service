@@ -3,7 +3,6 @@ import os
 
 from .amqp_tool import AmqpTool
 from .batch import TestBatch
-from .rest_api import RestApiTest
 
 
 class TestCLI:
@@ -14,7 +13,6 @@ class TestCLI:
                                             description="""Test Upload Service components:
 
         uploadctl test amqp listen|publish
-        uploadctl test api
         uploadctl test batch <docker-image> <command>
         """)
         test_subparsers = test_parser.add_subparsers()
@@ -38,12 +36,6 @@ class TestCLI:
         test_batch_parser.add_argument("docker_command", nargs=argparse.REMAINDER,
                                        help="Command and arguments for Docker image")
 
-        test_api_parser = test_subparsers.add_parser("api", description="Test REST API")
-        test_api_parser.set_defaults(command='test', test_command='api')
-        test_api_parser.add_argument('-v', '--verbose', action='store_true', help="Display response detail")
-        test_api_parser.add_argument('-p', '--pause', action='store_true', help="Pause between steps")
-        test_api_parser.add_argument('-u', '--uuid', nargs='?', help="Use this upload area ID")
-
     @classmethod
     def run(cls, args):
         if args.test_command == 'amqp':
@@ -54,12 +46,10 @@ class TestCLI:
             elif args.amqp_command == 'publish':
                 tool = AmqpTool(server=args.server, exchange_name=args.exchange, queue_name=args.queue_name)
                 tool.publish()
-        elif args.test_command == 'batch':
 
+        elif args.test_command == 'batch':
             TestBatch(queue_name=args.queue,
                       role_name=args.role).run(docker_image=args.image,
                                                command=args.docker_command,
                                                env=args.env)
-        elif args.test_command == 'api':
-            RestApiTest(verbose=args.verbose, pause=args.pause, uuid=args.uuid).run()
         exit(0)

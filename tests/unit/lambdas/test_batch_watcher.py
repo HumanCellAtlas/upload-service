@@ -14,19 +14,12 @@ class TestBatchWatcherDaemon(UploadTestCaseUsingMockAWS):
 
     def setUp(self):
         super().setUp()
-        self.environment = {
-            'API_KEY': 'test'
-        }
-        self.environmentor = EnvironmentSetup(self.environment)
-        self.environmentor.enter()
-
         self.batch_watcher = BatchWatcher()
         self.mock_batch_client = Stubber(self.batch_watcher.batch_client)
         self.mock_ec2_client = Stubber(self.batch_watcher.ec2_client)
         self.mock_lambda_client = Stubber(self.batch_watcher.lambda_client)
 
     def tearDown(self):
-        self.environmentor.exit()
         super().tearDown()
 
     @patch('upload.lambdas.batch_watcher.batch_watcher.UploadDB.run_query')

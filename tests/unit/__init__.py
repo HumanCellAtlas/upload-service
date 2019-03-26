@@ -65,7 +65,8 @@ class EnvironmentSetup:
             if v:
                 os.environ[k] = v
             else:
-                del os.environ[k]
+                if k in os.environ:
+                    del os.environ[k]
 
     def __enter__(self):
         self.enter()
@@ -77,16 +78,19 @@ class EnvironmentSetup:
 class UploadTestCase(unittest.TestCase):
 
     BOGO_CONFIG = {
+        'api_key': 'bogo_api_key',
+        'area_deletion_q_url': 'delete_sqs_url',
+        'area_deletion_lambda_name': 'delete_lambda_name',
         'bucket_name': 'bogobucket',
         'csum_job_q_arn': 'bogo_arn',
-        'csum_upload_q_url': 'bogo_url',
-        'area_deletion_q_url': 'delete_sqs_url',
         'csum_job_role_arn': 'bogo_role_arn',
-        'upload_submitter_role_arn': 'bogo_submitter_role_arn',
-        'slack_webhook': 'bogo_slack_url',
-        'area_deletion_lambda_name': 'delete_lambda_name',
-        'staging_bucket_arn': 'staging_bucket_arn',
+        'csum_upload_q_url': 'bogo_url',
         'ingest_api_host': 'test_ingest_api_host',
+        'slack_webhook': 'bogo_slack_url',
+        'staging_bucket_arn': 'staging_bucket_arn',
+        'upload_submitter_role_arn': 'bogo_submitter_role_arn',
+        'validation_job_q_arn': 'bogo_validation_job_q_arn',
+        'validation_job_role_arn': 'bogo_validation_job_role_arn',
         'validation_q_url': 'test_validation_q_url'
     }
 

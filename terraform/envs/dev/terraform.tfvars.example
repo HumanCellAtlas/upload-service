@@ -1,6 +1,8 @@
 deployment_stage = "XXX"
 
 // VPC
+// Use the 10.24x.0.0 range, starting from prod and working backwards, i.e. prod=240, staging=241, integration=242 etc.
+// Yes I know many deployments are in different accounts, but this leads to less accidents.
 vpc_cidr_block = "xxx.xxx.xxx.xxx/xx"
 
 // S3

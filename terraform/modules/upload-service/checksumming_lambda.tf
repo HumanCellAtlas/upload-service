@@ -117,7 +117,6 @@ resource "aws_lambda_function" "upload_checksum_lambda" {
   environment {
     variables = {
       DEPLOYMENT_STAGE = "${var.deployment_stage}",
-      INGEST_API_KEY = "${var.ingest_api_key}",
       API_HOST = "${var.upload_api_fqdn}",
       CSUM_DOCKER_IMAGE = "${var.csum_docker_image}"
     }

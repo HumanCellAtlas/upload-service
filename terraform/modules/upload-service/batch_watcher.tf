@@ -107,7 +107,6 @@ resource "aws_lambda_function" "batch_watcher_lambda" {
   environment {
     variables = {
       DEPLOYMENT_STAGE = "${var.deployment_stage}",
-      INGEST_API_KEY = "${var.ingest_api_key}",
       API_HOST = "${var.upload_api_fqdn}"
     }
   }
@@ -117,12 +116,14 @@ resource "aws_cloudwatch_event_rule" "batch_watcher_hourly_rule" {
     name = "batch-watcher-every-hour-${var.deployment_stage}"
     description = "Fires every hour"
     schedule_expression = "cron(0 * * * ? *)"
+    count = "${var.deployment_stage == "prod" || var.deployment_stage == "staging" || var.deployment_stage == "integration" || var.deployment_stage == "dev" ? 1 : 0}"
 }
 
 resource "aws_cloudwatch_event_target" "hourly_batch_watcher" {
     rule = "${aws_cloudwatch_event_rule.batch_watcher_hourly_rule.name}"
     target_id = "batch_watcher_lambda"
     arn = "${aws_lambda_function.batch_watcher_lambda.arn}"
+    count = "${var.deployment_stage == "prod" || var.deployment_stage == "staging" || var.deployment_stage == "integration" || var.deployment_stage == "dev" ? 1 : 0}"
 }
 
 resource "aws_lambda_permission" "allow_cloudwatch_to_call_batch_watcher" {
@@ -131,4 +132,6 @@ resource "aws_lambda_permission" "allow_cloudwatch_to_call_batch_watcher" {
     function_name = "${aws_lambda_function.batch_watcher_lambda.function_name}"
     principal = "events.amazonaws.com"
     source_arn = "${aws_cloudwatch_event_rule.batch_watcher_hourly_rule.arn}"
+    count = "${var.deployment_stage == "prod" || var.deployment_stage == "staging" || var.deployment_stage == "integration" || var.deployment_stage == "dev" ? 1 : 0}"
+
 }

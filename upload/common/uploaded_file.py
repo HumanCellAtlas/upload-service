@@ -25,7 +25,7 @@ class UploadedFile:
         obj_key = f"{upload_area.uuid}/{name}"
         s3_client.put_object(Body=data, ContentType=content_type, Bucket=upload_area.bucket_name, Key=obj_key)
         s3_object = upload_area.s3_object_for_file(name)
-        return cls(upload_area, s3object=s3_object)
+        return cls(upload_area, s3object=s3_object, recently_uploaded=True)
 
     @classmethod
     def from_s3_key(cls, upload_area, s3_key):
@@ -42,7 +42,7 @@ class UploadedFile:
         s3object = upload_area.s3_object_for_file(file_props['name'])
         return cls(upload_area, s3object=s3object)
 
-    def __init__(self, upload_area, s3object):
+    def __init__(self, upload_area, s3object, recently_uploaded=False):
         """
         The object of init() is to:
         - populate properties from the S3 object
@@ -63,7 +63,12 @@ class UploadedFile:
             "checksums": None
         }
 
-        self._s3_load()
+        if recently_uploaded:
+            # This is to account for s3 eventual consistency to ensure file gets checksummed.
+            # This may lead to api gateway timeouts that should be retried by client.
+            self._s3_load_with_long_retry()
+        else:
+            self._s3_load()
         self._populate_properties_from_s3_object()
 
         self._db = UploadDB()
@@ -154,8 +159,19 @@ class UploadedFile:
             status = rows[0][0]
         return status, self.checksums
 
-    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(5))
+    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(3))
     def _s3_load(self):
+        try:
+            self.s3object.load()
+        except ClientError as e:
+            if e.response['Error']['Code'] == '404':
+                raise UploadException(status=404, title="No such file",
+                                      detail=f"No such file in that upload area")
+            else:
+                raise e
+
+    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(150))
+    def _s3_load_with_long_retry(self):
         try:
             self.s3object.load()
         except ClientError as e:

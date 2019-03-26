@@ -22,6 +22,10 @@
     "prod": {
       "api_gateway_stage": "",
       "environment_variables": {}
+    },
+    "sam": {
+      "api_gateway_stage": "",
+      "environment_variables": {}
     }
   },
   "lambda_timeout": 300,
