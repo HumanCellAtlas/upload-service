@@ -21,7 +21,7 @@ resource "aws_batch_compute_environment" "csum_compute_env" {
     // Here we use an external data source to dynamically set the desired vcpus to match current state.
     desired_vcpus = "${data.external.checksum_desired_vcpus.result.desired_vcpus}"
     instance_type = [
-      "m4"
+      "${var.csum_cluster_instance_type}"
     ]
     subnets = [
       "${data.aws_subnet_ids.upload_vpc.ids}"
