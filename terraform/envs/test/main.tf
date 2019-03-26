@@ -35,6 +35,8 @@ module "upload-service-database" {
   db_username = "${var.db_username}"
   db_password = "${var.db_password}"
   db_instance_count = "${var.db_instance_count}"
+  preferred_maintenance_window = "${var.preferred_maintenance_window}"
+
   pgbouncer_subnet_id = "${element(data.aws_subnet_ids.upload_vpc.ids, 0)}"
   lb_subnet_ids = "${data.aws_subnet_ids.upload_vpc.ids}"
   vpc_id = "${module.upload-vpc.vpc_id}"
