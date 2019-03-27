@@ -45,11 +45,19 @@ class IngestNotifier:
         self._validate_payload(payload)
         notification_id = str(uuid.uuid4())
         self._create_or_update_db_notification(notification_id, "DELIVERING", payload)
-        if self._send_notification(notification_id, payload):
-            self._create_or_update_db_notification(notification_id, "DELIVERED", payload)
+        notification_successful = False
+        attempts = 0
+        while not notification_successful and attempts < 15:
+            attempts += 1
+            if self._send_notification(notification_id, payload):
+                self._create_or_update_db_notification(notification_id, "DELIVERED", payload)
+                notification_successful = True
+            else:
+                time.sleep(2)
+        if not notification_successful:
+            self._create_or_update_db_notification(notification_id, "FAILED", payload)
         return notification_id
 
-    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(5))
     def _send_notification(self, notification_id, payload):
         try:
             logger.info(f"attempting notification_id:{notification_id}, payload:{payload}, \
@@ -58,16 +66,16 @@ class IngestNotifier:
             headers = {'Authorization': f"Bearer {jwt_token}"}
             response = requests.post(self.ingest_notification_url, headers=headers, json=payload)
             if not response.status_code == requests.codes.ok:
-                self._create_or_update_db_notification(notification_id, "FAILED", payload)
                 logger.info(f"failed to send notification_id:{notification_id}, payload:{payload}, \
-                              response:{response.status_code}, url:{self.ingest_notification_url}")
+                              response:{str(response.json())}, url:{self.ingest_notification_url}")
+                return None
             else:
                 logger.info(f"successfully sent notification_id:{notification_id}, payload:{payload}, \
                           url:{self.ingest_notification_url}")
                 return True
         except Exception as e:
-            self._create_or_update_db_notification(notification_id, "FAILED", payload)
             logger.info(f"failed to send notification {notification_id} with payload {payload} and error {str(e)}")
+            return None
 
     def get_service_jwt(self):
         # This function is taken directly from auth best practice docs in hca gitlab
