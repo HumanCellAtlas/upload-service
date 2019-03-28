@@ -177,12 +177,6 @@ def update_validation_event(upload_area_uuid: str, validation_id: str, body: str
 
 
 @return_exceptions_as_http_errors
-def list_files(upload_area_uuid: str):
-    upload_area = _load_upload_area(upload_area_uuid)
-    return upload_area.ls(), requests.codes.ok
-
-
-@return_exceptions_as_http_errors
 def file_info(upload_area_uuid: str, filename: str):
     upload_area = _load_upload_area(upload_area_uuid)
     uploaded_file = upload_area.uploaded_file(filename)
