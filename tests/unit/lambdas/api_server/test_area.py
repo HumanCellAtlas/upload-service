@@ -223,16 +223,6 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(f"s3://{self.upload_config.bucket_name}/{area_uuid}/some.json",
                          json.loads(response.data)['url'])
 
-    def test_list_files(self):
-        area_uuid = self._create_area()
-        self.mock_upload_file_to_s3(area_uuid, 'file1')
-        self.mock_upload_file_to_s3(area_uuid, 'file2')
-
-        response = self.client.get(f"/v1/area/{area_uuid}")
-
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(2, len(json.loads(response.data)['files']))
-
     def test_get_file_for_existing_file(self):
         area_uuid = self._create_area()
         filename = 'file1.json'
