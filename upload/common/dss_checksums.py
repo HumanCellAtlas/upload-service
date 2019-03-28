@@ -85,22 +85,23 @@ class DssChecksums(collections.abc.MutableMapping):
             self._s3client = boto3.client('s3')
             self._clientside_checksum_hash_functions = clientside_checksum_hash_functions
 
+        @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(3))
         def validate_clientside_checksum_against_serverside_checksum(self, serverside_checksum_values):
             try:
-                response = self._s3client.get_object(Bucket=self._s3obj.bucket_name, Key=self._s3obj.key)
-                metadata = response["Metadata"]
+                metadata = self._s3obj.metadata
                 logger.debug(f"Received metadata: {metadata}")
                 _client_checksum_matches = True
                 for _hash_function in self._clientside_checksum_hash_functions:
                     if _hash_function not in metadata.keys():
+                        logger.warning(
+                            f"Clientside checksum {_hash_function} was not found in the metadata of the file. This "
+                            f"means that no clientside checksum was computed or the storing of the checksum failed.")
                         _client_checksum_matches = False
                     elif metadata[_hash_function] != serverside_checksum_values[_hash_function]:
-                        _client_checksum_matches = False
-                if not _client_checksum_matches:
-                    raise UploadException(status=500, title="Checksums do not match",
-                                          detail=f"Clientside checksum values stored as metadata did not match "
-                                                 f"serverside checksums. File has likely been corrupted during upload.")
-                else:
+                        raise UploadException(status=500, title="Checksums do not match",
+                                              detail=f"Clientside checksum values stored as metadata did not match "
+                                              f"serverside checksums. File has likely been corrupted during upload.")
+                if _client_checksum_matches:
                     logger.info("File passed checksum validation!")
             except ClientError:
                 raise UploadException(status=404, title="No such file",

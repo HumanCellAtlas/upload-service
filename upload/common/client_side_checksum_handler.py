@@ -5,37 +5,44 @@ import time
 from dcplib.checksumming_io import ChecksummingSink
 from dcplib.s3_multipart import get_s3_multipart_chunk_size
 
+from .logging import get_logger
+
+logger = get_logger(__name__)
+
 # Checksum(s) to compute for file; current options: crc32c, sha1, sha256, s3_etag
 CHECKSUM_NAMES = ['crc32c']
 
 
 class ClientSideChecksumHandler:
     """ The ClientSideChecksumHandler takes in a file as a parameter and handles any behavior related to
-    check-summing the file
-    on the client-side, returning a tag that can be used as metadata when the file is uploaded to S3."""
+    check-summing the file on the client-side, returning a tag that can be used as metadata when the file is uploaded
+    to S3."""
 
     def __init__(self, filename=None, data=None):
-        self._checksums = {}
         self._filename = filename
         self._data = data
+        self._checksums = {}
+
+        self._compute_checksum()
 
     def get_checksum_metadata_tag(self):
         """ Returns a map of checksum values by the name of the hashing function that produced it."""
         if not self._checksums:
-            print("Warning: No checksums have been computed for this file.")
+            logger.warning("No checksums have been computed for this file.")
+            return {}
         return {str(_hash_name): str(_hash_value) for _hash_name, _hash_value in self._checksums.items()}
 
-    def compute_checksum(self):
+    def _compute_checksum(self):
         """ Calculates checksums for a given file. """
         if self._filename is not None and self._filename.startswith("s3://"):
-            print("Warning: Did not perform client-side checksumming for file in S3. To be implemented.")
+            logger.warning("Did not perform client-side checksumming for file in S3. To be implemented.")
             pass
         elif self._filename is None and self._data is None:
-            print("Warning: Did not perform client-side checksumming because no data was provided.")
+            logger.warning("Did not perform client-side checksumming because no data was provided.")
             pass
         elif self._filename is not None and self._data is not None:
-            print(
-                f"Warning: Did not perform client-side checksumming because both a file and raw data was provided. "
+            logger.warning(
+                f"Did not perform client-side checksumming because both a file and raw data was provided. "
                 f"Only one may be provided.")
             pass
         else:
@@ -65,5 +72,5 @@ class ClientSideChecksumHandler:
             with ChecksummingSink(_multipart_chunksize, hash_functions=self._checksums) as sink:
                 sink.write(self._data)
                 checksums = sink.get_checksums()
-                print("Checksumming took %.2f milliseconds to compute" % ((time.time() - start_time) * 1000))
+                logger.info("Checksumming took %.2f milliseconds to compute" % ((time.time() - start_time) * 1000))
             return checksums

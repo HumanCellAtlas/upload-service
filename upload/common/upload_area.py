@@ -196,7 +196,6 @@ class UploadArea:
 
         # Compute client-side checksums for the file being uploaded
         checksum_handler = ClientSideChecksumHandler(data=content)
-        checksum_handler.compute_checksum()
         clientside_checksums = checksum_handler.get_checksum_metadata_tag()
         file = UploadedFile.create(upload_area=self, checksums=clientside_checksums, name=filename,
                                    content_type=str(media_type), data=content)

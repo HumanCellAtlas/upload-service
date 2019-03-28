@@ -2,8 +2,9 @@ import uuid
 
 import boto3
 
-from upload.common.dss_checksums import DssChecksums
+from upload.common.dss_checksums import DssChecksums, __name__ as logger_name
 from upload.common.exceptions import UploadException
+from upload.common.logging import get_logger
 from upload.common.upload_area import UploadArea
 from .. import UploadTestCaseUsingMockAWS
 from ... import FixtureFile
@@ -77,10 +78,9 @@ class TestDssChecksums(UploadTestCaseUsingMockAWS):
         _s3obj = self.create_s3_object(object_key=_filename, checksum_value={})
         _checksums = DssChecksums(_s3obj, checksums=_checksums)
 
-        with self.assertRaises(UploadException) as _upload_exception:
+        with self.assertLogs(logger=get_logger(logger_name)) as _context_manager:
             _checksums.save_as_tags_on_s3_object()
-
-        self.assertIn("checksum values stored as metadata did not match", _upload_exception.exception.detail)
+            self.assertIn("crc32c was not found in the metadata of the file", str(_context_manager.output))
 
     def test__upload_file_with_mismatched_clientside_checksum_fails(self):
         _filename = 'file'
