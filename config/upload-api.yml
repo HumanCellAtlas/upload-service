@@ -133,40 +133,6 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-    get:
-      summary: List files in an upload area
-      operationId: upload.lambdas.api_server.v1.area.list_files
-      description: |
-        Provide a JSON object listing all the files in an upload area, including their checkums.
-      tags:
-        - All
-      parameters:
-        - name: upload_area_uuid
-          in: path
-          description: A RFC4122-compliant ID for the upload area.
-          required: true
-          type: string
-      responses:
-        200:
-          description: Here's your listing.
-          schema:
-            type: object
-            properties:
-              files:
-                type: array
-                items:
-                  $ref: "#/definitions/FileInfo"
-            required:
-              - files
-        404:
-          description: Could not find an upload area with that ID.
-          schema:
-            $ref: '#/definitions/Error'
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/Error'
-
   /v1/area/{upload_area_uuid}/credentials:
 
     post:
