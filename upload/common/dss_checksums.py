@@ -97,7 +97,7 @@ class DssChecksums(collections.abc.MutableMapping):
                             f"Clientside checksum {_hash_function} was not found in the metadata of the file. This "
                             f"means that no clientside checksum was computed or the storing of the checksum failed.")
                         _client_checksum_matches = False
-                    elif metadata[_hash_function] != serverside_checksum_values[_hash_function]:
+                    elif metadata[_hash_function].lower() != serverside_checksum_values[_hash_function].lower():
                         raise UploadException(status=500, title="Checksums do not match",
                                               detail=f"Clientside checksum values stored as metadata did not match "
                                               f"serverside checksums. File has likely been corrupted during upload.")

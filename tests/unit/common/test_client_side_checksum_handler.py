@@ -20,7 +20,8 @@ class TestClientSideChecksumHandler(UploadTestCaseUsingMockAWS):
         _checksum_handler = ClientSideChecksumHandler(data=_test_file.contents)
         _checksums = _checksum_handler.get_checksum_metadata_tag()
 
-        [self.assertEquals(_checksums[_hash_function], _test_file.checksums[_hash_function]) for _hash_function in
+        [self.assertEquals(_checksums[_hash_function], _test_file.checksums[_hash_function]) for
+         _hash_function in
          CHECKSUM_NAMES]
 
     def test__get_tag_given_filename__returns_crc32c_tag(self):
@@ -29,7 +30,8 @@ class TestClientSideChecksumHandler(UploadTestCaseUsingMockAWS):
         _checksum_handler = ClientSideChecksumHandler(filename=FixtureFile.fixture_file_path(_test_file.name))
         _checksums = _checksum_handler.get_checksum_metadata_tag()
 
-        [self.assertEquals(_checksums[_hash_function], _test_file.checksums[_hash_function]) for _hash_function in
+        [self.assertEquals(_checksums[_hash_function], _test_file.checksums[_hash_function]) for
+         _hash_function in
          CHECKSUM_NAMES]
 
     def test__get_tag_given_s3_file__returns_warning(self):
