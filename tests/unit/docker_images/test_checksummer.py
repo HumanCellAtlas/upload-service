@@ -1,13 +1,12 @@
 import unittest
-from unittest.mock import patch
 import uuid
+from unittest.mock import patch
 
 import boto3
 
+from upload.common.upload_config import UploadConfig
 from .. import UploadTestCaseUsingMockAWS, EnvironmentSetup
 from ... import FixtureFile
-
-from upload.common.upload_config import UploadConfig
 
 
 class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
@@ -34,7 +33,8 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
     def test_checksummer_checksums(self, mock_update_checksum_event):
         test_file = FixtureFile.factory("foo")
         file_s3_key = f"somearea/{test_file.name}"
-        self.create_s3_object(file_s3_key, content=test_file.contents)
+        self.create_s3_object(file_s3_key, content=test_file.contents,
+                              checksum_value={'crc32c': test_file.checksums['crc32c']})
         s3_url = f"s3://{self.upload_bucket.name}/{file_s3_key}"
 
         from upload.docker_images.checksummer.checksummer import Checksummer
@@ -54,7 +54,8 @@ class TestChecksummerDockerImage(UploadTestCaseUsingMockAWS):
     def test_checksummer__when_file_etag_is_wrong__aborts(self, mock_update_checksum_event):
         test_file = FixtureFile.factory("foo")
         file_s3_key = f"somearea/{test_file.name}"
-        self.create_s3_object(file_s3_key, content=test_file.contents)
+        self.create_s3_object(file_s3_key, content=test_file.contents,
+                              checksum_value={'crc32c': test_file.crc32c})
         s3_url = f"s3://{self.upload_bucket.name}/{file_s3_key}"
 
         from upload.docker_images.checksummer.checksummer import Checksummer

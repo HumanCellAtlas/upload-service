@@ -43,7 +43,7 @@ class TestUploadAreaCreationExistenceAndDeletion(UploadAreaTest):
 
         self.assertEqual(db_area.id, area.db_id)
 
-    def test_is_extant__for_nonexistant_area__returns_false(self):
+    def test_is_extant__for_nonexistent_area__returns_false(self):
         area_uuid = "an-area-that-will-not-exist"
 
         self.assertFalse(UploadArea(area_uuid).is_extant())
@@ -156,7 +156,7 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
             'content_type': 'application/json; dcp-type="metadata/sample"',
             'url': f"s3://{self.upload_config.bucket_name}/{db_area.uuid}/some.json",
             'checksums': {
-                "crc32c": "FE9ADA52",
+                "crc32c": "fe9ada52",
                 "s3_etag": s3_etag,
                 "sha1": "b1b101e21cf9cf8a4729da44d7818f935eec0ce8",
                 "sha256": "29f5572dfbe07e1db9422a4c84e3f9e455aab9ac596f0bf3340be17841f26f70"
