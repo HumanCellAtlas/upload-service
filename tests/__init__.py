@@ -101,7 +101,7 @@ FixtureFile.register(name='small_file',
                          "s3_etag": "90bb15802d139f86139a6ca72d61611b",
                          "sha1": "1039d0969f1fb147292dedfd9116fb5d447430e1",
                          "sha256": "513ede16ce2c0a32fdbe2b4177356b919bfa40523c1e5919d5ea024a53a07b7a",
-                         "crc32c": "ced75a"
+                         "crc32c": "00ced75a"
                      })
 
 FixtureFile.register(name='small_invalid_file',
