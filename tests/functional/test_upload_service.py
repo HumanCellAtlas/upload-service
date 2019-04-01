@@ -194,10 +194,10 @@ class TestUploadService(unittest.TestCase):
         # Check S3 object has checksum tags
         tagging = boto3.client('s3').get_object_tagging(Bucket=self.upload_config.bucket_name,
                                                         Key=f"{self.upload_area_uuid}/{test_file.name}")
-        self.assertEqual(
-            sorted(tagging['TagSet'], key=lambda x: x['Key']),
-            test_file.s3_tagset
-        )
+
+        _actual_checksums = self._get_dict_representation_of_tagset_case_insensitive(tagging['TagSet'])
+        _expected_checksums = self._get_dict_representation_of_tagset_case_insensitive(test_file.s3_tagset)
+        self.assertDictEqual(_actual_checksums, _expected_checksums)
 
     def _verify_file_is_checksummed_via_batch(self, test_file):
         """ For files that are 10G or larger, we expect that the file will check-summed via batch. This means that it
@@ -216,15 +216,17 @@ class TestUploadService(unittest.TestCase):
         # Check file record now contains checksums
         db = self.db_session_maker.session()
         file_record = db.query(DbFile).get(checksum_record.file_id)
-        self.assertEqual(test_file.checksums, file_record.checksums)
+        [self.assertEquals(test_file.checksums[_checksum_function].lower(),
+                           file_record.checksums[_checksum_function].lower())
+         for _checksum_function in set(list(test_file.checksums.keys()) + list(file_record.checksums.keys()))]
 
         # Check S3 object has checksum tags
         tagging = boto3.client('s3').get_object_tagging(Bucket=self.upload_config.bucket_name,
                                                         Key=f"{self.upload_area_uuid}/{test_file.name}")
-        self.assertEqual(
-            sorted(tagging['TagSet'], key=lambda x: x['Key']),
-            test_file.s3_tagset
-        )
+
+        _actual_checksums = self._get_dict_representation_of_tagset_case_insensitive(tagging['TagSet'])
+        _expected_checksums = self._get_dict_representation_of_tagset_case_insensitive(test_file.s3_tagset)
+        self.assertDictEqual(_actual_checksums, _expected_checksums)
 
     def _verify_file_validation_status(self, validation_id, expected_exit_code=0, expected_error_msg=''):
         # Get the validation status of the file
@@ -294,3 +296,9 @@ class TestUploadService(unittest.TestCase):
         print(' '.join(command))
         completed_process = subprocess.run(command, stdout=None, stderr=None)
         self.assertEqual(expected_returncode, completed_process.returncode)
+
+    def _get_dict_representation_of_tagset_case_insensitive(self, tagset):
+        _tagset_dict = {}
+        for _item in tagset:
+            _tagset_dict[_item['Key'].lower()] = _item['Value'].lower()
+        return _tagset_dict
