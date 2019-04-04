@@ -18,14 +18,14 @@ logger = get_logger(__name__)
 
 @return_exceptions_as_http_errors
 @require_authenticated
-def create(upload_area_uuid: str):
+def create_area(upload_area_uuid: str):
     upload_area = UploadArea(upload_area_uuid)
     upload_area.update_or_create()
     return {'uri': upload_area.uri}, requests.codes.created
 
 
 @return_exceptions_as_http_errors
-def head_upload_area(upload_area_uuid: str):
+def area_exists(upload_area_uuid: str):
     _load_upload_area(upload_area_uuid)
     return None, requests.codes.ok
 
@@ -38,7 +38,7 @@ def credentials(upload_area_uuid: str):
 
 @return_exceptions_as_http_errors
 @require_authenticated
-def delete(upload_area_uuid: str):
+def delete_area(upload_area_uuid: str):
     upload_area = _load_upload_area(upload_area_uuid)
     upload_area.add_upload_area_to_delete_sqs()
     return None, requests.codes.accepted
@@ -46,7 +46,7 @@ def delete(upload_area_uuid: str):
 
 @return_exceptions_as_http_errors
 @require_authenticated
-def put_file(upload_area_uuid: str, filename: str, body: str):
+def store_file(upload_area_uuid: str, filename: str, body: str):
     upload_area = _load_upload_area(upload_area_uuid)
     content_type = connexion.request.headers['Content-Type']
     file = upload_area.store_file(filename, content=body, content_type=content_type)
@@ -54,7 +54,7 @@ def put_file(upload_area_uuid: str, filename: str, body: str):
 
 
 @return_exceptions_as_http_errors
-def post_file(upload_area_uuid: str, filename: str):
+def file_uploaded_notification(upload_area_uuid: str, filename: str):
     upload_area = _load_upload_area(upload_area_uuid)
     upload_area.add_uploaded_file_to_csum_daemon_sqs(filename)
     return None, requests.codes.accepted

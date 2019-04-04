@@ -73,17 +73,17 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.client.post(f"/v1/area/{area_uuid}", headers=self.authentication_header)
         return area_uuid
 
-    def test_head_upload_area_does_not_exist(self):
+    def test_upload_area_exists__with_nonexistent_upload_area__returns_404(self):
         area_uuid = str(uuid.uuid4())
         response = self.client.head(f"/v1/area/{area_uuid}")
         self.assertEqual(response.status_code, 404)
 
-    def test_head_upload_area_does_exist(self):
+    def test_upload_area_exists__with_existing_upload_area__returns_200(self):
         area_uuid = self._create_area()
         response = self.client.head(f"/v1/area/{area_uuid}")
         self.assertEqual(response.status_code, 200)
 
-    def test_create_with_unused_upload_area_uuid(self):
+    def test_create_area__with_unused_upload_area_uuid__creates_area(self):
         area_uuid = str(uuid.uuid4())
 
         response = self.client.post(f"/v1/area/{area_uuid}", headers=self.authentication_header)
@@ -99,7 +99,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(self.upload_config.bucket_name, record["bucket_name"])
         self.assertEqual("UNLOCKED", record["status"])
 
-    def test_create_with_already_used_upload_area_uuid(self):
+    def test_create_area__with_already_used_upload_area_uuid__acts_idempotently(self):
         area_uuid = self._create_area()
 
         response = self.client.post(f"/v1/area/{area_uuid}", headers=self.authentication_header)
@@ -116,7 +116,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual("UNLOCKED", record["status"])
 
     @mock_sts
-    def test_credentials_with_non_existent_upload_area(self):
+    def test_credentials__with_non_existent_upload_area__returns_404(self):
         area_uuid = str(uuid.uuid4())
 
         response = self.client.post(f"/v1/area/{area_uuid}/credentials")
@@ -124,7 +124,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(404, response.status_code)
 
     @mock_sts
-    def test_credentials_with_existing_locked_upload_area(self):
+    def test_credentials__with_existing_locked_upload_area__returns_409(self):
         area_uuid = self._create_area()
         UploadArea(area_uuid).lock()
 
@@ -134,7 +134,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
     @mock_sts
     @patch('upload.common.upload_area.UploadArea._retrieve_upload_area_deletion_lambda_timeout')
-    def test_credentials_with_deleted_upload_area(self, mock_area_deletion_timeout):
+    def test_credentials__with_deleted_upload_area__returns_404(self, mock_area_deletion_timeout):
         area_uuid = self._create_area()
         mock_area_deletion_timeout.return_value = 900
         UploadArea(area_uuid).delete()
@@ -144,15 +144,16 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(404, response.status_code)
 
     @mock_sts
-    def test_credentials_with_existing_unlocked_upload_area(self):
+    def test_credentials__with_existing_unlocked_upload_area__returns_201_and_credentials(self):
         area_uuid = self._create_area()
 
         response = self.client.post(f"/v1/area/{area_uuid}/credentials")
 
         data = json.loads(response.data)
+        self.assertEqual(201, response.status_code)
         self.assertEqual(['AccessKeyId', 'Expiration', 'SecretAccessKey', 'SessionToken'], list(data.keys()))
 
-    def test_delete_with_id_of_real_non_empty_upload_area(self):
+    def test_delete_area__with_id_of_real_non_empty_upload_area__enqueues_deletion(self):
         area_uuid = self._create_area()
 
         obj = self.upload_bucket.Object(f'{area_uuid}/test_file')
@@ -192,7 +193,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         record = UploadDB().get_pg_record("upload_area", area_uuid, column='uuid')
         self.assertEqual("DELETION_QUEUED", record["status"])
 
-    def test_delete_with_unused_used_upload_area_uuid(self):
+    def test_delete_area__with_unused_used_upload_area_uuid__returns_404(self):
         area_uuid = str(uuid.uuid4())
 
         response = self.client.delete(f"/v1/area/{area_uuid}", headers=self.authentication_header)
@@ -200,7 +201,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(404, response.status_code)
         self.assertEqual('application/problem+json', response.content_type)
 
-    def test_put_file_without_content_type_dcp_type_param(self):
+    def test_store_file__without_content_type_dcp_type_param__returns_400(self):
         headers = {'Content-Type': 'application/json'}
         headers.update(self.authentication_header)
         area_uuid = self._create_area()
@@ -211,7 +212,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual('application/problem+json', response.content_type)
         self.assertIn("missing parameter \'dcp-type\'", response.data.decode('utf8'))
 
-    def test_put_file(self):
+    def test_store_file__with_valid_params__saves_file(self):
         headers = {'Content-Type': 'application/json; dcp-type="metadata/sample"'}
         headers.update(self.authentication_header)
         area_uuid = self._create_area()
@@ -223,7 +224,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(f"s3://{self.upload_config.bucket_name}/{area_uuid}/some.json",
                          json.loads(response.data)['url'])
 
-    def test_get_file_for_existing_file(self):
+    def test_file_info__for_existing_file__returns_file_info(self):
         area_uuid = self._create_area()
         filename = 'file1.json'
         s3obj = self.mock_upload_file_to_s3(area_uuid, filename)
@@ -243,7 +244,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         })
 
-    def test_get_file_returns_404_for_missing_area_or_file(self):
+    def test_file_info__for_missing_area_or_file__returns_404(self):
         response = self.client.get(f"/v1/area/bogoarea/bogofile")
         self.assertEqual(404, response.status_code)
 
@@ -254,7 +255,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         response = self.client.get(f"/v1/area/{area_uuid}/bogofile")
         self.assertEqual(404, response.status_code)
 
-    def test_put_files_info(self):
+    def test_files_info__for_existing_files__returns_files_info(self):
         area_uuid = self._create_area()
         o1 = self.mock_upload_file_to_s3(area_uuid, 'file1.json',
                                          content_type='application/json; dcp-type="metadata/foo"')
@@ -291,7 +292,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             'checksums': {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'}
         })
 
-    def test_post_file_with_valid_area(self):
+    def test_file_uploaded_notification__with_valid_area__enqueues_something(self):
         area_uuid = self._create_area()
 
         response = self.client.post(f"/v1/area/{area_uuid}/filename123")
@@ -304,7 +305,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(s3_key, f"{area_uuid}/filename123")
         self.assertEqual(s3_bucket, "bogobucket")
 
-    def test_post_file_with_invalid_area(self):
+    def test_file_uploaded_notification__with_invalid_area__returns_404(self):
         area_uuid = str(uuid.uuid4())
         response = self.client.post(f"/v1/area/{area_uuid}/filename123")
         self.assertEqual(404, response.status_code)

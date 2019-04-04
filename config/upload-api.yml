@@ -39,7 +39,7 @@ paths:
 
     head:
       summary: Check if an upload area exists
-      operationId: upload.lambdas.api_server.v1.area.head_upload_area
+      operationId: upload.lambdas.api_server.v1.area.area_exists
       description: |
         Check if an upload area exists.
       tags:
@@ -59,7 +59,7 @@ paths:
 
     post:
       summary: Create an Upload Area
-      operationId: upload.lambdas.api_server.v1.area.create
+      operationId: upload.lambdas.api_server.v1.area.create_area
       description: |
         Create an Upload Area. This endpoint is idempotent and can be called for an existing upload area.
       tags:
@@ -100,7 +100,7 @@ paths:
 
     delete:
       summary: Delete an Upload Area
-      operationId: upload.lambdas.api_server.v1.area.delete
+      operationId: upload.lambdas.api_server.v1.area.delete_area
       description: Schedule an Upload Area for deletion
       tags:
         - For Ingestion Service Use Only
@@ -198,7 +198,7 @@ paths:
       operationId: upload.lambdas.api_server.v1.area.retrieve_checksum_status_count
       description:  |
         Provide a JSON object with number of files that are in a particular upload area,
-        scheduled for checksumming, checksumming, checksummed, and unescheduled.
+        scheduled for checksumming, checksumming, checksummed, and unscheduled.
       tags:
         - All
       parameters:
@@ -234,7 +234,7 @@ paths:
 
     post:
       summary: Notify upload of uploaded file
-      operationId: upload.lambdas.api_server.v1.area.post_file
+      operationId: upload.lambdas.api_server.v1.area.file_uploaded_notification
       description: Notify upload api of uploaded file in upload area.
       tags:
         - All
@@ -263,7 +263,7 @@ paths:
 
     put:
       summary: Store a metadata file
-      operationId: upload.lambdas.api_server.v1.area.put_file
+      operationId: upload.lambdas.api_server.v1.area.store_file
       description: Store a JSON metadata file in the upload area.
       tags:
         - For Ingestion Service Use Only
