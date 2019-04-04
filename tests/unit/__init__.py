@@ -107,8 +107,9 @@ class UploadTestCase(unittest.TestCase):
 
     def setUp(self):
         # Common Environment
-        if os.environ['DEPLOYMENT_STAGE'] in ['local', 'test']:
-            self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
+        env_deployment_stage = os.environ.get('DEPLOYMENT_STAGE', 'test')
+        if env_deployment_stage in ['local', 'test']:
+            self.deployment_stage = env_deployment_stage
         else:
             self.deployment_stage = 'test'
         self.environment = {
@@ -181,7 +182,7 @@ class UploadTestCaseUsingMockAWS(UploadTestCase):
         self.upload_bucket.create()
 
         self.sqs = boto3.resource('sqs')
-        self.sqs.create_queue(QueueName=f"bogo_url")
+        self.sqs.create_queue(QueueName=f"bogo_url")  # TODO: what is this?  Needs comment or renamed.
         self.sqs.create_queue(QueueName=f"delete_sqs_url")
         self.sqs.create_queue(QueueName=f"test_validation_q_url")
 
