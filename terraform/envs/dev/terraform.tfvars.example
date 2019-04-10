@@ -9,8 +9,11 @@ vpc_cidr_block = "xxx.xxx.xxx.xxx/xx"
 bucket_name_prefix = "org-humancellatlas-upload-"
 staging_bucket_arn = "arn:aws:s3:::org-humancellatlas-upload-staging"
 
+// DNS
+parent_zone_domain_name = "<deployment_stage>.data.humancellatlas.org"
+
 // API Lambda
-upload_api_fqdn = "upload.<deployment_stage>.data.humancellatlas.org"
+upload_api_fqdn = "upload.<deployment_stage>.<parent_zone_domain_name>"
 ingest_api_key = "xxxxxxxxxxxxxxxxxxxx"
 
 // Checksum Lambda
@@ -34,7 +37,7 @@ db_instance_count = 1
 preferred_maintenance_window = "sat:09:08-sat:09:38"
 
 // DCP Ingest
-ingest_api_host = "api.ingest.<deployment_stage>.data.humancellatlas.org"
+ingest_api_host = "api.ingest.<deployment_stage>.<parent_zone_domain_name>"
 
 // AUTH
 dcp_auth0_audience = "https://dev.data.humancellatlas.org/"

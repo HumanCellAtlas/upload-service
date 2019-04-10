@@ -27,6 +27,9 @@ module "upload-service" {
   bucket_name_prefix = "${var.bucket_name_prefix}"
   staging_bucket_arn = "${var.staging_bucket_arn}"
 
+  // DNS
+  parent_zone_domain_name = "${var.parent_zone_domain_name}"
+
   // API Lambda
   upload_api_fqdn = "${var.upload_api_fqdn}"
   ingest_api_key = "${var.ingest_api_key}"
