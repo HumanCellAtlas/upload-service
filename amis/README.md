@@ -109,6 +109,10 @@ umount /mnt
 
     Something like: `aws ec2 register-image --cli-input-json file://register-image.json`
 
+    This AMI will be used in multiple accounts dev+ and prod, so it must
+    be made public, so the prod account can access it.  Do that at AWS Console
+    -> EC2 -> AMIs -> Owned by me -> _select the AMI_ -> Permissions -> Edit.
+
 14. Cleanup
     * Delete the rootfs EBS volume, you no longer need it.
     * Don't delete the shapshot.  The AMI needs that.
