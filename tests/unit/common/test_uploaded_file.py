@@ -4,12 +4,11 @@ import uuid
 
 from sqlalchemy.orm.exc import NoResultFound
 
-from .. import UploadTestCaseUsingMockAWS
-from ... import FixtureFile
-
 from upload.common.database_orm import DBSessionMaker, DbFile
 from upload.common.upload_area import UploadArea
 from upload.common.uploaded_file import UploadedFile
+from .. import UploadTestCaseUsingMockAWS
+from ... import FixtureFile
 
 
 class TestUploadedFile(UploadTestCaseUsingMockAWS):
@@ -39,7 +38,7 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         pass
 
     def test_create__creates_a_new_s3_object_and_db_record(self):
-        filename = f"file-{random.randint(0,999999999)}"
+        filename = f"file-{random.randint(0, 999999999)}"
         content_type = "application/octet-stream; dcp-type=data"
         file_content = "file1_content"
 
@@ -64,7 +63,7 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         self.assertEqual(self.upload_area.db_id, record.upload_area_id)
 
     def test_init__given_existing_entities__initializes_properties_correctly(self):
-        filename = f"file-{random.randint(0,999999999)}"
+        filename = f"file-{random.randint(0, 999999999)}"
         s3object = self.create_s3_object(f"{self.upload_area_id}/{filename}")
         file_record = self.create_file_record(s3object)
 
@@ -82,7 +81,7 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         self.assertEqual(s3object.content_length, uf.size)
 
     def test_init__when_no_db_record_exists__creates_a_db_record(self):
-        filename = f"file-{random.randint(0,999999999)}"
+        filename = f"file-{random.randint(0, 999999999)}"
         s3object = self.create_s3_object(f"{self.upload_area_id}/{filename}")
 
         with self.assertRaises(NoResultFound):
@@ -101,7 +100,7 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         self.assertEqual(self.upload_area.db_id, record.upload_area_id)
 
     def test_init__doesnt_create_db_record_if_one_already_exists(self):
-        filename = f"file-{random.randint(0,999999999)}"
+        filename = f"file-{random.randint(0, 999999999)}"
         s3_key = f"{self.upload_area_id}/{filename}"
         s3object = self.create_s3_object(s3_key)
         self.create_file_record(s3object)
@@ -113,7 +112,7 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         self.assertEqual(record_count_before, record_count_after)
 
     def test_from_s3_key__initializes_correctly(self):
-        filename = f"file-{random.randint(0,999999999)}"
+        filename = f"file-{random.randint(0, 999999999)}"
         s3object = self.create_s3_object(f"{self.upload_area_id}/{filename}")
         file_record = self.create_file_record(s3object)
 
@@ -124,7 +123,7 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         self.assertEqual(file_record.id, uf.db_id)
 
     def test_from_db_id__initializes_correctly_and_figures_out_which_upload_area_to_use(self):
-        filename = f"file-{random.randint(0,999999999)}"
+        filename = f"file-{random.randint(0, 999999999)}"
         s3object = self.create_s3_object(f"{self.upload_area_id}/{filename}")
         file_record = self.create_file_record(s3object)
 
@@ -136,7 +135,7 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         self.assertEqual(file_record.id, uf.db_id)
 
     def test_refresh__picks_up_changed_content_type(self):
-        filename = f"file-{random.randint(0,999999999)}"
+        filename = f"file-{random.randint(0, 999999999)}"
         old_content_type = "application/octet-stream"  # missing dcp-type
         new_content_type = "application/octet-stream; dcp-type=data"
         s3object = self.create_s3_object(object_key=f"{self.upload_area.uuid}/{filename}",
@@ -155,7 +154,7 @@ class TestUploadedFile(UploadTestCaseUsingMockAWS):
         self.assertEqual(new_content_type, uf.content_type)
 
     def test_checksums_setter_saves_db_record(self):
-        filename = f"file-{random.randint(0,999999999)}"
+        filename = f"file-{random.randint(0, 999999999)}"
         s3object = self.create_s3_object(f"{self.upload_area_id}/{filename}")
         file_record = self.create_file_record(s3object)
         uf = UploadedFile.from_db_id(file_record.id)

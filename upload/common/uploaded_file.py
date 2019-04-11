@@ -22,6 +22,22 @@ class UploadedFile:
 
     @classmethod
     def create(cls, upload_area, checksums={}, name=None, content_type=None, data=None):
+        """ Check if the file exists already and if so, return it. """
+
+        found_file = None
+        try:
+            obj = s3_client.head_object(Bucket=upload_area.bucket_name, Key=name)
+            if obj and obj.containsKey('Metadata'):
+                if obj['Metadata'] == checksums:
+                    found_file = obj
+        except ClientError:
+            # An exception from calling `head_object` indicates that no file with the specified name could be found
+            # in the specified bucket. No further action is needed since the file will be created.
+            pass
+
+        if found_file:
+            return UploadedFile.from_s3_key(upload_area, found_file['Key'])
+
         obj_key = f"{upload_area.uuid}/{name}"
         s3_client.put_object(Body=data, ContentType=content_type, Bucket=upload_area.bucket_name, Key=obj_key,
                              Metadata=checksums)
@@ -31,7 +47,7 @@ class UploadedFile:
     @classmethod
     def from_s3_key(cls, upload_area, s3_key):
         s3object = s3.Bucket(upload_area.bucket_name).Object(s3_key)
-        return cls(upload_area, s3object=s3object)
+        return cls(upload_area, s3object=s3object, recently_uploaded=False)
 
     @classmethod
     def from_db_id(cls, db_id):
@@ -67,8 +83,10 @@ class UploadedFile:
         if recently_uploaded:
             # This is to account for s3 eventual consistency to ensure file gets checksummed.
             # This may lead to api gateway timeouts that should be retried by client.
+            self.recently_uploaded = True
             self._s3_load_with_long_retry()
         else:
+            self.recently_uploaded = False
             self._s3_load()
         self._populate_properties_from_s3_object()
 

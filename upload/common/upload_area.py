@@ -135,7 +135,7 @@ class UploadArea:
         self._db_update()
 
     def ls(self):
-        return {'files': self._file_list()}
+        return {'files': [file.info() for file in self._file_list()]}
 
     def lock(self):
         self.status = "LOCKED"
@@ -197,21 +197,25 @@ class UploadArea:
         # Compute client-side checksums for the file being uploaded
         checksum_handler = ClientSideChecksumHandler(data=content)
         clientside_checksums = checksum_handler.get_checksum_metadata_tag()
+
         file = UploadedFile.create(upload_area=self, checksums=clientside_checksums, name=filename,
                                    content_type=str(media_type), data=content)
-        checksum_id = str(uuid.uuid4())
-        checksum_event = ChecksumEvent(file_id=file.db_id,
-                                       checksum_id=checksum_id,
-                                       status="CHECKSUMMING")
-        checksum_event.create_record()
 
-        checksums = DssChecksums(s3_object=file.s3object)
-        checksums.compute(report_progress=True)
-        checksums.save_as_tags_on_s3_object()
-        file.checksums = dict(checksums)
+        if file.recently_uploaded:
+            checksum_id = str(uuid.uuid4())
+            checksum_event = ChecksumEvent(file_id=file.db_id,
+                                           checksum_id=checksum_id,
+                                           status="CHECKSUMMING")
+            checksum_event.create_record()
 
-        checksum_event.status = "CHECKSUMMED"
-        checksum_event.update_record()
+            checksums = DssChecksums(s3_object=file.s3object)
+            checksums.compute(report_progress=True)
+            checksums.save_as_tags_on_s3_object()
+            file.checksums = dict(checksums)
+
+            checksum_event.status = "CHECKSUMMED"
+            checksum_event.update_record()
+
         return file
 
     def uploaded_file(self, filename):
@@ -273,13 +277,14 @@ class UploadArea:
         return config
 
     def _file_list(self):
+        """ Returns a list UploadedFile objects representing files that exists in the current bucket."""
         file_list = []
         paginator = s3.meta.client.get_paginator('list_objects')
         for page in paginator.paginate(Bucket=self.bucket_name, Prefix=self.key_prefix):
             if 'Contents' in page:
                 for o in page['Contents']:
                     file = UploadedFile.from_s3_key(self, o['Key'])
-                    file_list.append(file.info())
+                    file_list.append(file)
         return file_list
 
     def _empty_upload_area(self):

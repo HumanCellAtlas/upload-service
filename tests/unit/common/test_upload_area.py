@@ -5,12 +5,11 @@ from botocore.exceptions import ClientError
 from moto import mock_sts
 from sqlalchemy.orm.exc import NoResultFound
 
-from .. import UploadTestCaseUsingMockAWS
-
 from upload.common.database_orm import DBSessionMaker, DbUploadArea, DbFile
+from upload.common.exceptions import UploadException
 from upload.common.upload_area import UploadArea
 from upload.common.uploaded_file import UploadedFile
-from upload.common.exceptions import UploadException
+from .. import UploadTestCaseUsingMockAWS
 
 
 class UploadAreaTest(UploadTestCaseUsingMockAWS):
@@ -169,6 +168,25 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
         self.assertEqual(16, db_file.size)
         self.assertEqual(db_area.id, db_file.upload_area_id)
         self.assertEqual("some.json", db_file.name)
+
+    def test__store_redundant_file__only_uploaded_once(self):
+        db_area = self.create_upload_area()
+        area = UploadArea(uuid=db_area.uuid)
+        filename = "somefile.json"
+        content_type = 'application/json; dcp-type="metadata/sample"'
+        content = "exquisite corpse"
+
+        # Upload the file twice
+        first_upload_file = area.store_file(filename, content=content, content_type=content_type)
+        second_upload_file = area.store_file(filename, content=content, content_type=content_type)
+
+        # Make sure the file is only there once
+        data = area.ls()
+        self.assertEquals(len(data['files']), 1)
+
+        # Assert that the info of the two files is exactly the same. If the files were uploaded more than once,
+        # the last modified time would change so this check is sufficient to verify that the file was not re-uploaded.
+        self.assertEquals(first_upload_file.info(), second_upload_file.info())
 
     def test_ls__returns_info_on_all_files_in_upload_area(self):
         db_area = self.create_upload_area()
