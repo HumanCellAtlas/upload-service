@@ -1,23 +1,19 @@
-import json
-import os
-import uuid
-import time
 import base64
+import json
+import time
+import uuid
 
 import requests
 from jwt import encode
-from tenacity import retry, stop_after_attempt, wait_fixed
 
-from .exceptions import UploadException
-from .logging import get_logger
 from .database import UploadDB
+from .logging import get_logger
 from .upload_config import UploadConfig, UploadOutgoingIngestAuthConfig
 
 logger = get_logger(__name__)
 
 
 class IngestNotifier:
-
     INGEST_ENDPOINTS = {"file_uploaded": "messaging/fileUploadInfo",
                         "file_validated": "messaging/fileValidationResult"}
 
@@ -43,6 +39,12 @@ class IngestNotifier:
 
     def format_and_send_notification(self, payload):
         self._validate_payload(payload)
+
+        if self._is_dev_upload_area(payload):
+            logger.info(f"Skipping sending notification for area {payload.get('upload_area_id')} because it was "
+                        f"identified as a development upload area.")
+            return None
+
         notification_id = str(uuid.uuid4())
         self._create_or_update_db_notification(notification_id, "DELIVERING", payload)
         notification_successful = False
@@ -79,7 +81,8 @@ class IngestNotifier:
 
     def get_service_jwt(self):
         # This function is taken directly from auth best practice docs in hca gitlab
-        # https://allspark.dev.data.humancellatlas.org/dcp-ops/docs/wikis/Security/Authentication%20and%20Authorization/Setting%20up%20DCP%20Auth
+        # https://allspark.dev.data.humancellatlas.org/dcp-ops/docs/wikis/Security/Authentication%20and
+        # %20Authorization/Setting%20up%20DCP%20Auth
         iat = time.time()
         exp = iat + 3600
         payload = {'iss': self.gcp_service_acct_creds["client_email"],
@@ -112,6 +115,13 @@ class IngestNotifier:
         }
         return notification_props
 
+    def _is_dev_upload_area(self, payload):
+        if payload.get("upload_area_id").startswith("deadbeef"):
+            return True
+        return False
+
     def _validate_payload(self, payload):
+        """ Validates the payload by making sure that the payload is of a dictionary structure and contains an
+        upload_area_id."""
         assert type(payload) is dict, "payload is not dict"
         assert payload.get("upload_area_id") is not None, "upload_area_id is not in payload"
