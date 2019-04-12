@@ -23,11 +23,12 @@ class UploadedFile:
     @classmethod
     def create(cls, upload_area, checksums={}, name=None, content_type=None, data=None):
         """ Check if the file exists already and if so, return it. """
+        obj_key = f"{upload_area.uuid}/{name}"
 
         found_file = None
         try:
-            obj = s3_client.head_object(Bucket=upload_area.bucket_name, Key=name)
-            if obj and obj.containsKey('Metadata'):
+            obj = s3_client.head_object(Bucket=upload_area.bucket_name, Key=obj_key)
+            if obj and 'Metadata' in obj:
                 if obj['Metadata'] == checksums:
                     found_file = obj
         except ClientError:
@@ -36,9 +37,8 @@ class UploadedFile:
             pass
 
         if found_file:
-            return UploadedFile.from_s3_key(upload_area, found_file['Key'])
+            return UploadedFile.from_s3_key(upload_area, obj_key)
 
-        obj_key = f"{upload_area.uuid}/{name}"
         s3_client.put_object(Body=data, ContentType=content_type, Bucket=upload_area.bucket_name, Key=obj_key,
                              Metadata=checksums)
         s3_object = upload_area.s3_object_for_file(name)
