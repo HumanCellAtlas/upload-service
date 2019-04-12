@@ -4,32 +4,13 @@ set -euo pipefail
 
 api_gateway_name="upload.lambdas.api_server"
 
-set_api_id() {
-    # Identify the id of our API Gateway by finding a gateway with a REST API with resource with an integration that
-    # executes our lambda.
-    echo "Finding API ID:"
-    for api_id in $(aws apigateway get-rest-apis | jq -r ".items[] | select(.name==\"${api_gateway_name}\") | .id") ; do
-        echo "    checking api ${api_id}"
-        for resource_id in $(aws apigateway get-resources --rest-api-id $api_id | jq -r .items[].id); do
-            echo "        checking resource ${resource_id}"
-            aws apigateway get-integration --rest-api-id $api_id --resource-id $resource_id --http-method GET >/dev/null 2>&1 || continue
-            uri=$(aws apigateway get-integration --rest-api-id $api_id --resource-id $resource_id --http-method GET | jq -r .uri)
-            if [[ $uri == *"$lambda_arn"* ]]; then
-                echo "            Found id! ${api_id}"
-                export api_id
-                return
-            fi
-        done
-    done
-}
-
 function setup_deployed_json() {
     deployed_json=".chalice/deployed.json"
     if [[ -z $lambda_arn ]]; then
         echo "Lambda function $lambda_name not found, resetting Chalice config"
         rm -f "$deployed_json"
     else
-        set_api_id
+        export api_id=$(../scripts/get_api_id "$api_gateway_name" "$lambda_name")
         echo "API Gateway ID = ${api_id}"
         cat "$deployed_json" | jq .$stage.api_handler_arn=env.lambda_arn | jq .$stage.rest_api_id=env.api_id | sponge "$deployed_json"
     fi

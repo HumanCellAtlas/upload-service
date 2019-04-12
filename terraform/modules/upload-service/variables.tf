@@ -22,11 +22,18 @@ variable "staging_bucket_arn" {
   type = "string"
 }
 
-// API Lambda
+// DNS
+
+variable "parent_zone_domain_name" {
+  type = "string"
+}
 
 variable "upload_api_fqdn" {
   type = "string"
 }
+
+// API Lambda
+
 variable "ingest_api_key" {
   type = "string"
 }
