@@ -42,6 +42,11 @@ ingest_api_host = "api.ingest.<deployment_stage>.<parent_zone_domain_name>"
 // AUTH
 dcp_auth0_audience = "https://dev.data.humancellatlas.org/"
 gcp_service_acct_creds = "service-credentials-b64-encoded-string"
+openid_provider = "https://humancellatlas.auth0.com/"
+oidc_audience = "https://dev.data.humancellatlas.org/"
+oidc_group_claim = "https://auth.data.humancellatlas.org/group"
+oidc_email_claim = "https://auth.data.humancellatlas.org/email"
+authorized_gcp_project_domain = "human-cell-atlas-travis-test.iam.gserviceaccount.com"
 
 // Slack
 slack_webhook = "https://hooks.slack.com/services/<some-secret-stuff>"

@@ -18,6 +18,20 @@ securityDefinitions:
     type: apiKey
     name: Api-Key
     in: header
+  dcpAuth:
+    description: >
+      The following claims must be present in the JWT:
+      - '{{OIDC_GROUP_CLAIM}}': the user group this user belongs.
+      - 'iss': must be {{OPENID_PROVIDER}} or a trusted google project.
+      - 'aud': audience must match {{API_DOMAIN_NAME}}.
+      - '{{OIDC_EMAIL_CLAIM}}': the email of the requester
+    type: oauth2
+    flow: implicit
+    authorizationUrl: https://auth.data.humancellatlas.org/authorize
+    scopes:
+      email: This scope value requests access to the email and email_verified Claims.
+      openid: see http://openid.net/specs/openid-connect-core-1_0.html#ScopeClaims
+      offline_access: see http://openid.net/specs/openid-connect-core-1_0.html#OfflineAccessPrivacy
 
 paths:
   /version:
@@ -66,6 +80,7 @@ paths:
         - For Ingestion Service Use Only
       security:
         - api_key: []
+        - dcpAuth: []
       parameters:
         - name: upload_area_uuid
           in: path
@@ -106,6 +121,7 @@ paths:
         - For Ingestion Service Use Only
       security:
         - api_key: []
+        - dcpAuth: []
       parameters:
         - name: upload_area_uuid
           in: path
@@ -269,6 +285,7 @@ paths:
         - For Ingestion Service Use Only
       security:
         - api_key: []
+        - dcpAuth: []
       parameters:
         - name: upload_area_uuid
           in: path
@@ -380,6 +397,7 @@ paths:
         - For Ingestion Service Use Only
       security:
         - api_key: []
+        - dcpAuth: []
       parameters:
         - name: Api-Key
           in: header
@@ -487,6 +505,7 @@ paths:
         - For Ingestion Service Use Only
       security:
         - api_key: []
+        - dcpAuth: []
       parameters:
         - name: Api-Key
           in: header
@@ -608,6 +627,7 @@ paths:
         - Upload Service Internal Use Only
       security:
         - api_key: []
+        - dcpAuth: []
       parameters:
         - name: upload_area_uuid
           in: path
@@ -661,6 +681,7 @@ paths:
         - Upload Service Internal Use Only
       security:
         - api_key: []
+        - dcpAuth: []
       parameters:
         - name: upload_area_uuid
           in: path

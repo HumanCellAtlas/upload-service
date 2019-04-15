@@ -42,3 +42,20 @@ resource "aws_secretsmanager_secret_version" "outgoing_ingest_auth" {
 }
 SECRETS_JSON
 }
+
+resource "aws_secretsmanager_secret" "incoming_service_auth" {
+  name = "dcp/upload/${var.deployment_stage}/incoming_auth"
+}
+
+resource "aws_secretsmanager_secret_version" "incoming_service_auth" {
+  secret_id = "${aws_secretsmanager_secret.incoming_service_auth.id}"
+  secret_string = <<SECRETS_JSON
+{
+  "openid_provider": "${var.openid_provider}",
+  "oidc_audience": "${var.oidc_audience}",
+  "oidc_group_claim": "${var.oidc_group_claim}",
+  "oidc_email_claim": "${var.oidc_email_claim}",
+  "authorized_gcp_project_domain": "${var.authorized_gcp_project_domain}"
+}
+SECRETS_JSON
+}

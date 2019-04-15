@@ -103,6 +103,26 @@ variable "gcp_service_acct_creds" {
   type = "string"
 }
 
+variable "openid_provider" {
+  type = "string"
+}
+
+variable "oidc_audience" {
+  type = "string"
+}
+
+variable "oidc_group_claim" {
+  type = "string"
+}
+
+variable "oidc_email_claim" {
+  type = "string"
+}
+
+variable "authorized_gcp_project_domain" {
+  type = "string"
+}
+
 # Data Sources
 
 data "aws_caller_identity" "current" {}

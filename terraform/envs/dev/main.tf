@@ -60,6 +60,11 @@ module "upload-service" {
   // AUTH
   dcp_auth0_audience = "${var.dcp_auth0_audience}"
   gcp_service_acct_creds = "${var.gcp_service_acct_creds}"
+  openid_provider = "${var.openid_provider}"
+  oidc_audience = "${var.oidc_audience}"
+  oidc_group_claim = "${var.oidc_group_claim}"
+  oidc_email_claim = "${var.oidc_email_claim}"
+  authorized_gcp_project_domain = "${var.authorized_gcp_project_domain}"
 
   // Slack
   slack_webhook = "${var.slack_webhook}"
