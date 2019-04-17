@@ -5,24 +5,23 @@ import uuid
 
 import boto3
 from dcplib.media_types import DcpMediaType
-from tenacity import retry, wait_fixed, stop_after_attempt
 
 from .checksum_event import ChecksumEvent
 from .client_side_checksum_handler import ClientSideChecksumHandler
 from .dss_checksums import DssChecksums
 from .exceptions import UploadException
 from .logging import get_logger
+from .sqs_queue import DeletionSQSQueue
 from .upload_config import UploadConfig
 from .uploaded_file import UploadedFile
 
 if not os.environ.get("CONTAINER"):
     from .database import UploadDB
 
-logger = get_logger(__name__)
+LOGGER = get_logger(__name__)
 
-s3 = boto3.resource('s3')
-sqs = boto3.resource('sqs')
-lambda_client = boto3.client('lambda')
+S3 = boto3.resource('s3')
+LAMBDA_CLIENT = boto3.client('lambda')
 
 
 class UploadArea:
@@ -34,12 +33,22 @@ class UploadArea:
         self.status = None
         self.key_prefix = f"{self.uuid}/"
         self.key_prefix_length = len(self.key_prefix)
-        self._bucket = s3.Bucket(self.bucket_name)
+        self._bucket = S3.Bucket(self.bucket_name)
         self.db = UploadDB()
         self._db_load()
 
     def __str__(self):
         return f"UploadArea(id={self.db_id}, uuid={self.uuid}, status={self.status})"
+
+    @staticmethod
+    def _get_and_check_config():
+        config = UploadConfig()
+        assert config.bucket_name is not None, "bucket_name is not in config"
+        assert config.csum_upload_q_url is not None, "csum_upload_q_url is not in config"
+        assert config.area_deletion_q_url is not None, "area_deletion_q_url is not in config"
+        assert config.area_deletion_lambda_name is not None, "area_deletion_lambda_name is not in config"
+        assert config.upload_submitter_role_arn is not None, "upload_submitter_role_arn is not in config"
+        return config
 
     @property
     def bucket_name(self):
@@ -69,10 +78,7 @@ class UploadArea:
 
     def is_extant(self) -> bool:
         self._db_load()
-        if self.db_id and self.status != 'DELETED':
-            return True
-        else:
-            return False
+        return bool(self.db_id and self.status != 'DELETED')
 
     def credentials(self):
         self._db_load()
@@ -115,7 +121,7 @@ class UploadArea:
                 }
             ]
         })
-        logger.debug(policy_json)
+        LOGGER.debug(policy_json)
         response = sts.assume_role(
             RoleArn=self.config.upload_submitter_role_arn,
             RoleSessionName=self.uuid,
@@ -148,45 +154,6 @@ class UploadArea:
     def s3_object_for_file(self, filename):
         return self._bucket.Object(self.key_prefix + filename)
 
-    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(5))
-    def add_uploaded_file_to_csum_daemon_sqs(self, filename):
-        payload = {
-            'Records': [{
-                'eventName': 'ObjectCreated:Put',
-                "s3": {
-                    "bucket": {
-                        "name": f"{self.bucket_name}"
-                    },
-                    "object": {
-                        "key": f"{self.key_prefix}{filename}"
-                    }
-                }
-            }]
-        }
-        response = sqs.meta.client.send_message(QueueUrl=self.config.csum_upload_q_url,
-                                                MessageBody=json.dumps(payload))
-        status = response['ResponseMetadata']['HTTPStatusCode']
-        if status != 200:
-            raise UploadException(status=500, title="Internal error",
-                                  detail=f"Adding file upload message for {self.key_prefix}{filename} "
-                                  f"was unsuccessful to SQS {self.config.csum_upload_q_url} )")
-
-    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(5))
-    def add_upload_area_to_delete_sqs(self):
-        self.status = "DELETION_QUEUED"
-        self._db_update()
-        payload = {
-            'area_uuid': f"{self.uuid}"
-        }
-        response = sqs.meta.client.send_message(QueueUrl=self.config.area_deletion_q_url,
-                                                MessageBody=json.dumps(payload))
-        status = response['ResponseMetadata']['HTTPStatusCode']
-        if status != 200:
-            raise UploadException(status=500, title="Internal error",
-                                  detail=f"Adding delete message for area {self.uuid} \
-                                        was unsuccessful to sqs {self.config.area_deletion_q_url} )")
-        logger.info(f"added deletion of area {self.uuid} to sqs")
-
     def store_file(self, filename, content, content_type):
         media_type = DcpMediaType.from_string(content_type)
         if 'dcp-type' not in media_type.parameters:
@@ -214,6 +181,12 @@ class UploadArea:
         checksum_event.update_record()
         return file
 
+    def add_upload_area_to_delete_sqs(self):
+        self.status = "DELETION_QUEUED"
+        self._db_update()
+        DeletionSQSQueue(self).enqueue()
+        return self.status
+
     def uploaded_file(self, filename):
         key = f"{self.key_prefix}{filename}"
         return UploadedFile.from_s3_key(self, key)
@@ -232,7 +205,7 @@ class UploadArea:
             "WHERE file.upload_area_id = %s GROUP BY status;", (self.db_id,))
         results = query_result.fetchall()
         checksumming_file_count = 0
-        if len(results) > 0:
+        if results:
             for status in results:
                 checksum_status[status[0]] = status[1]
                 checksumming_file_count += status[1]
@@ -252,7 +225,7 @@ class UploadArea:
             'VALIDATED': 0,
             'SCHEDULED': 0
         }
-        if len(results) > 0:
+        if results:
             for status in results:
                 validation_status_dict[status[0]] = status[1]
         return validation_status_dict
@@ -263,18 +236,9 @@ class UploadArea:
         results = query_result.fetchall()
         return results[0][0]
 
-    def _get_and_check_config(self):
-        config = UploadConfig()
-        assert config.bucket_name is not None, "bucket_name is not in config"
-        assert config.csum_upload_q_url is not None, "csum_upload_q_url is not in config"
-        assert config.area_deletion_q_url is not None, "area_deletion_q_url is not in config"
-        assert config.area_deletion_lambda_name is not None, "area_deletion_lambda_name is not in config"
-        assert config.upload_submitter_role_arn is not None, "upload_submitter_role_arn is not in config"
-        return config
-
     def _file_list(self):
         file_list = []
-        paginator = s3.meta.client.get_paginator('list_objects')
+        paginator = S3.meta.client.get_paginator('list_objects')
         for page in paginator.paginate(Bucket=self.bucket_name, Prefix=self.key_prefix):
             if 'Contents' in page:
                 for o in page['Contents']:
@@ -283,24 +247,23 @@ class UploadArea:
         return file_list
 
     def _empty_upload_area(self):
-        logger.info(f"starting deletion of area {self.uuid}")
+        LOGGER.info(f"starting deletion of area {self.uuid}")
         lambda_timeout = self._retrieve_upload_area_deletion_lambda_timeout() - 30
         deletion_start_time = time.time()
-        paginator = s3.meta.client.get_paginator('list_objects')
+        paginator = S3.meta.client.get_paginator('list_objects')
         for page in paginator.paginate(Bucket=self.bucket_name, Prefix=self.uuid):
             if 'Contents' in page:
                 for o in page['Contents']:
                     elapsed_time = time.time() - deletion_start_time
                     if elapsed_time > lambda_timeout:
-                        # Lambda will timeout in less than 1 minute. Re-add this area to deletion sqs.
                         self.add_upload_area_to_delete_sqs()
-                        return "DELETION_QUEUED"
-                    s3.meta.client.delete_object(Bucket=self.bucket_name, Key=o['Key'])
-        logger.info(f"completed deletion of area {self.uuid}")
+                        return self.status
+                    S3.meta.client.delete_object(Bucket=self.bucket_name, Key=o['Key'])
+        LOGGER.info(f"completed deletion of area {self.uuid}")
         return "DELETED"
 
     def _retrieve_upload_area_deletion_lambda_timeout(self):
-        response = lambda_client.get_function(FunctionName=self.config.area_deletion_lambda_name)
+        response = LAMBDA_CLIENT.get_function(FunctionName=self.config.area_deletion_lambda_name)
         return response['Configuration']['Timeout']
 
     def _db_load(self):

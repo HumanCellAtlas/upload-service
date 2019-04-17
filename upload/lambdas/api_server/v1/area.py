@@ -5,6 +5,7 @@ import requests
 from .. import return_exceptions_as_http_errors, require_authenticated
 from ....common.validation_scheduler import ValidationScheduler
 from ....common.upload_area import UploadArea
+from ....common.sqs_queue import CsumSQSQueue, DeletionSQSQueue
 from ....common.uploaded_file import UploadedFile
 from ....common.dss_checksums import DssChecksums
 from ....common.checksum_event import ChecksumEvent
@@ -56,7 +57,7 @@ def store_file(upload_area_uuid: str, filename: str, body: str):
 @return_exceptions_as_http_errors
 def file_uploaded_notification(upload_area_uuid: str, filename: str):
     upload_area = _load_upload_area(upload_area_uuid)
-    upload_area.add_uploaded_file_to_csum_daemon_sqs(filename)
+    CsumSQSQueue(upload_area, filename).enqueue()
     return None, requests.codes.accepted
 
 
