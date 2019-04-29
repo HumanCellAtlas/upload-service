@@ -312,6 +312,31 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         response = self.client.post(f"/v1/area/{area_uuid}/filename123")
         self.assertEqual(404, response.status_code)
 
+    def test_add_uploaded_file_to_csum_daemon_sqs(self):
+        area_uuid = self._create_area()
+        filename = "filename123"
+
+        UploadArea(area_uuid).add_file_to_csum_sqs(filename)
+
+        message = self.sqs.meta.client.receive_message(QueueUrl='csum_sqs_url')
+        message_body = json.loads(message['Messages'][0]['Body'])
+
+        s3_key = message_body['Records'][0]['s3']['object']['key']
+        s3_bucket = message_body['Records'][0]['s3']['bucket']['name']
+        self.assertEqual(s3_key, f"{area_uuid}/filename123")
+        self.assertEqual(s3_bucket, "bogobucket")
+
+    def test_add_upload_area_to_delete_sqs(self):
+        area_uuid = self._create_area()
+
+        UploadArea(area_uuid).add_to_delete_sqs()
+        message = self.sqs.meta.client.receive_message(QueueUrl='delete_sqs_url')
+
+        message_body = json.loads(message['Messages'][0]['Body'])
+        self.assertEqual(message_body['area_uuid'], area_uuid)
+        record = UploadDB().get_pg_record("upload_area", area_uuid, column='uuid')
+        self.assertEqual(record['status'], "DELETION_QUEUED")
+
 
 if __name__ == '__main__':
     unittest.main()

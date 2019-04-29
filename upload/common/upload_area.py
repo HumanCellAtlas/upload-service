@@ -4,6 +4,7 @@ import time
 import uuid
 
 import boto3
+from dcplib.aws.sqs_handler import SQSHandler
 from dcplib.media_types import DcpMediaType
 
 from .checksum_event import ChecksumEvent
@@ -11,7 +12,6 @@ from .client_side_checksum_handler import ClientSideChecksumHandler
 from .dss_checksums import DssChecksums
 from .exceptions import UploadException
 from .logging import get_logger
-from .sqs_queue import DeletionSQSQueue
 from .upload_config import UploadConfig
 from .uploaded_file import UploadedFile
 
@@ -36,6 +36,8 @@ class UploadArea:
         self._bucket = S3.Bucket(self.bucket_name)
         self.db = UploadDB()
         self._db_load()
+        self.checksum_queue = SQSHandler(queue_url=self.config.csum_upload_q_url)
+        self.deletion_queue = SQSHandler(queue_url=self.config.area_deletion_q_url)
 
     def __str__(self):
         return f"UploadArea(id={self.db_id}, uuid={self.uuid}, status={self.status})"
@@ -181,11 +183,34 @@ class UploadArea:
         checksum_event.update_record()
         return file
 
-    def add_upload_area_to_delete_sqs(self):
+    def add_to_delete_sqs(self):
+        """ Add itself to theupload area deletion queue to be deleted and sets the status based on the status of the
+        queue. """
         self.status = "DELETION_QUEUED"
         self._db_update()
-        DeletionSQSQueue(self).enqueue()
+        payload = {
+            'area_uuid': f"{self.uuid}"
+        }
+        self.deletion_queue.add_message_to_queue(payload)
         return self.status
+
+    def add_file_to_csum_sqs(self, filename):
+        """ Given a filename, adds the S3 object with the given filename in this current bucket to the checksum queue
+        for server-side checksums to be computed."""
+        payload = {
+            'Records': [{
+                'eventName': 'ObjectCreated:Put',
+                "s3": {
+                    "bucket": {
+                        "name": f"{self.bucket_name}"
+                    },
+                    "object": {
+                        "key": f"{self.key_prefix}{filename}"
+                    }
+                }
+            }]
+        }
+        self.checksum_queue.add_message_to_queue(payload)
 
     def uploaded_file(self, filename):
         key = f"{self.key_prefix}{filename}"
@@ -256,7 +281,7 @@ class UploadArea:
                 for o in page['Contents']:
                     elapsed_time = time.time() - deletion_start_time
                     if elapsed_time > lambda_timeout:
-                        self.add_upload_area_to_delete_sqs()
+                        self.add_to_delete_sqs()
                         return self.status
                     S3.meta.client.delete_object(Bucket=self.bucket_name, Key=o['Key'])
         LOGGER.info(f"completed deletion of area {self.uuid}")
