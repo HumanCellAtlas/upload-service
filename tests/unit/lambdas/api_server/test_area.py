@@ -1,18 +1,20 @@
 #!/usr/bin/env python3.6
 
-import os, sys, unittest, uuid, json
+import json
+import os
+import sys
+import unittest
+import uuid
 
 from botocore.exceptions import ClientError
-
-from moto import mock_sts
 from mock import patch
+from moto import mock_sts
 
+from upload.common.database import UploadDB
+from upload.common.upload_area import UploadArea
+from upload.common.upload_config import UploadConfig
 from . import client_for_test_api_server
 from ... import UploadTestCaseUsingMockAWS, EnvironmentSetup
-
-from upload.common.upload_area import UploadArea
-from upload.common.database import UploadDB
-from upload.common.upload_config import UploadConfig
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
@@ -296,7 +298,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
         area_uuid = self._create_area()
 
         response = self.client.post(f"/v1/area/{area_uuid}/filename123")
-        message = self.sqs.meta.client.receive_message(QueueUrl='bogo_url')
+        message = self.sqs.meta.client.receive_message(QueueUrl='csum_sqs_url')
 
         message_body = json.loads(message['Messages'][0]['Body'])
         s3_key = message_body['Records'][0]['s3']['object']['key']
@@ -312,11 +314,13 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
 
     def test_add_uploaded_file_to_csum_daemon_sqs(self):
         area_uuid = self._create_area()
+        filename = "filename123"
 
-        UploadArea(area_uuid).add_uploaded_file_to_csum_daemon_sqs("filename123")
-        message = self.sqs.meta.client.receive_message(QueueUrl='bogo_url')
+        UploadArea(area_uuid).add_file_to_csum_sqs(filename)
 
+        message = self.sqs.meta.client.receive_message(QueueUrl='csum_sqs_url')
         message_body = json.loads(message['Messages'][0]['Body'])
+
         s3_key = message_body['Records'][0]['s3']['object']['key']
         s3_bucket = message_body['Records'][0]['s3']['bucket']['name']
         self.assertEqual(s3_key, f"{area_uuid}/filename123")
@@ -325,7 +329,7 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
     def test_add_upload_area_to_delete_sqs(self):
         area_uuid = self._create_area()
 
-        UploadArea(area_uuid).add_upload_area_to_delete_sqs()
+        UploadArea(area_uuid).add_to_delete_sqs()
         message = self.sqs.meta.client.receive_message(QueueUrl='delete_sqs_url')
 
         message_body = json.loads(message['Messages'][0]['Body'])

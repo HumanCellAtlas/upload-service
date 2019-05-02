@@ -84,7 +84,7 @@ class UploadTestCase(unittest.TestCase):
         'bucket_name': 'bogobucket',
         'csum_job_q_arn': 'bogo_arn',
         'csum_job_role_arn': 'bogo_role_arn',
-        'csum_upload_q_url': 'bogo_url',
+        'csum_upload_q_url': 'csum_sqs_url',
         'ingest_api_host': 'test_ingest_api_host',
         'slack_webhook': 'bogo_slack_url',
         'staging_bucket_arn': 'staging_bucket_arn',
@@ -183,6 +183,7 @@ class UploadTestCaseUsingMockAWS(UploadTestCase):
 
         self.sqs = boto3.resource('sqs')
         self.sqs.create_queue(QueueName=f"bogo_url")  # TODO: what is this?  Needs comment or renamed.
+        self.sqs.create_queue(QueueName=f"csum_sqs_url")
         self.sqs.create_queue(QueueName=f"delete_sqs_url")
         self.sqs.create_queue(QueueName=f"test_validation_q_url")
 
