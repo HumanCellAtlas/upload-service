@@ -39,7 +39,7 @@ class WaitFor:
 
     def _call_func(self):
         retval = self.func(*self.func_args)
-        print(f"After {self._elapsed_time()}: {self._function_signature()} returned {retval}")
+        print(f"\tafter {self._elapsed_time()}: {self._function_signature()} returned {retval}")
         return retval
 
     def _wait_until_next_check_time(self):

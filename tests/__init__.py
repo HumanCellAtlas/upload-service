@@ -132,7 +132,7 @@ FixtureFile.register(name='10241MB_file',
                      })
 
 FixtureFile.register(name='metadata_file.json',
-                     contents={'test_obj': 'test_obj'},
+                     contents='{"test_obj": "test_obj"}',
                      checksums={
                          "s3_etag": "98b3a7471805e97a493c0e42763abe14",
                          "sha1": "f3c6f383698e3abf90721e9705d99d065708d405",
