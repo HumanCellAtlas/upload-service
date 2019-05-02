@@ -5,12 +5,11 @@ from botocore.exceptions import ClientError
 from moto import mock_sts
 from sqlalchemy.orm.exc import NoResultFound
 
-from .. import UploadTestCaseUsingMockAWS
-
 from upload.common.database_orm import DBSessionMaker, DbUploadArea, DbFile
+from upload.common.exceptions import UploadException
 from upload.common.upload_area import UploadArea
 from upload.common.uploaded_file import UploadedFile
-from upload.common.exceptions import UploadException
+from .. import UploadTestCaseUsingMockAWS
 
 
 class UploadAreaTest(UploadTestCaseUsingMockAWS):
@@ -57,7 +56,6 @@ class TestUploadAreaCreationExistenceAndDeletion(UploadAreaTest):
         db_area = self.create_upload_area()
 
         self.assertTrue(UploadArea(db_area.uuid).is_extant())
-        pass
 
     def test_delete__marks_area_delete_and_deletes_objects(self):
         db_area = self.create_upload_area(db_session=self.db)
@@ -146,13 +144,13 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
 
         s3_key = f"{db_area.uuid}/some.json"
         s3_etag = "18f17fbfdd21cf869d664731e10d4ffd"
-        o1 = self.upload_bucket.Object(s3_key)
-        o1.load()
+        obj = self.upload_bucket.Object(s3_key)
+        obj.load()
         self.assertEqual({
             'upload_area_id': db_area.uuid,
             'name': 'some.json',
             'size': 16,
-            'last_modified': o1.last_modified.isoformat(),
+            'last_modified': obj.last_modified.isoformat(),
             'content_type': 'application/json; dcp-type="metadata/sample"',
             'url': f"s3://{self.upload_config.bucket_name}/{db_area.uuid}/some.json",
             'checksums': {
@@ -170,13 +168,33 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
         self.assertEqual(db_area.id, db_file.upload_area_id)
         self.assertEqual("some.json", db_file.name)
 
+    def test__store_redundant_file__only_uploaded_once(self):
+        db_area = self.create_upload_area()
+        area = UploadArea(uuid=db_area.uuid)
+        filename = "somefile.json"
+        content_type = 'application/json; dcp-type="metadata/sample"'
+        content = "exquisite corpse"
+
+        # Upload the file twice
+        first_upload_file = area.store_file(filename, content=content, content_type=content_type)
+        second_upload_file = area.store_file(filename, content=content, content_type=content_type)
+
+        # Make sure the file is only there once
+        data = area.ls()
+        self.assertEqual(len(data['files']), 1)
+
+        # Assert that the info of the two files is exactly the same. If the files were uploaded more than once,
+        # the last modified time would change so this check is sufficient to verify that the file was not re-uploaded.
+        self.assertEqual(first_upload_file.info(), second_upload_file.info())
+
     def test_ls__returns_info_on_all_files_in_upload_area(self):
         db_area = self.create_upload_area()
-        o1 = self.mock_upload_file_to_s3(db_area.uuid, 'file1.json',
-                                         content_type='application/json; dcp-type="metadata/foo"')
-        o2 = self.mock_upload_file_to_s3(db_area.uuid, 'file2.fastq.gz',
-                                         content_type='application/octet-stream; dcp-type=data',
-                                         checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'})
+        file_1_object = self.mock_upload_file_to_s3(db_area.uuid, 'file1.json',
+                                                    content_type='application/json; dcp-type="metadata/foo"')
+        file_2_object = self.mock_upload_file_to_s3(db_area.uuid, 'file2.fastq.gz',
+                                                    content_type='application/octet-stream; dcp-type=data',
+                                                    checksums={'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c',
+                                                               'crc32c': 'd'})
 
         area = UploadArea(uuid=db_area.uuid)
         data = area.ls()
@@ -187,7 +205,7 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
         self.assertEqual({
             'upload_area_id': db_area.uuid,
             'name': 'file1.json',
-            'last_modified': o1.last_modified.isoformat(),
+            'last_modified': file_1_object.last_modified.isoformat(),
             'content_type': 'application/json; dcp-type="metadata/foo"',
             'url': f"s3://{self.upload_config.bucket_name}/{db_area.uuid}/file1.json",
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
@@ -195,7 +213,7 @@ class TestUploadAreaFileManipulation(UploadAreaTest):
         self.assertEqual({
             'upload_area_id': db_area.uuid,
             'name': 'file2.fastq.gz',
-            'last_modified': o2.last_modified.isoformat(),
+            'last_modified': file_2_object.last_modified.isoformat(),
             'content_type': 'application/octet-stream; dcp-type=data',
             'url': f"s3://{self.upload_config.bucket_name}/{db_area.uuid}/file2.fastq.gz",
             'checksums': {'s3_etag': 'a', 'sha1': 'b', 'sha256': 'c', 'crc32c': 'd'}
