@@ -71,7 +71,7 @@ class TestDssChecksums(UploadTestCaseUsingMockAWS):
 
         self.assertEqual(_checksums, _dss_checksums)
 
-    def test__upload_file_with_missing_clientside_checksums__fails(self):
+    def _test__upload_file_with_missing_clientside_checksums__fails(self):
         _filename = 'file'
         _checksums = {'crc32c': '3', 'sha1': '1', 'sha256': '2', 's3_etag': '4'}
 
@@ -82,7 +82,7 @@ class TestDssChecksums(UploadTestCaseUsingMockAWS):
             _checksums.save_as_tags_on_s3_object()
             self.assertIn("crc32c was not found in the metadata of the file", str(_context_manager.output))
 
-    def test__upload_file_with_mismatched_clientside_checksum_fails(self):
+    def _test__upload_file_with_mismatched_clientside_checksum_fails(self):
         _filename = 'file'
         _checksums = {'crc32c': '3', 'sha1': '1', 'sha256': '2', 's3_etag': '4'}
 
