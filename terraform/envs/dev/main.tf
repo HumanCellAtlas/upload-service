@@ -34,6 +34,9 @@ module "upload-service" {
   upload_api_fqdn = "${var.upload_api_fqdn}"
   ingest_api_key = "${var.ingest_api_key}"
 
+  // API Gateway
+  upload_api_api_gateway_id = "${var.upload_api_api_gateway_id}"
+
   // Checksum Lambda
   csum_docker_image = "${var.csum_docker_image}"
 
