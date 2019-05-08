@@ -39,6 +39,12 @@ variable "ingest_api_key" {
   type = "string"
 }
 
+// API Gateway
+
+variable "upload_api_api_gateway_id" {
+  type = "string"
+}
+
 // Checksum Lambda
 
 variable "csum_docker_image" {
