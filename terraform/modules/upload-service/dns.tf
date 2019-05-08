@@ -18,15 +18,6 @@ resource "aws_api_gateway_domain_name" "upload" {
   }
 }
 
-data "external" "api_gateway" {
-  program = ["${path.cwd}/../../../scripts/get_api_id", "--json"]
-
-  query = {
-    api_gateway_name = "upload.lambdas.api_server"
-    lambda_name = "${aws_lambda_function.upload_api_lambda.function_name}"
-  }
-}
-
 resource "aws_route53_record" "upload" {
   name    = "${aws_api_gateway_domain_name.upload.domain_name}"
   type    = "A"
@@ -40,7 +31,7 @@ resource "aws_route53_record" "upload" {
 }
 
 resource "aws_api_gateway_base_path_mapping" "status_api" {
-  api_id      = "${lookup(data.external.api_gateway.result, "api_id")}"
+  api_id      = "${var.upload_api_api_gateway_id}"
   stage_name  = "${var.deployment_stage}"
   domain_name = "${aws_api_gateway_domain_name.upload.domain_name}"
 }

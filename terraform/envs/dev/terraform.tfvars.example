@@ -16,6 +16,9 @@ parent_zone_domain_name = "<deployment_stage>.data.humancellatlas.org"
 upload_api_fqdn = "upload.<deployment_stage>.<parent_zone_domain_name>"
 ingest_api_key = "xxxxxxxxxxxxxxxxxxxx"
 
+// API Gateway
+upload_api_api_gateway_id = "xxxxxxxxxx"
+
 // Checksum Lambda
 csum_docker_image = "humancellatlas/upload-checksummer:8"
 
