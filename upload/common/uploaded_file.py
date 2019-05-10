@@ -138,7 +138,7 @@ class UploadedFile:
 
     def retrieve_latest_file_validation_status_and_results(self):
         status = "UNSCHEDULED"
-        results = None
+        results = "N/A"
         query_results = self._db.run_query_with_params(
             "SELECT status, results->>'stdout' "
             "FROM validation "
