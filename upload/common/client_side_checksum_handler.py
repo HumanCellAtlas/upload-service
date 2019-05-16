@@ -47,30 +47,37 @@ class ClientSideChecksumHandler:
             pass
         else:
             if self._filename is not None:
-                with open(self._filename, 'rb') as _file_object:
-                    checksumCalculator = self.ChecksumCalculator(_file_object.read(), os.path.getsize(self._filename))
-                    self._checksums = checksumCalculator.compute()
+                checksumCalculator = self.ChecksumCalculator(os.path.getsize(self._filename), filename=self._filename)
+                self._checksums = checksumCalculator.compute()
             else:
                 checksumCalculator = self.ChecksumCalculator(
-                    self._data if isinstance(self._data, (bytes, bytearray)) else self._data.encode(),
-                    sys.getsizeof(self._data))
+                    sys.getsizeof(self._data),
+                    data=self._data if isinstance(self._data, (bytes, bytearray)) else self._data.encode())
                 self._checksums = checksumCalculator.compute()
 
     class ChecksumCalculator:
         """ The ChecksumCalculator encapsulates calling various library functions based on the required checksum to
         be calculated on a file."""
 
-        def __init__(self, data, data_size, checksums=CHECKSUM_NAMES):
+        def __init__(self, data_size, data=None, filename=None, checksums=CHECKSUM_NAMES):
             self._data = data
+            self._filename = filename
             self._data_size = data_size
             self._checksums = checksums
 
         def compute(self):
             """ Compute the checksum(s) for the given file and return a map of the value by the hash function name. """
             start_time = time.time()
-            _multipart_chunksize = get_s3_multipart_chunk_size(self._data_size)
-            with ChecksummingSink(_multipart_chunksize, hash_functions=self._checksums) as sink:
-                sink.write(self._data)
-                checksums = sink.get_checksums()
-                logger.info("Checksumming took %.2f milliseconds to compute" % ((time.time() - start_time) * 1000))
+            if self._data:
+                with ChecksummingSink(self._data_size, hash_functions=self._checksums) as sink:
+                    sink.write(self._data)
+                    checksums = sink.get_checksums()
+            elif self._filename:
+                _multipart_chunksize = get_s3_multipart_chunk_size(self._data_size)
+                with ChecksummingSink(_multipart_chunksize, hash_functions=self._checksums) as sink:
+                    with open(self._filename, 'rb') as _file_object:
+                        sink.write(_file_object.read(_multipart_chunksize))
+                    checksums = sink.get_checksums()
+
+            logger.info("Checksumming took %.2f milliseconds to compute" % ((time.time() - start_time) * 1000))
             return checksums
