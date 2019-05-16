@@ -246,7 +246,8 @@ class TestAreaApi(UploadTestCaseUsingMockAWS):
             'checksums': {'s3_etag': '1', 'sha1': '2', 'sha256': '3', 'crc32c': '4'}
         })
 
-    def test_file_info__for_missing_area_or_file__returns_404(self):
+    @patch('upload.common.uploaded_file.UploadedFile._s3_load.retry.sleep')
+    def test_file_info__for_missing_area_or_file__returns_404(self, mock_s3_load):
         response = self.client.get(f"/v1/area/bogoarea/bogofile")
         self.assertEqual(404, response.status_code)
 

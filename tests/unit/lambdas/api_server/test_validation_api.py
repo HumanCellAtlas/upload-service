@@ -272,7 +272,8 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(file_one_record['id'] in validation_file_db_ids, True)
         self.assertEqual(file_two_record['id'] in validation_file_db_ids, True)
 
-    def test_schedule_validation__without_files_in_payload__is_unsuccessful(self):
+    @patch('upload.common.uploaded_file.UploadedFile._s3_load.retry.sleep')
+    def test_schedule_validation__without_files_in_payload__is_unsuccessful(self, mock_s3_load):
         area_id = self._create_area()
 
         payload = {
