@@ -140,7 +140,7 @@ class TestValidatorHarness(UploadTestCaseUsingMockAWS):
             self.assertEqual(results['exit_code'], 0)
             self.assertEqual(results['status'], 'completed')
             self.assertEqual(results['validation_id'], self.validation_id)
-            self._verify_log_file_contents(expected_stdout="32883")
+            self._verify_log_file_contents(harness.validation_id, expected_stdout="32883")
             harness._unstage_files()
 
     def test__run_validator__runs_binary_and_catches_exit_code_and_stderr_for_validation_with_errors(self):
@@ -165,7 +165,8 @@ class TestValidatorHarness(UploadTestCaseUsingMockAWS):
             self.assertEqual(results['exit_code'], 1)
             self.assertEqual(results['status'], 'completed')
             self.assertEqual(results['validation_id'], self.validation_id)
-            self._verify_log_file_contents(expected_stderr=f"sum: {expected_file_path}: No such file or directory")
+            self._verify_log_file_contents(harness.validation_id,
+                                           expected_stderr=f"sum: {expected_file_path}: No such file or directory")
 
     @responses.activate
     def test__validate__contacts_upload_api_to_update_validation_record(self):
@@ -205,12 +206,14 @@ class TestValidatorHarness(UploadTestCaseUsingMockAWS):
             self.assertEqual(body_2['payload']['exception'], None)
             self.assertEqual(body_2['payload']['upload_area_id'], self.upload_area_id)
             self.assertEqual(body_2['payload']['names'], [self.filename])
-            self._verify_log_file_contents(expected_stdout="32883")  # OS X and Linux /usr/bin/sum output differs
+            self._verify_log_file_contents(harness.validation_id,
+                                           expected_stdout="32883")  # OS X and Linux /usr/bin/sum output differs
 
-    def _verify_log_file_contents(self, expected_stdout=None, expected_stderr=None):
+    def _verify_log_file_contents(self, validation_id, expected_stdout=None, expected_stderr=None):
         """ Check to make sure that the strings that are expected to be as part of stdout and stderr are present in
         the log file."""
-        _log_file_object = open(self.log_filename, 'r')
+        _filename = f"{self.log_filename}_{validation_id}"
+        _log_file_object = open(_filename, 'r')
         _contents = _log_file_object.read()
         if expected_stdout is not None:
             self.assertIn(expected_stdout, _contents)
