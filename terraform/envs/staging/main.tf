@@ -27,9 +27,15 @@ module "upload-service" {
   bucket_name_prefix = "${var.bucket_name_prefix}"
   staging_bucket_arn = "${var.staging_bucket_arn}"
 
+  // DNS
+  parent_zone_domain_name = "${var.parent_zone_domain_name}"
+
   // API Lambda
   upload_api_fqdn = "${var.upload_api_fqdn}"
   ingest_api_key = "${var.ingest_api_key}"
+
+  // API Gateway
+  upload_api_api_gateway_id = "${var.upload_api_api_gateway_id}"
 
   // Checksum Lambda
   csum_docker_image = "${var.csum_docker_image}"
@@ -37,10 +43,12 @@ module "upload-service" {
   // Validation Batch infrastructure.
   validation_cluster_ec2_key_pair = "${var.validation_cluster_ec2_key_pair}"
   validation_cluster_ami_id = "${var.validation_cluster_ami_id}"
+  validation_cluster_instance_type = "${var.validation_cluster_instance_type}"
   validation_cluster_min_vcpus = "${var.validation_cluster_min_vcpus}"
 
   // Checksumming Batch infrastructure.
   csum_cluster_ec2_key_pair = "${var.csum_cluster_ec2_key_pair}"
+  csum_cluster_instance_type = "${var.csum_cluster_instance_type}"
   csum_cluster_min_vcpus = "${var.csum_cluster_min_vcpus}"
 
   // Database

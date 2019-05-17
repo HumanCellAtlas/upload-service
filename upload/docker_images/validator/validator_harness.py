@@ -20,7 +20,7 @@ logger = get_logger(f"CHECKSUMMER [{os.environ.get('AWS_BATCH_JOB_ID')}]")
 
 class ValidatorHarness:
     DEFAULT_STAGING_AREA = "/data"
-    TIMEOUT = None
+    TIMEOUT = 3600  # kill job after 1 hour
 
     def __init__(self, path_to_validator, s3_urls_of_files_to_be_validated, staging_folder=None):
         self.path_to_validator = path_to_validator
@@ -30,12 +30,8 @@ class ValidatorHarness:
         self.version = self._find_version()
         self.job_id = os.environ['AWS_BATCH_JOB_ID']
         self.validation_id = os.environ['VALIDATION_ID']
-        self._log("VALIDATOR STARTING version={version}, job_id={job_id}, "
-                  "validation_id={validation_id} attempt={attempt}".format(
-                      version=self.version,
-                      job_id=self.job_id,
-                      validation_id=self.validation_id,
-                      attempt=os.environ['AWS_BATCH_JOB_ATTEMPT']))
+        self._log(f"VALIDATOR STARTING version={self.version}, job_id={self.job_id}, "
+                  f"validation_id={self.validation_id} attempt={os.environ['AWS_BATCH_JOB_ATTEMPT']}")
 
     def validate(self, test_only=False):
         self._log("VERSION {version}, attempt {attempt} with argv: {argv}".format(

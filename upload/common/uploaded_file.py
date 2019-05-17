@@ -7,6 +7,7 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 
 from .dss_checksums import DssChecksums
 from .exceptions import UploadException
+
 if not os.environ.get("CONTAINER"):
     from .database import UploadDB
 
@@ -15,22 +16,38 @@ s3_client = boto3.client('s3')
 
 
 class UploadedFile:
-
     """
     The UploadedFile class represents newly-uploaded or previously uploaded files.
     """
 
     @classmethod
-    def create(cls, upload_area, name=None, content_type=None, data=None):
+    def create(cls, upload_area, checksums={}, name=None, content_type=None, data=None):
+        """ Check if the file exists already and if so, return it. """
         obj_key = f"{upload_area.uuid}/{name}"
-        s3_client.put_object(Body=data, ContentType=content_type, Bucket=upload_area.bucket_name, Key=obj_key)
+
+        found_file = None
+        try:
+            obj = s3_client.head_object(Bucket=upload_area.bucket_name, Key=obj_key)
+            if obj and 'Metadata' in obj:
+                if obj['Metadata'] == checksums:
+                    found_file = obj
+        except ClientError:
+            # An exception from calling `head_object` indicates that no file with the specified name could be found
+            # in the specified bucket. No further action is needed since the file will be created.
+            pass
+
+        if found_file:
+            return UploadedFile.from_s3_key(upload_area, obj_key)
+
+        s3_client.put_object(Body=data, ContentType=content_type, Bucket=upload_area.bucket_name, Key=obj_key,
+                             Metadata=checksums)
         s3_object = upload_area.s3_object_for_file(name)
-        return cls(upload_area, s3object=s3_object)
+        return cls(upload_area, s3object=s3_object, recently_uploaded=True)
 
     @classmethod
     def from_s3_key(cls, upload_area, s3_key):
         s3object = s3.Bucket(upload_area.bucket_name).Object(s3_key)
-        return cls(upload_area, s3object=s3object)
+        return cls(upload_area, s3object=s3object, recently_uploaded=False)
 
     @classmethod
     def from_db_id(cls, db_id):
@@ -42,7 +59,7 @@ class UploadedFile:
         s3object = upload_area.s3_object_for_file(file_props['name'])
         return cls(upload_area, s3object=s3object)
 
-    def __init__(self, upload_area, s3object):
+    def __init__(self, upload_area, s3object, recently_uploaded=False):
         """
         The object of init() is to:
         - populate properties from the S3 object
@@ -63,7 +80,14 @@ class UploadedFile:
             "checksums": None
         }
 
-        self._s3_load()
+        if recently_uploaded:
+            # This is to account for s3 eventual consistency to ensure file gets checksummed.
+            # This may lead to api gateway timeouts that should be retried by client.
+            self.recently_uploaded = True
+            self._s3_load_with_long_retry()
+        else:
+            self.recently_uploaded = False
+            self._s3_load()
         self._populate_properties_from_s3_object()
 
         self._db = UploadDB()
@@ -132,7 +156,7 @@ class UploadedFile:
 
     def retrieve_latest_file_validation_status_and_results(self):
         status = "UNSCHEDULED"
-        results = None
+        results = "N/A"
         query_results = self._db.run_query_with_params(
             "SELECT status, results->>'stdout' "
             "FROM validation "
@@ -140,7 +164,7 @@ class UploadedFile:
             "INNER JOIN file ON validation_files.file_id = file.id "
             "WHERE file.id = %s;", (self.db_id,))
         rows = query_results.fetchall()
-        if len(rows) > 0:
+        if rows:
             status = rows[0][0]
             results = rows[0][1]
         return status, results
@@ -150,12 +174,23 @@ class UploadedFile:
         query_results = self._db.run_query_with_params("SELECT status FROM checksum \
             WHERE file_id = %s ORDER BY created_at DESC LIMIT 1;", (self.db_id,))
         rows = query_results.fetchall()
-        if len(rows) > 0:
+        if rows:
             status = rows[0][0]
         return status, self.checksums
 
-    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(5))
+    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(3))
     def _s3_load(self):
+        try:
+            self.s3object.load()
+        except ClientError as e:
+            if e.response['Error']['Code'] == '404':
+                raise UploadException(status=404, title="No such file",
+                                      detail=f"No such file in that upload area")
+            else:
+                raise e
+
+    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(150))
+    def _s3_load_with_long_retry(self):
         try:
             self.s3object.load()
         except ClientError as e:
@@ -182,12 +217,12 @@ class UploadedFile:
                                               sql_table.columns['s3_etag'] == s3_etag))
         result = self._db.run_query(query)
         rows = result.fetchall()
-        if len(rows) == 0:
+        if not rows:
             return None
-        elif len(rows) > 1:
+        if len(rows) > 1:
             raise UploadException(status=500, title=">1 match for File query",
                                   detail=f"{len(rows)} matched query for {s3_key} {s3_etag}")
-        elif len(rows) == 1:
+        else:
             if self.s3object:
                 # Sanity checks:
                 assert rows[0][result.keys().index('name')] == os.path.basename(s3_key)  # Yes, !Windows :)

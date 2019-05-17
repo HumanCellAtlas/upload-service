@@ -65,7 +65,8 @@ class EnvironmentSetup:
             if v:
                 os.environ[k] = v
             else:
-                del os.environ[k]
+                if k in os.environ:
+                    del os.environ[k]
 
     def __enter__(self):
         self.enter()
@@ -77,16 +78,19 @@ class EnvironmentSetup:
 class UploadTestCase(unittest.TestCase):
 
     BOGO_CONFIG = {
+        'api_key': 'bogo_api_key',
+        'area_deletion_q_url': 'delete_sqs_url',
+        'area_deletion_lambda_name': 'delete_lambda_name',
         'bucket_name': 'bogobucket',
         'csum_job_q_arn': 'bogo_arn',
-        'csum_upload_q_url': 'bogo_url',
-        'area_deletion_q_url': 'delete_sqs_url',
         'csum_job_role_arn': 'bogo_role_arn',
-        'upload_submitter_role_arn': 'bogo_submitter_role_arn',
-        'slack_webhook': 'bogo_slack_url',
-        'area_deletion_lambda_name': 'delete_lambda_name',
-        'staging_bucket_arn': 'staging_bucket_arn',
+        'csum_upload_q_url': 'csum_sqs_url',
         'ingest_api_host': 'test_ingest_api_host',
+        'slack_webhook': 'bogo_slack_url',
+        'staging_bucket_arn': 'staging_bucket_arn',
+        'upload_submitter_role_arn': 'bogo_submitter_role_arn',
+        'validation_job_q_arn': 'bogo_validation_job_q_arn',
+        'validation_job_role_arn': 'bogo_validation_job_role_arn',
         'validation_q_url': 'test_validation_q_url'
     }
 
@@ -103,8 +107,9 @@ class UploadTestCase(unittest.TestCase):
 
     def setUp(self):
         # Common Environment
-        if os.environ['DEPLOYMENT_STAGE'] in ['local', 'test']:
-            self.deployment_stage = os.environ['DEPLOYMENT_STAGE']
+        env_deployment_stage = os.environ.get('DEPLOYMENT_STAGE', 'test')
+        if env_deployment_stage in ['local', 'test']:
+            self.deployment_stage = env_deployment_stage
         else:
             self.deployment_stage = 'test'
         self.environment = {
@@ -177,7 +182,8 @@ class UploadTestCaseUsingMockAWS(UploadTestCase):
         self.upload_bucket.create()
 
         self.sqs = boto3.resource('sqs')
-        self.sqs.create_queue(QueueName=f"bogo_url")
+        self.sqs.create_queue(QueueName=f"bogo_url")  # TODO: what is this?  Needs comment or renamed.
+        self.sqs.create_queue(QueueName=f"csum_sqs_url")
         self.sqs.create_queue(QueueName=f"delete_sqs_url")
         self.sqs.create_queue(QueueName=f"test_validation_q_url")
 
@@ -188,13 +194,13 @@ class UploadTestCaseUsingMockAWS(UploadTestCase):
         if self.deployment_stage == 'local':
             self.sts_mock.stop()
 
-    def create_s3_object(self, object_key, bucket_name=None,
+    def create_s3_object(self, object_key, checksum_value={}, bucket_name=None,
                          content_type="application/octet-stream",
                          content="file_content"):
         bucket_name = bucket_name or self.upload_config.bucket_name
         s3 = boto3.resource('s3')
         s3object = s3.Bucket(bucket_name).Object(object_key)
-        s3object.put(Body=content, ContentType=content_type)
+        s3object.put(Body=content, ContentType=content_type, Metadata=checksum_value)
         return s3object
 
     """

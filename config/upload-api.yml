@@ -39,7 +39,7 @@ paths:
 
     head:
       summary: Check if an upload area exists
-      operationId: upload.lambdas.api_server.v1.area.head_upload_area
+      operationId: upload.lambdas.api_server.v1.area.area_exists
       description: |
         Check if an upload area exists.
       tags:
@@ -59,7 +59,7 @@ paths:
 
     post:
       summary: Create an Upload Area
-      operationId: upload.lambdas.api_server.v1.area.create
+      operationId: upload.lambdas.api_server.v1.area.create_area
       description: |
         Create an Upload Area. This endpoint is idempotent and can be called for an existing upload area.
       tags:
@@ -100,7 +100,7 @@ paths:
 
     delete:
       summary: Delete an Upload Area
-      operationId: upload.lambdas.api_server.v1.area.delete
+      operationId: upload.lambdas.api_server.v1.area.delete_area
       description: Schedule an Upload Area for deletion
       tags:
         - For Ingestion Service Use Only
@@ -133,40 +133,6 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-    get:
-      summary: List files in an upload area
-      operationId: upload.lambdas.api_server.v1.area.list_files
-      description: |
-        Provide a JSON object listing all the files in an upload area, including their checkums.
-      tags:
-        - All
-      parameters:
-        - name: upload_area_uuid
-          in: path
-          description: A RFC4122-compliant ID for the upload area.
-          required: true
-          type: string
-      responses:
-        200:
-          description: Here's your listing.
-          schema:
-            type: object
-            properties:
-              files:
-                type: array
-                items:
-                  $ref: "#/definitions/FileInfo"
-            required:
-              - files
-        404:
-          description: Could not find an upload area with that ID.
-          schema:
-            $ref: '#/definitions/Error'
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/Error'
-
   /v1/area/{upload_area_uuid}/credentials:
 
     post:
@@ -187,72 +153,6 @@ paths:
           description: Credentials were created.
         423:
           description: This upload area is currently locked.  No credentials can be issued.
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/Error'
-
-  /v1/area/{upload_area_uuid}/lock:
-
-    post:
-      summary: Lock an Upload Area
-      operationId: upload.lambdas.api_server.v1.area.lock
-      description: |
-        Lock an Upload area so that submitters may not add/delete/rename files in it.
-      tags:
-        - For Ingestion Service Use Only
-      security:
-        - api_key: []
-      parameters:
-        - name: upload_area_uuid
-          in: path
-          description: A RFC4122-compliant ID for the upload area.
-          required: true
-          type: string
-        - name: Api-Key
-          in: header
-          description: An authentication token provided by the service provider.
-          required: true
-          type: string
-      responses:
-        204:
-          description: Upload area is now locked.
-        401:
-          description: Unrecognized Api-Key.
-          schema:
-            $ref: '#/definitions/Error'
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/Error'
-
-    delete:
-      summary: Unock an Upload Area
-      operationId: upload.lambdas.api_server.v1.area.unlock
-      description: |
-        Unlock an Upload area so that submitters may add/delete/rename files in it.
-      tags:
-        - For Ingestion Service Use Only
-      security:
-        - api_key: []
-      parameters:
-        - name: upload_area_uuid
-          in: path
-          description: A RFC4122-compliant ID for the upload area.
-          required: true
-          type: string
-        - name: Api-Key
-          in: header
-          description: An authentication token provided by the service provider.
-          required: true
-          type: string
-      responses:
-        204:
-          description: Upload area is now unlocked.
-        401:
-          description: Unrecognized Api-Key.
-          schema:
-            $ref: '#/definitions/Error'
         default:
           description: Unexpected error
           schema:
@@ -298,7 +198,7 @@ paths:
       operationId: upload.lambdas.api_server.v1.area.retrieve_checksum_status_count
       description:  |
         Provide a JSON object with number of files that are in a particular upload area,
-        scheduled for checksumming, checksumming, checksummed, and unescheduled.
+        scheduled for checksumming, checksumming, checksummed, and unscheduled.
       tags:
         - All
       parameters:
@@ -334,7 +234,7 @@ paths:
 
     post:
       summary: Notify upload of uploaded file
-      operationId: upload.lambdas.api_server.v1.area.post_file
+      operationId: upload.lambdas.api_server.v1.area.file_uploaded_notification
       description: Notify upload api of uploaded file in upload area.
       tags:
         - All
@@ -363,7 +263,7 @@ paths:
 
     put:
       summary: Store a metadata file
-      operationId: upload.lambdas.api_server.v1.area.put_file
+      operationId: upload.lambdas.api_server.v1.area.store_file
       description: Store a JSON metadata file in the upload area.
       tags:
         - For Ingestion Service Use Only
@@ -803,6 +703,26 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+  /health:
+    get:
+      summary: Retreive health status of Upload Service
+      description: |
+        Returns a 200 if Upload Service is healthy.
+      operationId: upload.lambdas.api_server.health_check.health
+      tags:
+        - All
+      responses:
+        200:
+          description: Status is nominal.
+        503:
+          description: Service unavailable.
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
   /v1/health:
     get:
       summary: Retreive health status of Upload Service
@@ -813,7 +733,7 @@ paths:
         - All
       responses:
         200:
-          description: Status is nominnal.
+          description: Status is nominal.
         503:
           description: Service unavailable.
           schema:

@@ -8,6 +8,7 @@ from upload.common.uploaded_file import UploadedFile
 from upload.common.validation_event import ValidationEvent
 from upload.common.validation_scheduler import MAX_FILE_SIZE_IN_BYTES
 from upload.common.database import UploadDB
+from upload.common.upload_config import UploadConfig
 
 from . import client_for_test_api_server
 from ... import UploadTestCaseUsingMockAWS, EnvironmentSetup
@@ -18,10 +19,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
     def setUp(self):
         super().setUp()
         # Environment
-        self.api_key = "foo"
         self.environment = {
-            'INGEST_API_KEY': self.api_key,
-            'INGEST_AMQP_SERVER': 'foo',
             'CSUM_DOCKER_IMAGE': 'bogo_image',
             'API_HOST': 'bogohost'
         }
@@ -29,7 +27,7 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         self.environmentor.enter()
 
         # Authentication
-        self.authentication_header = {'Api-Key': self.api_key}
+        self.authentication_header = {'Api-Key': UploadConfig().api_key}
         # Setup app
         self.client = client_for_test_api_server()
 
@@ -274,7 +272,8 @@ class TestValidationApi(UploadTestCaseUsingMockAWS):
         self.assertEqual(file_one_record['id'] in validation_file_db_ids, True)
         self.assertEqual(file_two_record['id'] in validation_file_db_ids, True)
 
-    def test_schedule_validation__without_files_in_payload__is_unsuccessful(self):
+    @patch('upload.common.uploaded_file.UploadedFile._s3_load.retry.sleep')
+    def test_schedule_validation__without_files_in_payload__is_unsuccessful(self, mock_s3_load):
         area_id = self._create_area()
 
         payload = {

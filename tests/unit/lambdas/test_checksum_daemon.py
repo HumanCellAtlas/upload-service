@@ -1,22 +1,22 @@
 import os
 import sys
-from unittest.mock import Mock, patch
 import uuid
+from unittest.mock import Mock, patch
 
 import boto3
 from sqlalchemy.orm.exc import NoResultFound
 
+from upload.common.database_orm import DBSessionMaker, DbFile, DbChecksum
+from upload.common.upload_area import UploadArea
 from .. import UploadTestCaseUsingMockAWS, EnvironmentSetup
 from ... import FixtureFile
-
-from upload.common.upload_area import UploadArea
-from upload.common.database_orm import DBSessionMaker, DbFile, DbChecksum
 
 if __name__ == '__main__':
     pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
     sys.path.insert(0, pkg_root)  # noqa
 
 from upload.lambdas.checksum_daemon import ChecksumDaemon  # noqa
+
 
 # Add checksums
 
@@ -32,7 +32,6 @@ class ChecksumDaemonTest(UploadTestCaseUsingMockAWS):
         super().setUp()
         # Environment
         self.environment = {
-            'INGEST_AMQP_SERVER': 'foo',
             'CSUM_DOCKER_IMAGE': 'bogoimage'
         }
         self.environmentor = EnvironmentSetup(self.environment)
@@ -49,7 +48,8 @@ class ChecksumDaemonTest(UploadTestCaseUsingMockAWS):
         self.small_file = FixtureFile.factory('foo')
         self.file_key = f"{self.area_uuid}/{self.small_file.name}"
         self.object = self.upload_bucket.Object(self.file_key)
-        self.object.put(Key=self.file_key, Body=self.small_file.contents, ContentType=self.small_file.content_type)
+        self.object.put(Key=self.file_key, Body=self.small_file.contents, ContentType=self.small_file.content_type,
+                        Metadata={'crc32c': self.small_file.crc32c})
         # Event
         self.events = {'Records': [
             {'eventVersion': '2.0', 'eventSource': 'aws:s3', 'awsRegion': 'us-east-1',
@@ -72,7 +72,6 @@ class ChecksumDaemonTest(UploadTestCaseUsingMockAWS):
 
 
 class TestChecksumDaemonSeeingS3ObjectsForTheFirstTime(ChecksumDaemonTest):
-
     """
     Scenario: a file is uploaded for the first time
     """
@@ -95,7 +94,6 @@ class TestChecksumDaemonSeeingS3ObjectsForTheFirstTime(ChecksumDaemonTest):
 
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     def test_for_a_small_s3_object__csums_are_computed_in_the_lambda(self, mock_send_notif):
-
         self.daemon.consume_events(self.events)
 
         file_record = self.db.query(DbFile).filter(DbFile.s3_key == self.file_key,
@@ -143,7 +141,6 @@ class TestChecksumDaemonSeeingS3ObjectsForTheFirstTime(ChecksumDaemonTest):
 
 
 class TestChecksumDaemonSeeingS3ObjectsForWhichAFileRecordAlreadyExists(ChecksumDaemonTest):
-
     """
     Scenario: a file is re-uploaded using identical contents
     """
@@ -166,14 +163,12 @@ class TestChecksumDaemonSeeingS3ObjectsForWhichAFileRecordAlreadyExists(Checksum
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.DssChecksums.compute')
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     def test_when_the_file_record_contains_checksums__they_are_not_recomputed(self, mock_fasn, mock_compute):
-
         self.daemon.consume_events(self.events)
 
         mock_compute.assert_not_called()
 
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     def test_when_the_file_record_contains_checksums__they_are_applied_as_tags(self, mock_fasn):
-
         self.daemon.consume_events(self.events)
 
         tagging = boto3.client('s3').get_object_tagging(Bucket=self.upload_config.bucket_name, Key=self.file_key)
@@ -181,7 +176,6 @@ class TestChecksumDaemonSeeingS3ObjectsForWhichAFileRecordAlreadyExists(Checksum
 
     @patch('upload.lambdas.checksum_daemon.checksum_daemon.IngestNotifier.format_and_send_notification')
     def test_when_the_file_is_tagged_ingest_is_notified(self, mock_format_and_send_notification):
-
         self.daemon.consume_events(self.events)
 
         self.assertTrue(mock_format_and_send_notification.called,

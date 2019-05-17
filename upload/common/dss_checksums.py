@@ -1,17 +1,16 @@
-from functools import reduce
-import time
 import collections.abc
+import time
+from functools import reduce
 
 import boto3
-from botocore.exceptions import ClientError
 from boto3.s3.transfer import TransferConfig
-from tenacity import retry, wait_fixed, stop_after_attempt
-
+from botocore.exceptions import ClientError
 from dcplib.checksumming_io import ChecksummingSink
 from dcplib.s3_multipart import get_s3_multipart_chunk_size, MULTIPART_THRESHOLD
+from tenacity import retry, wait_fixed, stop_after_attempt
 
-from .logging import get_logger
 from .exceptions import UploadException
+from .logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -32,6 +31,7 @@ class DssChecksums(collections.abc.MutableMapping):
 
     TAG_PREFIX = 'hca-dss-'
     CHECKSUM_NAMES = ('sha1', 'sha256', 'crc32c', 's3_etag')
+    CLIENTSIDE_CHECKSUM_NAMES = ['crc32c']
     CHECKSUM_TAGS = ('hca-dss-sha1', 'hca-dss-sha256', 'hca-dss-crc32c', 'hca-dss-s3_etag')
 
     def __init__(self, s3_object,
@@ -39,8 +39,9 @@ class DssChecksums(collections.abc.MutableMapping):
                  ):
         self._s3obj = s3_object
         self._s3client = boto3.client('s3')
-        self.tagger = self.Tagger(s3_object)
-        self._checksums = self.tagger.read_checksums_from_object() or checksums or {}
+        self._tagger = self.Tagger(s3_object)
+        self._checksums = self._tagger.read_checksums_from_object() or checksums or {}
+        self._validator = self.Validator(s3_object, self.CLIENTSIDE_CHECKSUM_NAMES)
 
     def __getitem__(self, name):
         return self._checksums[name]
@@ -61,7 +62,7 @@ class DssChecksums(collections.abc.MutableMapping):
         return self._checksums.keys()
 
     def refresh(self):
-        self._checksums = self.tagger.read_checksums_from_object() or {}
+        self._checksums = self._tagger.read_checksums_from_object() or {}
 
     def are_present(self):
         return sorted(self.keys()) == sorted(self.CHECKSUM_NAMES)
@@ -72,7 +73,41 @@ class DssChecksums(collections.abc.MutableMapping):
         return self
 
     def save_as_tags_on_s3_object(self):
-        self.tagger.save_tags(self)
+        # Validation of clientside checksums has been temporary disabled due to unexpected checksum mismatches.
+        # This function should be re-enabled once ticket #380 is investigated and resolved.
+        # self._validator.validate_clientside_checksum_against_serverside_checksum(self._checksums)
+        self._tagger.save_tags(self)
+
+    class Validator:
+        """ This subclass verifies that the checksum(s) that are computed for the file, match the checksum(s) that
+        were computed client-side and stored in the metadata of the file."""
+
+        def __init__(self, s3obj, clientside_checksum_hash_functions):
+            self._s3obj = s3obj
+            self._s3client = boto3.client('s3')
+            self._clientside_checksum_hash_functions = clientside_checksum_hash_functions
+
+        @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(3))
+        def validate_clientside_checksum_against_serverside_checksum(self, serverside_checksum_values):
+            try:
+                metadata = self._s3obj.metadata
+                logger.debug(f"Received metadata: {metadata}")
+                _client_checksum_matches = True
+                for _hash_function in self._clientside_checksum_hash_functions:
+                    if _hash_function not in metadata.keys():
+                        logger.warning(
+                            f"Clientside checksum {_hash_function} was not found in the metadata of the file. This "
+                            f"means that no clientside checksum was computed or the storing of the checksum failed.")
+                        _client_checksum_matches = False
+                    elif metadata[_hash_function].lower() != serverside_checksum_values[_hash_function].lower():
+                        raise UploadException(status=500, title="Checksums do not match",
+                                              detail=f"Clientside checksum values stored as metadata did not match "
+                                              f"serverside checksums. File has likely been corrupted during upload.")
+                if _client_checksum_matches:
+                    logger.info("File passed checksum validation!")
+            except ClientError:
+                raise UploadException(status=404, title="No such file",
+                                      detail="No such file in that upload area while attempting to read metadata")
 
     class Tagger:
 

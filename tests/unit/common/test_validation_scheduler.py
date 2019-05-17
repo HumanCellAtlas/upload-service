@@ -1,12 +1,11 @@
-import uuid
 import json
+import uuid
 from unittest.mock import patch
 
+from upload.common.database import UploadDB
 from upload.common.upload_area import UploadArea
 from upload.common.uploaded_file import UploadedFile
 from upload.common.validation_scheduler import ValidationScheduler, MAX_FILE_SIZE_IN_BYTES
-from upload.common.database import UploadDB
-
 from .. import UploadTestCaseUsingMockAWS
 
 

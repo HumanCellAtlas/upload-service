@@ -23,12 +23,25 @@ variable "staging_bucket_arn" {
 }
 
 
-// API Lambda
+// DNS
+
+variable "parent_zone_domain_name" {
+  type = "string"
+}
 
 variable "upload_api_fqdn" {
   type = "string"
 }
+
+// API Lambda
+
 variable "ingest_api_key" {
+  type = "string"
+}
+
+// API Gateway
+
+variable "upload_api_api_gateway_id" {
   type = "string"
 }
 
@@ -46,10 +59,16 @@ variable "validation_cluster_ec2_key_pair" {
 variable "validation_cluster_ami_id" {
   type = "string"
 }
+variable "validation_cluster_instance_type" {
+  type = "string"
+}
 variable "validation_cluster_min_vcpus" {
   type = "string"
 }
 variable "csum_cluster_ec2_key_pair" {
+  type = "string"
+}
+variable "csum_cluster_instance_type" {
   type = "string"
 }
 variable "csum_cluster_min_vcpus" {

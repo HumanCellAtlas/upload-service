@@ -9,6 +9,8 @@ class LambdaMgr(InfraMgr):
         'upload-api-{env}',
         'dcp-upload-csum-{env}',
         'dcp-upload-batch-watcher-{env}',
+        'dcp-upload-validation-scheduler-{env}',
+        'dcp-upload-area-deletion-{env}',
         # 'dcp-upload-health-check-{env}' - leave this running
     ]
 

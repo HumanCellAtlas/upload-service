@@ -12,6 +12,7 @@ from upload.common.validation_event import ValidationEvent
 from upload.common.checksum_event import ChecksumEvent
 from upload.common.database import UploadDB
 from upload.common.upload_api_client import update_event
+from upload.common.upload_config import UploadConfig
 
 
 class TestUploadApiClient(UploadTestCaseUsingMockAWS):
@@ -19,17 +20,14 @@ class TestUploadApiClient(UploadTestCaseUsingMockAWS):
     def setUp(self):
         super().setUp()
         # Environment
-        self.api_key = "unguessable"
         self.environment = {
-            'INGEST_API_KEY': self.api_key,
-            'INGEST_AMQP_SERVER': 'foo',
             'CSUM_DOCKER_IMAGE': 'bogoimage',
             'API_HOST': 'bogohost'
         }
         self.environmentor = EnvironmentSetup(self.environment)
         self.environmentor.enter()
         # Setup authentication
-        self.authentication_header = {'Api-Key': self.api_key}
+        self.authentication_header = {'Api-Key': UploadConfig().api_key}
         # Setup app
         self.client = client_for_test_api_server()
 

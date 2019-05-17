@@ -1,15 +1,23 @@
 deployment_stage = "XXX"
 
 // VPC
+// Use the 10.24x.0.0 range, starting from prod and working backwards, i.e. prod=240, staging=241, integration=242 etc.
+// Yes I know many deployments are in different accounts, but this leads to less accidents.
 vpc_cidr_block = "xxx.xxx.xxx.xxx/xx"
 
 // S3
 bucket_name_prefix = "org-humancellatlas-upload-"
 staging_bucket_arn = "arn:aws:s3:::org-humancellatlas-upload-staging"
 
+// DNS
+parent_zone_domain_name = "<deployment_stage>.data.humancellatlas.org"
+
 // API Lambda
-upload_api_fqdn = "upload.<deployment_stage>.data.humancellatlas.org"
+upload_api_fqdn = "upload.<deployment_stage>.<parent_zone_domain_name>"
 ingest_api_key = "xxxxxxxxxxxxxxxxxxxx"
+
+// API Gateway
+upload_api_api_gateway_id = "xxxxxxxxxx"
 
 // Checksum Lambda
 csum_docker_image = "humancellatlas/upload-checksummer:8"
@@ -17,10 +25,12 @@ csum_docker_image = "humancellatlas/upload-checksummer:8"
 // Validation Batch infrastructure.
 validation_cluster_ec2_key_pair = "my-ec2-keypair"
 validation_cluster_ami_id = "ami-xxxxxxxx"
+validation_cluster_instance_type = "m5"
 validation_cluster_min_vcpus = 0
 
 // Checksumming Batch infrastructure.
 csum_cluster_ec2_key_pair = "my-ec2-keypair"
+csum_cluster_instance_type = "m5"
 csum_cluster_min_vcpus = 0
 
 // Database
@@ -30,7 +40,7 @@ db_instance_count = 1
 preferred_maintenance_window = "sat:09:08-sat:09:38"
 
 // DCP Ingest
-ingest_api_host = "api.ingest.<deployment_stage>.data.humancellatlas.org"
+ingest_api_host = "api.ingest.<deployment_stage>.<parent_zone_domain_name>"
 
 // AUTH
 dcp_auth0_audience = "https://dev.data.humancellatlas.org/"
