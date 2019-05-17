@@ -112,7 +112,7 @@ class ValidatorHarness:
             'exception': None
         }
         try:
-            _subprocess_filename = "SUBPROCESS_LOG_FILE"
+            _subprocess_filename = f"SUBPROCESS_LOG_FILE_{command}"
             _subprocess_file_object = open(_subprocess_filename, "w")
             completed_process = subprocess.run(command,
                                                stdout=_subprocess_file_object,
