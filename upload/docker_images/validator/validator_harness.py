@@ -143,4 +143,4 @@ class ValidatorHarness:
             staged_file_path.unlink()
 
     def _log(self, message):
-        LOGGER.info("[%d]: %s", self.job_id, str(message))
+        LOGGER.info("[%s]: %s", self.job_id, str(message))
