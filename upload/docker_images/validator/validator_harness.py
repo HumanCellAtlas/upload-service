@@ -15,7 +15,7 @@ from upload.common.logging import get_logger
 from upload.common.upload_api_client import update_event
 from upload.common.validation_event import ValidationEvent
 
-logger = get_logger(f"CHECKSUMMER [{os.environ.get('AWS_BATCH_JOB_ID')}]")
+LOGGER = get_logger(f"CHECKSUMMER [{os.environ.get('AWS_BATCH_JOB_ID')}]")
 
 
 class ValidatorHarness:
@@ -32,6 +32,20 @@ class ValidatorHarness:
         self.validation_id = os.environ['VALIDATION_ID']
         self._log(f"VALIDATOR STARTING version={self.version}, job_id={self.job_id}, "
                   f"validation_id={self.validation_id} attempt={os.environ['AWS_BATCH_JOB_ATTEMPT']}")
+
+    @staticmethod
+    def _download_file_from_bucket_to_filesystem(s3_bucket_name, s3_object_key, staged_file_path):
+        s3 = boto3.resource('s3')
+        bucket = s3.Bucket(s3_bucket_name)
+        bucket.download_file(s3_object_key, str(staged_file_path))
+
+    @staticmethod
+    def _find_version():
+        try:
+            with open('/HARNESS_VERSION', 'r') as fp:
+                return fp.read().strip()
+        except FileNotFoundError:
+            return None
 
     def validate(self, test_only=False):
         self._log("VERSION {version}, attempt {attempt} with argv: {argv}".format(
@@ -59,8 +73,8 @@ class ValidatorHarness:
     @retry(reraise=True,
            stop=stop_after_attempt(5),
            wait=wait_exponential(multiplier=10, min=1, max=4),
-           before=before_log(logger, logging.DEBUG),
-           before_sleep=before_sleep_log(logger, logging.ERROR))
+           before=before_log(LOGGER, logging.DEBUG),
+           before_sleep=before_sleep_log(LOGGER, logging.ERROR))
     def _stage_files_to_be_validated(self):
         upload_area_id = None
         file_names = []
@@ -85,11 +99,6 @@ class ValidatorHarness:
             self.staged_file_paths.append(staged_file_path)
         return upload_area_id, file_names
 
-    def _download_file_from_bucket_to_filesystem(self, s3_bucket_name, s3_object_key, staged_file_path):
-        s3 = boto3.resource('s3')
-        bucket = s3.Bucket(s3_bucket_name)
-        bucket.download_file(s3_object_key, str(staged_file_path))
-
     def _run_validator(self):
         command = [self.path_to_validator]
         for staged_file_path in self.staged_file_paths:
@@ -108,24 +117,23 @@ class ValidatorHarness:
             'exception': None
         }
         try:
+            _subprocess_filename = f"SUBPROCESS_LOG_FILE_{self.validation_id}"
+            _subprocess_file_object = open(_subprocess_filename, "w")
             completed_process = subprocess.run(command,
-                                               stdout=subprocess.PIPE,
-                                               stderr=subprocess.PIPE,
+                                               stdout=_subprocess_file_object,
+                                               stderr=_subprocess_file_object,
                                                timeout=self.TIMEOUT)
+            _subprocess_file_object.close()
             self._log("validator completed")
             results['status'] = 'completed'
             results['exit_code'] = completed_process.returncode
-            results['stdout'] = completed_process.stdout.decode('utf8')
-            results['stderr'] = completed_process.stderr.decode('utf8')
-        except subprocess.TimeoutExpired as e:
-            self._log("validator timed out: {}".format(e))
+        except subprocess.TimeoutExpired as exception:
+            self._log("validator timed out: {}".format(exception))
             results['status'] = 'timed_out'
-            results['stdout'] = e.stdout.decode('utf8')
-            results['stderr'] = e.stderr.decode('utf8')
-        except Exception as e:
-            self._log("validator aborted: {}".format(e))
+        except Exception as exception:
+            self._log("validator aborted: {}".format(exception))
             results['status'] = 'aborted'
-            results['exception'] = e
+            results['exception'] = exception
         results['duration_s'] = time.time() - start_time
         return results
 
@@ -134,12 +142,5 @@ class ValidatorHarness:
             self._log("removing file {}".format(staged_file_path))
             staged_file_path.unlink()
 
-    def _find_version(self):
-        try:
-            with open('/HARNESS_VERSION', 'r') as fp:
-                return fp.read().strip()
-        except FileNotFoundError:
-            return None
-
     def _log(self, message):
-        logger.info("[{id}]: ".format(id=self.job_id) + str(message))
+        LOGGER.info("[%s]: %s", self.job_id, str(message))
