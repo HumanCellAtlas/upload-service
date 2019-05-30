@@ -73,9 +73,7 @@ class DssChecksums(collections.abc.MutableMapping):
         return self
 
     def save_as_tags_on_s3_object(self):
-        # Validation of clientside checksums has been temporary disabled due to unexpected checksum mismatches.
-        # This function should be re-enabled once ticket #380 is investigated and resolved.
-        # self._validator.validate_clientside_checksum_against_serverside_checksum(self._checksums)
+        self._validator.validate_clientside_checksum_against_serverside_checksum(self._checksums)
         self._tagger.save_tags(self)
 
     class Validator:
