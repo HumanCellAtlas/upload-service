@@ -76,7 +76,11 @@ class ClientSideChecksumHandler:
                 _multipart_chunksize = get_s3_multipart_chunk_size(self._data_size)
                 with ChecksummingSink(_multipart_chunksize, hash_functions=self._checksums) as sink:
                     with open(self._filename, 'rb') as _file_object:
-                        sink.write(_file_object.read(_multipart_chunksize))
+                        while True:
+                            data = _file_object.read(_multipart_chunksize)
+                            if not data:
+                                break
+                            sink.write(data)
                     checksums = sink.get_checksums()
 
             logger.info("Checksumming took %.2f milliseconds to compute" % ((time.time() - start_time) * 1000))
