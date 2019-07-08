@@ -27,10 +27,10 @@ export SERVICE="upload"
 
 function delete_all_job_definitions() {
     prefix="$SERVICE-$DEPLOYMENT_STAGE-"
-    jobNames=$(aws batch describe-job-definitions | jq -r '.jobDefinitions[].jobDefinitionName' | grep $prefix)
+    jobNames=$(aws batch describe-job-definitions | jq -r '.jobDefinitions[].jobDefinitionArn' | grep $prefix)
     for jobName in $jobNames; do
-        aws glue delete-job --job-name $jobName
-        break
+        aws batch deregister-job-definition --job-definition $jobName
+        echo $jobName
     done
 }
 
@@ -42,6 +42,6 @@ make deploy
 aws secretsmanager update-secret --secret-id="dcp/upload/${DEPLOYMENT_STAGE}/upload_service_version" --secret-string='{ "upload_service_version": "'${UPLOAD_SERVICE_VERSION}'" }'
 delete_all_job_definitions
 
-#if [ ${DEPLOYMENT_STAGE} != dev ] ; then
+# if [ ${DEPLOYMENT_STAGE} != dev ] ; then
 #    tag_deploy
-#fi
+# fi
