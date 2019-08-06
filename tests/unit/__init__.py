@@ -107,11 +107,11 @@ class UploadTestCase(unittest.TestCase):
 
     def setUp(self):
         # Common Environment
-        env_deployment_stage = os.environ.get('DEPLOYMENT_STAGE', 'test')
-        if env_deployment_stage in ['local', 'test']:
+        env_deployment_stage = os.environ.get('DEPLOYMENT_STAGE', 'dev')
+        if env_deployment_stage in ['local', 'dev']:
             self.deployment_stage = env_deployment_stage
         else:
-            self.deployment_stage = 'test'
+            self.deployment_stage = 'dev'
         self.environment = {
             'DEPLOYMENT_STAGE': self.deployment_stage
         }

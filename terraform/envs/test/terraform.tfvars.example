@@ -1,7 +1,0 @@
-// VPC
-vpc_cidr_block = "xxx.xxx.xxx.xxx/xx"
-// Database
-db_username = "xxxxxxxx"
-db_password = "xxxxxxxxxxxxxx"
-db_instance_count = 1
-preferred_maintenance_window = "sat:09:08-sat:09:38"
