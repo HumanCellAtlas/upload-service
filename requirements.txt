@@ -1,5 +1,5 @@
 alembic==1.0.0
-boto3>1.9.44
+boto3==1.9.44
 botocore==1.12.119
 connexion==1.5.2
 cryptography==2.3.1

@@ -1,4 +1,4 @@
-awscli>1.15.70
+awscli==1.15.70
 chalice >= 1.1.1, < 1.2.0
 coverage==4.5.1
 domovoi == 1.5.7
