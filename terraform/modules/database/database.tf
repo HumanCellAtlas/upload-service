@@ -5,7 +5,7 @@ resource "aws_rds_cluster_instance" "cluster_instances" {
   instance_class     = "db.r4.large"
   publicly_accessible = "true"
   engine                  = "aurora-postgresql"
-  engine_version          = "9.6.8"
+  engine_version          = "9.6.12"
   auto_minor_version_upgrade = "true"
   performance_insights_enabled = "true"
   preferred_maintenance_window = "${var.preferred_maintenance_window}"
@@ -15,7 +15,7 @@ resource "aws_rds_cluster" "upload" {
   apply_immediately       = "false"
   cluster_identifier      = "upload-${var.deployment_stage}"
   engine                  = "aurora-postgresql"
-  engine_version          = "9.6.8"
+  engine_version          = "9.6.12"
   availability_zones      = ["us-east-1a", "us-east-1c", "us-east-1d"]
   database_name           = "upload_${var.deployment_stage}"
   master_username         = "${var.db_username}"
