@@ -19,7 +19,7 @@ POLICY
 
 resource "aws_iam_role_policy" "validation_scheduler_lambda" {
   name = "validation-scheduler-daemon-${var.deployment_stage}"
-  role = "${aws_iam_role.validation_scheduler_lambda.name}"
+  role =  aws_iam_role.validation_scheduler_lambda.name
   policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -118,13 +118,13 @@ EOF
 }
 
 output "validation_scheduler_lambda_role_arn" {
-  value = "${aws_iam_role.validation_scheduler_lambda.arn}"
+  value =  aws_iam_role.validation_scheduler_lambda.arn
 }
 
 
 resource "aws_lambda_function" "validation_scheduler_lambda" {
   function_name    = "dcp-upload-validation-scheduler-${var.deployment_stage}"
-  s3_bucket        = "${aws_s3_bucket.lambda_deployments.id}"
+  s3_bucket        =  aws_s3_bucket.lambda_deployments.id
   s3_key           = "validation_scheduler_daemon.zip"
   role             = "arn:aws:iam::${local.account_id}:role/validation-scheduler-daemon-${var.deployment_stage}"
   handler          = "app.schedule_file_validation"
@@ -135,7 +135,7 @@ resource "aws_lambda_function" "validation_scheduler_lambda" {
   environment {
     variables = {
       DEPLOYMENT_STAGE = "${var.deployment_stage}",
-      API_HOST = "${var.upload_api_fqdn}"
+      API_HOST =  var.upload_api_fqdn
     }
   }
 }

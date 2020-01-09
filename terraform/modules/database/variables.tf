@@ -1,32 +1,32 @@
 variable "pgbouncer_subnet_id" {
-  type = "string"
+  type = string
 }
 
 variable "lb_subnet_ids" {
-  type = "list"
+  type = list
 }
 
 variable "vpc_id" {
-  type = "string"
+  type = string
 }
 
 variable "deployment_stage" {
-  type = "string"
+  type = string
 }
 
 variable "db_username" {
-  type = "string"
+  type = string
 }
 
 variable "db_password" {
-  type = "string"
+  type = string
 }
 
 variable "db_instance_count" {
-  type = "string"
+  type = string
   default = 2
 }
 
 variable "preferred_maintenance_window" {
-  type = "string"
+  type = string
 }

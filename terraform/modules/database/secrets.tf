@@ -4,7 +4,7 @@ resource "aws_secretsmanager_secret" "database-secrets" {
 }
 
 resource "aws_secretsmanager_secret_version" "database-secrets" {
-  secret_id = "${aws_secretsmanager_secret.database-secrets.id}"
+  secret_id =  aws_secretsmanager_secret.database-secrets.id
   secret_string = <<SECRETS_JSON
 {
   "database_uri": "postgresql://${aws_rds_cluster.upload.master_username}:${aws_rds_cluster.upload.master_password}@${aws_rds_cluster.upload.endpoint}/${aws_rds_cluster.upload.database_name}",

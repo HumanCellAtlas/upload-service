@@ -19,7 +19,7 @@ POLICY
 
 resource "aws_iam_role_policy" "upload_csum_lambda" {
   name = "upload-checksum-daemon-${var.deployment_stage}"
-  role = "${aws_iam_role.upload_csum_lambda.name}"
+  role =  aws_iam_role.upload_csum_lambda.name
   policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -100,13 +100,13 @@ EOF
 }
 
 output "upload_csum_lambda_role_arn" {
-  value = "${aws_iam_role.upload_csum_lambda.arn}"
+  value =  aws_iam_role.upload_csum_lambda.arn
 }
 
 
 resource "aws_lambda_function" "upload_checksum_lambda" {
   function_name    = "dcp-upload-csum-${var.deployment_stage}"
-  s3_bucket        = "${aws_s3_bucket.lambda_deployments.id}"
+  s3_bucket        =  aws_s3_bucket.lambda_deployments.id
   s3_key           = "checksum_daemon/checksum_daemon.zip"
   role             = "arn:aws:iam::${local.account_id}:role/upload-checksum-daemon-${var.deployment_stage}"
   handler          = "app.call_checksum_daemon"
@@ -118,7 +118,7 @@ resource "aws_lambda_function" "upload_checksum_lambda" {
     variables = {
       DEPLOYMENT_STAGE = "${var.deployment_stage}",
       API_HOST = "${var.upload_api_fqdn}",
-      CSUM_DOCKER_IMAGE = "${var.csum_docker_image}"
+      CSUM_DOCKER_IMAGE =  var.csum_docker_image
     }
   }
 }

@@ -1,8 +1,8 @@
 resource "aws_ecs_task_definition" "pgbouncer" {
   family                = "upload-service-pgbouncer-${var.deployment_stage}"
   requires_compatibilities = ["FARGATE"]
-  execution_role_arn = "${aws_iam_role.task_executor.arn}"
-  task_role_arn = "${aws_iam_role.pgbouncer.arn}"
+  execution_role_arn =  aws_iam_role.task_executor.arn
+  task_role_arn =  aws_iam_role.pgbouncer.arn
   container_definitions = <<DEFINITION
 [
   {
@@ -89,7 +89,7 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "task_executor_ecs" {
-  role = "${aws_iam_role.task_executor.name}"
+  role =  aws_iam_role.task_executor.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
@@ -115,7 +115,7 @@ EOF
 
 resource "aws_iam_role_policy" "pgbouncer" {
   name = "upload-service-pgbouncer-policy-${var.deployment_stage}"
-  role = "${aws_iam_role.pgbouncer.id}"
+  role =  aws_iam_role.pgbouncer.id
   policy = <<EOF
 {
     "Version": "2012-10-17",
@@ -144,8 +144,8 @@ resource "aws_ecs_cluster" "pgbouncer" {
 
 resource "aws_ecs_service" "pgbouncer" {
   name            = "upload-service-pgbouncer-${var.deployment_stage}"
-  cluster         = "${aws_ecs_cluster.pgbouncer.id}"
-  task_definition = "${aws_ecs_task_definition.pgbouncer.arn}"
+  cluster         =  aws_ecs_cluster.pgbouncer.id
+  task_definition =  aws_ecs_task_definition.pgbouncer.arn
   desired_count   = 1
   launch_type     = "FARGATE"
 
@@ -156,7 +156,7 @@ resource "aws_ecs_service" "pgbouncer" {
   }
 
   load_balancer {
-    target_group_arn = "${aws_lb_target_group.pgbouncer.id}"
+    target_group_arn =  aws_lb_target_group.pgbouncer.id
     container_name   = "pgbouncer-${var.deployment_stage}"
     container_port   = "5432"
   }
@@ -167,12 +167,12 @@ resource "aws_ecs_service" "pgbouncer" {
 }
 
 resource "aws_lb_listener" "front_end" {
-  load_balancer_arn = "${aws_lb.main.id}"
+  load_balancer_arn =  aws_lb.main.id
   port              = "5432"
   protocol          = "TCP"
 
   default_action {
-    target_group_arn = "${aws_lb_target_group.pgbouncer.id}"
+    target_group_arn =  aws_lb_target_group.pgbouncer.id
     type             = "forward"
   }
 
@@ -189,7 +189,7 @@ resource "aws_lb_target_group" "pgbouncer" {
   name        = "upload-pgbouncer-${var.deployment_stage}"
   port        = "5432"
   protocol    = "TCP"
-  vpc_id      = "${var.vpc_id}"
+  vpc_id      =  var.vpc_id
   target_type = "ip"
   lifecycle {
      ignore_changes = "lambda_multi_value_headers_enabled"

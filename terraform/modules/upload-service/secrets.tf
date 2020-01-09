@@ -3,7 +3,7 @@ resource "aws_secretsmanager_secret" "secrets" {
 }
 
 resource "aws_secretsmanager_secret_version" "secrets" {
-  secret_id = "${aws_secretsmanager_secret.secrets.id}"
+  secret_id =  aws_secretsmanager_secret.secrets.id
   //
   // HEY YOU!  DEVELOPER!
   //
@@ -34,7 +34,7 @@ resource "aws_secretsmanager_secret" "outgoing_ingest_auth" {
 }
 
 resource "aws_secretsmanager_secret_version" "outgoing_ingest_auth" {
-  secret_id = "${aws_secretsmanager_secret.outgoing_ingest_auth.id}"
+  secret_id =  aws_secretsmanager_secret.outgoing_ingest_auth.id
   secret_string = <<SECRETS_JSON
 {
   "dcp_auth0_audience": "${var.dcp_auth0_audience}",

@@ -19,7 +19,7 @@ POLICY
 
 resource "aws_iam_role_policy" "area_deletion_lambda" {
   name = "area-deletion-daemon-${var.deployment_stage}"
-  role = "${aws_iam_role.area_deletion_lambda.name}"
+  role =  aws_iam_role.area_deletion_lambda.name
   policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -118,13 +118,13 @@ EOF
 }
 
 output "area_deletion_lambda_role_arn" {
-  value = "${aws_iam_role.area_deletion_lambda.arn}"
+  value =  aws_iam_role.area_deletion_lambda.arn
 }
 
 
 resource "aws_lambda_function" "area_deletion_lambda" {
   function_name    = "dcp-upload-area-deletion-${var.deployment_stage}"
-  s3_bucket        = "${aws_s3_bucket.lambda_deployments.id}"
+  s3_bucket        =  aws_s3_bucket.lambda_deployments.id
   s3_key           = "area_deletion_daemon.zip"
   role             = "arn:aws:iam::${local.account_id}:role/area-deletion-daemon-${var.deployment_stage}"
   handler          = "app.delete_upload_area"
@@ -134,7 +134,7 @@ resource "aws_lambda_function" "area_deletion_lambda" {
 
   environment {
     variables = {
-      DEPLOYMENT_STAGE = "${var.deployment_stage}"
+      DEPLOYMENT_STAGE =  var.deployment_stage
     }
   }
 }

@@ -1,6 +1,6 @@
 resource "aws_iam_instance_profile" "ecsInstanceRole" {
   name = "ecsInstanceRole"
-  role = "${aws_iam_role.ecsInstanceRole.name}"
+  role =  aws_iam_role.ecsInstanceRole.name
 }
 
 resource "aws_iam_role" "ecsInstanceRole" {
@@ -23,7 +23,7 @@ POLICY
 }
 
 resource "aws_iam_role_policy_attachment" "ecsInstanceRole" {
-  role = "${aws_iam_role.ecsInstanceRole.name}"
+  role =  aws_iam_role.ecsInstanceRole.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
 }
 
@@ -47,7 +47,7 @@ POLICY
 }
 
 resource "aws_iam_role_policy_attachment" "AWSBatchServiceRole" {
-  role = "${aws_iam_role.AWSBatchServiceRole.name}"
+  role =  aws_iam_role.AWSBatchServiceRole.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole"
 }
 
@@ -73,7 +73,7 @@ POLICY
 }
 
 resource "aws_iam_role_policy_attachment" "AmazonEC2SpotFleetRole" {
-  role = "${aws_iam_role.AmazonEC2SpotFleetRole.name}"
+  role =  aws_iam_role.AmazonEC2SpotFleetRole.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole"
 }
 

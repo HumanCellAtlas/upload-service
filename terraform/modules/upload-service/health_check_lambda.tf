@@ -19,7 +19,7 @@ POLICY
 
 resource "aws_iam_role_policy" "upload_health_check_lambda" {
   name = "upload-health-check-${var.deployment_stage}"
-  role = "${aws_iam_role.upload_health_check_lambda.name}"
+  role =  aws_iam_role.upload_health_check_lambda.name
   policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -76,7 +76,7 @@ EOF
 
 resource "aws_lambda_function" "upload_health_check_lambda" {
   function_name    = "dcp-upload-health-check-${var.deployment_stage}"
-  s3_bucket        = "${aws_s3_bucket.lambda_deployments.id}"
+  s3_bucket        =  aws_s3_bucket.lambda_deployments.id
   s3_key           = "health_check_daemon/health_check_daemon.zip"
   role             = "arn:aws:iam::${local.account_id}:role/upload-health-check-${var.deployment_stage}"
   handler          = "app.health_check"
@@ -95,22 +95,22 @@ resource "aws_cloudwatch_event_rule" "daily" {
     name = "dcp-upload-daily-health-check-${var.deployment_stage}"
     description = "Fires every day at 13:00 UTC"
     schedule_expression = "cron(0 13 * * ? *)"
-    count = "${var.deployment_stage == "prod" || var.deployment_stage == "staging" || var.deployment_stage == "integration" || var.deployment_stage == "dev" ? 1 : 0}"
+    count =  var.deployment_stage == "prod" || var.deployment_stage == "staging" || var.deployment_stage == "integration" || var.deployment_stage == "dev" ? 1 : 0
 }
 
 resource "aws_cloudwatch_event_target" "daily_health_check" {
-    rule = "${aws_cloudwatch_event_rule.daily.name}"
+    rule =  aws_cloudwatch_event_rule.daily.name
     target_id = "upload_health_check_lambda"
-    arn = "${aws_lambda_function.upload_health_check_lambda.arn}"
-    count = "${var.deployment_stage == "prod" || var.deployment_stage == "staging" || var.deployment_stage == "integration" || var.deployment_stage == "dev" ? 1 : 0}"
+    arn =  aws_lambda_function.upload_health_check_lambda.arn
+    count =  var.deployment_stage == "prod" || var.deployment_stage == "staging" || var.deployment_stage == "integration" || var.deployment_stage == "dev" ? 1 : 0
 }
 
 resource "aws_lambda_permission" "allow_cloudwatch_to_call_health_check" {
     statement_id = "AllowExecutionFromCloudWatch"
     action = "lambda:InvokeFunction"
-    function_name = "${aws_lambda_function.upload_health_check_lambda.function_name}"
+    function_name =  aws_lambda_function.upload_health_check_lambda.function_name
     principal = "events.amazonaws.com"
-    source_arn = "${aws_cloudwatch_event_rule.daily.arn}"
-    count = "${var.deployment_stage == "prod" || var.deployment_stage == "staging" || var.deployment_stage == "integration" || var.deployment_stage == "dev" ? 1 : 0}"
+    source_arn =  aws_cloudwatch_event_rule.daily.arn
+    count =  var.deployment_stage == "prod" || var.deployment_stage == "staging" || var.deployment_stage == "integration" || var.deployment_stage == "dev" ? 1 : 0
 
 }

@@ -1,7 +1,7 @@
 resource "aws_security_group" "rds-postgres" {
   name        = "dcp-upload-${var.deployment_stage}-rds-postgres-sg"
   description = "DCP Upload Service Postgres"
-  vpc_id      = "${var.vpc_id}"
+  vpc_id      =  var.vpc_id
 
   ingress {
     from_port   = 5432

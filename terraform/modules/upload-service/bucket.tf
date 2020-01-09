@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "upload_areas_bucket" {
-  bucket = "${local.bucket_name}"
+  bucket =  local.bucket_name
   acl = "private"
   force_destroy = "false"
   acceleration_status = "Enabled"
@@ -76,8 +76,8 @@ POLICY
 }
 
 resource "aws_iam_role_policy_attachment" "upload_submitter" {
-  role = "${aws_iam_role.upload_submitter.name}"
-  policy_arn = "${aws_iam_policy.upload_areas_submitter_access.arn}"
+  role =  aws_iam_role.upload_submitter.name
+  policy_arn =  aws_iam_policy.upload_areas_submitter_access.arn
 }
 
 resource "aws_s3_bucket" "lambda_deployments" {

@@ -19,7 +19,7 @@ POLICY
 
 resource "aws_iam_role_policy" "upload_api_lambda" {
   name = "upload-api-${var.deployment_stage}"
-  role = "${aws_iam_role.upload_api_lambda.name}"
+  role =  aws_iam_role.upload_api_lambda.name
 
   policy = <<EOF
 {
@@ -112,7 +112,7 @@ resource "aws_lambda_function" "upload_api_lambda" {
   environment {
     variables = {
       DEPLOYMENT_STAGE = "${var.deployment_stage}",
-      API_HOST = "${var.upload_api_fqdn}"
+      API_HOST =  var.upload_api_fqdn
     }
   }
   tags {

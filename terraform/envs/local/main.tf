@@ -23,7 +23,7 @@ resource "aws_secretsmanager_secret" "secrets" {
 }
 
 resource "aws_secretsmanager_secret_version" "secrets" {
-  secret_id = "${aws_secretsmanager_secret.secrets.id}"
+  secret_id =  aws_secretsmanager_secret.secrets.id
   secret_string = <<SECRETS_JSON
 {
   "api_key": "dummy-value-to-keep-environment-script-happy"
@@ -38,7 +38,7 @@ resource "aws_secretsmanager_secret" "database-secrets" {
 }
 
 resource "aws_secretsmanager_secret_version" "database-secrets" {
-  secret_id = "${aws_secretsmanager_secret.database-secrets.id}"
+  secret_id =  aws_secretsmanager_secret.database-secrets.id
   secret_string = <<SECRETS_JSON
 {
   "database_uri": "postgresql://:@localhost/upload_${var.deployment_stage}",

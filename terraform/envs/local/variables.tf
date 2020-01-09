@@ -1,3 +1,3 @@
 variable "deployment_stage" {
-  type = "string"
+  type = string
 }

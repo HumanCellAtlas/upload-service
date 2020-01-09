@@ -9,17 +9,17 @@ data "external" "checksum_desired_vcpus" {
 resource "aws_batch_compute_environment" "csum_compute_env" {
   compute_environment_name = "dcp-upload-csum-cluster-${var.deployment_stage}"
   type = "MANAGED"
-  service_role = "${aws_iam_role.AWSBatchServiceRole.arn}"
+  service_role =  aws_iam_role.AWSBatchServiceRole.arn
   compute_resources {
     type = "SPOT"
     bid_percentage = 100
-    spot_iam_fleet_role = "${aws_iam_role.AmazonEC2SpotFleetRole.arn}"
+    spot_iam_fleet_role =  aws_iam_role.AmazonEC2SpotFleetRole.arn
     max_vcpus = 64
-    min_vcpus = "${var.csum_cluster_min_vcpus}"
+    min_vcpus =  var.csum_cluster_min_vcpus
     // You must set desired_vcpus otherwise you get error: "desiredvCpus should be between minvCpus and maxvCpus"
     // However this is actually not settable in AWS.  It will not let you change it.
     // Here we use an external data source to dynamically set the desired vcpus to match current state.
-    desired_vcpus = "${data.external.checksum_desired_vcpus.result.desired_vcpus}"
+    desired_vcpus =  data.external.checksum_desired_vcpus.result.desired_vcpus
     instance_type = [
       "${var.csum_cluster_instance_type}"
     ]
@@ -29,8 +29,8 @@ resource "aws_batch_compute_environment" "csum_compute_env" {
     security_group_ids = [
       "${module.upload-vpc.vpc_default_security_group_id}"
     ]
-    ec2_key_pair = "${var.csum_cluster_ec2_key_pair}"
-    instance_role = "${aws_iam_instance_profile.ecsInstanceRole.arn}"
+    ec2_key_pair =  var.csum_cluster_ec2_key_pair
+    instance_role =  aws_iam_instance_profile.ecsInstanceRole.arn
     // Do not appear to work.  They do not stick.
     // tags {
     //   Name = "dcp-upload-csum-${var.deployment_stage}"
@@ -109,6 +109,6 @@ POLICY
 }
 
 resource "aws_iam_role_policy_attachment" "csum_job_role" {
-  role = "${aws_iam_role.csum_job_role.name}"
-  policy_arn = "${aws_iam_policy.csum_job_policy.arn}"
+  role =  aws_iam_role.csum_job_role.name
+  policy_arn =  aws_iam_policy.csum_job_policy.arn
 }

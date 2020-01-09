@@ -13,7 +13,7 @@ resource "aws_sqs_queue" "deadletter_queue" {
 }
 
 resource "aws_sqs_queue_policy" "pre_checksum_upload_queue_access" {
-  queue_url = "${aws_sqs_queue.upload_queue.id}"
+  queue_url =  aws_sqs_queue.upload_queue.id
 
   policy = <<POLICY
 {
@@ -50,9 +50,9 @@ POLICY
 
 resource "aws_lambda_event_source_mapping" "event_source_mapping" {
   batch_size = 1
-  event_source_arn  = "${aws_sqs_queue.upload_queue.arn}"
+  event_source_arn  =  aws_sqs_queue.upload_queue.arn
   enabled           = true
-  function_name     = "${aws_lambda_function.upload_checksum_lambda.arn}"
+  function_name     =  aws_lambda_function.upload_checksum_lambda.arn
 }
 
 
@@ -72,9 +72,9 @@ resource "aws_sqs_queue" "area_deletion_deadletter_queue" {
 
 resource "aws_lambda_event_source_mapping" "area_deletion_event_source_mapping" {
   batch_size = 1
-  event_source_arn  = "${aws_sqs_queue.area_deletion_queue.arn}"
+  event_source_arn  =  aws_sqs_queue.area_deletion_queue.arn
   enabled           = true
-  function_name     = "${aws_lambda_function.area_deletion_lambda.arn}"
+  function_name     =  aws_lambda_function.area_deletion_lambda.arn
 }
 
 resource "aws_sqs_queue" "validation_queue" {
@@ -93,7 +93,7 @@ resource "aws_sqs_queue" "validation_deadletter_queue" {
 
 resource "aws_lambda_event_source_mapping" "validation_event_source_mapping" {
   batch_size = 1
-  event_source_arn  = "${aws_sqs_queue.validation_queue.arn}"
+  event_source_arn  =  aws_sqs_queue.validation_queue.arn
   enabled           = true
-  function_name     = "${aws_lambda_function.validation_scheduler_lambda.arn}"
+  function_name     =  aws_lambda_function.validation_scheduler_lambda.arn
 }
