@@ -110,7 +110,7 @@ resource "aws_lambda_function" "upload_checksum_lambda" {
   s3_key           = "checksum_daemon/checksum_daemon.zip"
   role             = "arn:aws:iam::${local.account_id}:role/upload-checksum-daemon-${var.deployment_stage}"
   handler          = "app.call_checksum_daemon"
-  runtime          = "python3.6"
+  runtime          = "python3.7"
   memory_size      = 1500
   timeout          = 900
 

@@ -128,7 +128,7 @@ resource "aws_lambda_function" "area_deletion_lambda" {
   s3_key           = "area_deletion_daemon.zip"
   role             = "arn:aws:iam::${local.account_id}:role/area-deletion-daemon-${var.deployment_stage}"
   handler          = "app.delete_upload_area"
-  runtime          = "python3.6"
+  runtime          = "python3.7"
   memory_size      = 500
   timeout          = 900
 

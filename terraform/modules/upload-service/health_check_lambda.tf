@@ -80,7 +80,7 @@ resource "aws_lambda_function" "upload_health_check_lambda" {
   s3_key           = "health_check_daemon/health_check_daemon.zip"
   role             = "arn:aws:iam::${local.account_id}:role/upload-health-check-${var.deployment_stage}"
   handler          = "app.health_check"
-  runtime          = "python3.6"
+  runtime          = "python3.7"
   memory_size      = 128
   timeout          = 300
 

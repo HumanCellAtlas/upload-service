@@ -105,7 +105,7 @@ resource "aws_lambda_function" "upload_api_lambda" {
   function_name    = "upload-api-${var.deployment_stage}"
   role             = "arn:aws:iam::${local.account_id}:role/upload-api-${var.deployment_stage}"
   handler          = "app.app"
-  runtime          = "python3.6"
+  runtime          = "python3.7"
   memory_size      = 512
   timeout          = 300
 

@@ -128,7 +128,7 @@ resource "aws_lambda_function" "validation_scheduler_lambda" {
   s3_key           = "validation_scheduler_daemon.zip"
   role             = "arn:aws:iam::${local.account_id}:role/validation-scheduler-daemon-${var.deployment_stage}"
   handler          = "app.schedule_file_validation"
-  runtime          = "python3.6"
+  runtime          = "python3.7"
   memory_size      = 500
   timeout          = 900
 
