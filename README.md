@@ -71,14 +71,14 @@ cp config/environment.dev.example config/environment.dev
 ```
 Then edit as necessary.
 
-## Running Tests
+## Running Unit Tests
 
 ```bash
 export AWS_PROFILE=hca
 source config/environment
 make test
 ```
-### Running Tests Offline
+### Running Unit Tests Offline
 Tests may also be run offline if you have a PostgreSQL server running locally.
 You must setup an `upload_local` postgres database first, e.g.:
 
@@ -87,7 +87,8 @@ brew install postgres
 # follow instructions to start postgres server
 createuser
 createdb upload_local
-DEPLOYMENT_STAGE=local make db/migrate
+echo '{"database_uri":"postgresql://:@localhost/upload_local"}' > /tmp/config
+DEPLOYMENT_STAGE=local CONFIG_SOURCE=/tmp/config make db/migrate
 ```
 To run tests offline use the `local` environment:
 ```bash
