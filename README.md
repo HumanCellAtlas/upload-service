@@ -45,7 +45,7 @@ Image by [Sam Pierson](mailto:spierson@chanzuckerberg.com)
 
  - A Linux/Unix machine
  - git
- - Python 3.6
+ - Python 3.7
 
 Check out the upload service repo:
 
@@ -59,8 +59,8 @@ Install packages.  I use `virtualenv`, but you don’t have to.  This is what it
 
 ```bash
 mkdir venv  # I have venv/ in my global .gitignore
-virtualenv --python python3.6 venv/36
-source venv/36/bin/activate
+virtualenv --python python3.7 venv/37
+source venv/37/bin/activate
 pip install -r requirements-dev.txt
 ```
 
