@@ -74,7 +74,7 @@ POLICY
 
 resource "aws_iam_role_policy_attachment" "AmazonEC2SpotFleetRole" {
   role = "${aws_iam_role.AmazonEC2SpotFleetRole.name}"
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole"
 }
 
 resource aws_iam_service_linked_role "AWSServiceRoleForEC2Spot" {
