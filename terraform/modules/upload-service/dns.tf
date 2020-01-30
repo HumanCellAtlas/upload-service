@@ -3,7 +3,7 @@ data "aws_route53_zone" "deployment_stage" {
 }
 
 data "aws_acm_certificate" "deployment_stage" {
-  domain   = "*.${var.parent_zone_domain_name}"
+  domain   = "*.${var.deployment_stage}.${var.parent_zone_domain_name}"
   statuses = ["ISSUED"]
   types = ["AMAZON_ISSUED"]
   most_recent = true
